@@ -26,12 +26,37 @@ class Shape {
     constructor(start_freq, id_num) {
         this.nodes = [];
         
+        //var newobj;
+        this.start = function () {
+            this.odx = 0;
+            this.ody = 0;
+        },
+        this.move = function (dx, dy) {
+            this.translate(dx - this.odx, dy - this.ody);
+            this.odx = dx;
+            this.ody = dy;
+        },
+        this.up = function () {
+            //console.log(this);
+            var path = this.attr("path");
+            // update path
+            for (var i = 0; i < path.length - 1; i++) {
+                console.log(path[i]);
+                path[i][1] += this.odx;
+                path[i][2] += this.ody;
+                //console.log(path[i]);
+            }
+
+        };
+
+
         this.hoverIn = function (item) {
             return function (event) {
                 if (CURR_TOOL == "adjust") {
                     item.path.attr("stroke-width", "3");
-                    var id = item.path.id;
-                    console.log(id);
+                    item.path.attr("cursor", "move");
+
+                    //var id = item.path.id;
                 }
             };
         };
@@ -43,8 +68,9 @@ class Shape {
         };
 
         this.path = r.path().attr({"stroke": "#111", "stroke-width": "2"}).hover(this.hoverIn(this), this.hoverOut(this));
+        this.path.drag(this.move, this.start, this.up);
+
         //this.bBox = this.path.getBBox();
-       
 
         this.origin = "";
         this.start_freq = start_freq;
@@ -70,19 +96,25 @@ class Shape {
         //this.circ1.attr({guide : this.path, along : 0}).animate({along : 1}, length, "linear");
         //setInterval(this.animate_helper,length);
     }
+    
     animate_helper(length){
         this.circ1.data("mypath", this.path);
         this.anim = Raphael.animation({progress: 1}, length).repeat(Infinity);
-        this.circ1.animate(this.anim);    }
-    pause () {
-        console.log("pause");
-        this.circ1.pause(this.animation);
+        this.circ1.animate(this.anim);    
     }
+    
+    pause () {
+        // TODO
+        console.log("pause");
+        this.anim = Raphael.animation({progress: 0}, length).repeat(Infinity);
+        this.circ1.animate(this.anim);      }
 }
 
 var GRID_SIZE = 50;
 var GLOBAL_MARGIN = 5;
 /* 
+    TOOLS
+    -----
     draw
     adjust 
 */
@@ -204,7 +236,7 @@ $(document).ready(function() {
                 y < (origin_y + 20) && y > (origin_y - 20)) {
             x = origin_x;
             y = origin_y;
-            ACTIVE_SHAPE.path.attr("fill", "rgba(120,120,120,.1)");
+            ACTIVE_SHAPE.path.attr("fill", "rgba(100,100,100,.1)");
             //HOVER_OVER_ORIGIN = true;
         } 
         else {
@@ -272,7 +304,7 @@ $(document).ready(function() {
 function complete_shape(){
 
     ACTIVE_SHAPE.path.attr("path", path_to_string(ACTIVE_SHAPE.path) + "Z");
-    ACTIVE_SHAPE.path.attr("fill", "rgba(50,50,50,.1)");
+    ACTIVE_SHAPE.path.attr("fill", "rgba(100,100,100,.2)");
 
     shapesList.push(ACTIVE_SHAPE);
 
