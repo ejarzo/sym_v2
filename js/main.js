@@ -1,6 +1,5 @@
+/* Raphael */
 var r = Raphael("holder", "100%", "100%");
-
-
 
 r.customAttributes.progress = function (v) {
     var path = this.data("mypath");
@@ -21,7 +20,61 @@ r.customAttributes.progress = function (v) {
 
 var TEMPO = 2;
 
-/* Shape class */
+
+
+
+function control_move (dx, dy) {
+    
+    this.translate(dx - this.odx, dy - this.ody);
+    
+    /*var currShapeId = this.data("shapeId");
+    var i = this.data("i");
+    var currShape = (shapesList[currShapeId]);
+    console.log(currShape); 
+    var currPath = (shapesList[currShapeId]).path.attr("path");
+*/
+    this.control_update(dx - (this.odx || 0), dy - (this.ody || 0));
+    
+    
+    this.odx = dx;
+    this.ody = dy;
+
+
+    
+    
+
+    //console.log(currPath[i]);
+
+    //currPath[i][1] += this.odx;
+    //currPath[i][2] += this.ody;
+
+    //currShape.path(currPath);
+}
+
+function control_up (){
+    this.odx = this.ody = 0;
+}
+
+
+
+/*function control_hoverIn (item) {
+    return function (event) {
+        if (CURR_TOOL == "adjust") {
+            item.attr("radius", "5");
+            //item.path.attr("cursor", "move");
+
+            //var id = item.path.id;
+        }
+    };
+};
+
+function control_hoverOut (item) {
+    return function (event) {
+        item.attr("radius", "5");
+    };
+};
+*/
+/* ---------------- Shape class ------------------ */
 class Shape {
     constructor(start_freq, id_num) {
         this.nodes = [];
@@ -33,6 +86,8 @@ class Shape {
         },
         this.move = function (dx, dy) {
             this.translate(dx - this.odx, dy - this.ody);
+            //this.controls.translate(dx - this.odx, dy - this.ody);
+            //this.controls.forEach(function(){this.translate(dx - this.odx, dy - this.ody);})
             this.odx = dx;
             this.ody = dy;
         },
@@ -49,12 +104,14 @@ class Shape {
 
         };
 
+        
 
+        /* --------- on hover --------- */
         this.hoverIn = function (item) {
             return function (event) {
                 if (CURR_TOOL == "adjust") {
                     item.path.attr("stroke-width", "3");
-                    item.path.attr("cursor", "move");
+                    //item.path.attr("cursor", "move");
 
                     //var id = item.path.id;
                 }
@@ -67,37 +124,30 @@ class Shape {
             };
         };
 
-        this.path = r.path().attr({"stroke": "#111", "stroke-width": "2"}).hover(this.hoverIn(this), this.hoverOut(this));
+        /* --------- path attributes --------- */
+        this.path = r.path().attr({"stroke": "#111", "stroke-width": "2"});
+        this.path.hover(this.hoverIn(this), this.hoverOut(this));
         this.path.drag(this.move, this.start, this.up);
 
-        //this.bBox = this.path.getBBox();
+        this.controls = r.set();
+        //this.controls.hover(control_hoverIn(this), control_hoverOut(this));
 
-        this.origin = "";
+        //this.controls.drag(this.move, this.up);
+        //this.bBox = this.path.getBBox();
+        //this.origin = this.path.attrs.path;
+
         this.start_freq = start_freq;
         this.completed = false;
         this.loop = false;
+        this.length = function () {return (this.path.attr("path")).length};
         this.circ1 = r.circle(0, 0, 5).attr("fill", "#111");
         this.circ1.attr("progress", 0);
         this.anim;
     }
+
     animate () {
         var length = this.path.getTotalLength() * TEMPO;
-        //console.log(length);
-        
-        //var anim = Raphael.animation({guide : this.path, along : 0}, length).repeat(Infinity);
-        this.animate_helper(length);
-        //var data = [this.path, 1];
-        //console.log(data);
-        /*this.circ1.data("mypath", this.path);
-        var anim = Raphael.animation({progress: 1}, length).repeat(Infinity);
-        this.circ1.animate(anim);*/
-
-        //this.circ1.animate(anim);
-        //this.circ1.attr({guide : this.path, along : 0}).animate({along : 1}, length, "linear");
-        //setInterval(this.animate_helper,length);
-    }
-    
-    animate_helper(length){
+  
         this.circ1.data("mypath", this.path);
         this.anim = Raphael.animation({progress: 1}, length).repeat(Infinity);
         this.circ1.animate(this.anim);    
@@ -105,19 +155,22 @@ class Shape {
     
     pause () {
         // TODO
-        console.log("pause");
-        this.anim = Raphael.animation({progress: 0}, length).repeat(Infinity);
-        this.circ1.animate(this.anim);      }
+        var origin_x = (this.path.attr("path")[0])[1];
+        var origin_y = (this.path.attr("path")[0])[2];
+        //console.log(origin_x, origin_y);
+        
+        this.circ1.stop(this.anim);
+        this.anim = "";
+        this.circ1.remove();
+
+        this.circ1 = r.circle(0, 0, 5).attr("fill", "#111");
+        this.circ1.attr("progress", 0);
+    }
 }
 
 var GRID_SIZE = 50;
 var GLOBAL_MARGIN = 5;
-/* 
-    TOOLS
-    -----
-    draw
-    adjust 
-*/
+// TOOLS: draw, adjust
 var CURR_TOOL = "draw";
 var PREV_ENDPOINT;
 var ACTIVE_SHAPE = new Shape;
@@ -170,7 +223,9 @@ $(document).ready(function() {
         //stop_all();
         //r.clear();
         for (var i = shapesList.length - 1; i >= 0; i--) {
-            shapesList[i].path.hide()
+            shapesList[i].path.hide();
+            shapesList[i].circ1.remove();
+            shapesList[i].controls.remove();
         }
         shapesList = [];
         ACTIVE_SHAPE = new Shape();
@@ -279,11 +334,58 @@ $(document).ready(function() {
 
                 lineToMouse.attr("path", moveTo);                
 
-                if (ACTIVE_SHAPE.path.attr("path") === "") {
+                if (ACTIVE_SHAPE.path.attr("path") === "") { // shape is empty
                     ACTIVE_SHAPE.path.attr("path", moveTo);
                 } else {
                     ACTIVE_SHAPE.path.attr("path", path_to_string(ACTIVE_SHAPE.path) + lineTo);
                 }
+                
+                var discattr = {fill: "#fff", stroke: 2, "stroke-width": 2};
+                
+                var newControl = r.circle(x, y, 3).attr(discattr);
+                console.log(ACTIVE_SHAPE);
+                var shapeId = shapesList.length;
+                
+                newControl.data("i", ACTIVE_SHAPE.length());
+                
+                newControl.data("shapeId", shapeId);
+                newControl.drag(control_move, control_up);
+
+                newControl.click(function(){
+                    console.log("index:", this.data("i"));
+                    console.log("shape id:", this.data("shapeId"));
+                });
+
+                newControl.control_update = function (x, y) {
+                    //this.translate(x, y);
+                    //this.controls.forEach(function(){this.translate(dx - this.odx, dy - this.ody);})
+                    //this.odx = dx;
+                    //this.ody = dy;
+
+                    console.log("cx:", this.attr("cx"));
+                    console.log("odx:", this.odx);
+
+                    var X = this.attr("cx") + x, Y = this.attr("cy") + y;
+                    
+                    this.attr({cx: X, cy: Y});
+                   
+                    var i = this.data("i");
+                    var currShapeId = this.data('shapeId');
+                    //console.log("i__:", i);
+                   
+                    var currShape = shapesList[currShapeId];
+                    var tempPath = currShape.path.attr("path");
+                    
+                    console.log("temp path:", tempPath);
+                    
+                    tempPath[i-1][1] = X;
+                    tempPath[i-1][2] = Y;
+
+                    currShape.path.attr("path", tempPath);
+                }
+
+                ACTIVE_SHAPE.controls.push(newControl);
+                console.log(ACTIVE_SHAPE.controls);
 
             }
             /*console.log("lineToMouse:");
@@ -308,7 +410,7 @@ function complete_shape(){
 
     shapesList.push(ACTIVE_SHAPE);
 
-    ACTIVE_SHAPE = new Shape;
+    ACTIVE_SHAPE = new Shape();
 
     lineToMouse.attr("path", "");
     lineToMouseIsActive = false;
