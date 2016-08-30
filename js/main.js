@@ -1,5 +1,6 @@
 /* Raphael */
 var r = Raphael("holder", "100%", "100%");
+var TEMPO = 2;
 
 r.customAttributes.progress = function (v) {
     var path = this.data("mypath");
@@ -18,62 +19,39 @@ r.customAttributes.progress = function (v) {
 };
 
 
-var TEMPO = 2;
 
 
-
-
+/* ---------------- Corner handles  ------------------ */
 function control_move (dx, dy) {
+    this.translate(dx - (this.odx || 0), dy - (this.ody || 0));
     
-    this.translate(dx - this.odx, dy - this.ody);
-    
-    /*var currShapeId = this.data("shapeId");
-    var i = this.data("i");
-    var currShape = (shapesList[currShapeId]);
-    console.log(currShape); 
-    var currPath = (shapesList[currShapeId]).path.attr("path");
-*/
     this.control_update(dx - (this.odx || 0), dy - (this.ody || 0));
-    
     
     this.odx = dx;
     this.ody = dy;
-
-
-    
-    
-
-    //console.log(currPath[i]);
-
-    //currPath[i][1] += this.odx;
-    //currPath[i][2] += this.ody;
-
-    //currShape.path(currPath);
 }
 
 function control_up (){
     this.odx = this.ody = 0;
 }
 
-
-
-/*function control_hoverIn (item) {
+function control_hoverIn (item) {
     return function (event) {
         if (CURR_TOOL == "adjust") {
-            item.attr("radius", "5");
-            //item.path.attr("cursor", "move");
-
-            //var id = item.path.id;
+            item.attr("r", "5");
+            item.attr("stroke-width", "3");
         }
     };
 };
 
 function control_hoverOut (item) {
     return function (event) {
-        item.attr("radius", "5");
+        item.attr("r", "3");
+        item.attr("stroke-width", "2");
     };
 };
-*/
+
+
 /* ---------------- Shape class ------------------ */
 class Shape {
     constructor(start_freq, id_num) {
@@ -85,22 +63,33 @@ class Shape {
             this.ody = 0;
         },
         this.move = function (dx, dy) {
-            this.translate(dx - this.odx, dy - this.ody);
+            //this.translate(dx - this.odx, dy - this.ody);
+            var i = this.data("i");
+            //console.log(this.data("i"));
             //this.controls.translate(dx - this.odx, dy - this.ody);
-            //this.controls.forEach(function(){this.translate(dx - this.odx, dy - this.ody);})
+            
+            shapesList[i].controls.translate(dx - this.odx, dy - this.ody);
+            var currShape = shapesList[i];
+            var tempPath = currShape.path.attr("path");
+
+            for (var i = 0; i < tempPath.length - 1; i++) {
+                tempPath[i][1] += (dx -this.odx);
+                tempPath[i][2] += (dy -this.ody);
+            }
+
+            currShape.path.attr("path", tempPath);
+
             this.odx = dx;
             this.ody = dy;
         },
         this.up = function () {
-            //console.log(this);
-            var path = this.attr("path");
-            // update path
+          /*  var path = this.attr("path");
             for (var i = 0; i < path.length - 1; i++) {
                 console.log(path[i]);
                 path[i][1] += this.odx;
                 path[i][2] += this.ody;
-                //console.log(path[i]);
-            }
+            }*/
+            this.odx = this.ody = 0;
 
         };
 
@@ -350,6 +339,7 @@ $(document).ready(function() {
                 
                 newControl.data("shapeId", shapeId);
                 newControl.drag(control_move, control_up);
+                newControl.hover(control_hoverIn(newControl), control_hoverOut(newControl));
 
                 newControl.click(function(){
                     console.log("index:", this.data("i"));
@@ -361,25 +351,29 @@ $(document).ready(function() {
                     //this.controls.forEach(function(){this.translate(dx - this.odx, dy - this.ody);})
                     //this.odx = dx;
                     //this.ody = dy;
-
-                    console.log("cx:", this.attr("cx"));
-                    console.log("odx:", this.odx);
-
-                    var X = this.attr("cx") + x, Y = this.attr("cy") + y;
-                    
-                    this.attr({cx: X, cy: Y});
+                    //console.log("cx:", this.attr("cx"));
+                    //console.log("odx:", this.odx);
+                    //var X = this.attr("cx") + x, Y = this.attr("cy") + y;
+                    //this.attr({cx: X, cy: Y});
                    
                     var i = this.data("i");
                     var currShapeId = this.data('shapeId');
                     //console.log("i__:", i);
                    
                     var currShape = shapesList[currShapeId];
+                    
                     var tempPath = currShape.path.attr("path");
-                    
+                    //console.log(tempPath);
+
                     console.log("temp path:", tempPath);
-                    
-                    tempPath[i-1][1] = X;
-                    tempPath[i-1][2] = Y;
+                    //var dx = (this.odx - x);
+                    console.log("x:", x);
+                    console.log("y:", y);
+                    console.log("odx:", this.odx);
+                    console.log("ody:", this.ody);
+
+                    tempPath[i-1][1] += x;
+                    tempPath[i-1][2] += y;
 
                     currShape.path.attr("path", tempPath);
                 }
@@ -407,6 +401,7 @@ function complete_shape(){
 
     ACTIVE_SHAPE.path.attr("path", path_to_string(ACTIVE_SHAPE.path) + "Z");
     ACTIVE_SHAPE.path.attr("fill", "rgba(100,100,100,.2)");
+    ACTIVE_SHAPE.path.data("i", shapesList.length);
 
     shapesList.push(ACTIVE_SHAPE);
 
