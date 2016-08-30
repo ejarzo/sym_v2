@@ -1,6 +1,7 @@
 /* Raphael */
 var r = Raphael("holder", "100%", "100%");
-var TEMPO = 2;
+
+var TEMPO = 4;
 
 r.customAttributes.progress = function (v) {
     var path = this.data("mypath");
@@ -19,39 +20,6 @@ r.customAttributes.progress = function (v) {
 };
 
 
-
-
-/* ---------------- Corner handles  ------------------ */
-function control_move (dx, dy) {
-    this.translate(dx - (this.odx || 0), dy - (this.ody || 0));
-    
-    this.control_update(dx - (this.odx || 0), dy - (this.ody || 0));
-    
-    this.odx = dx;
-    this.ody = dy;
-}
-
-function control_up (){
-    this.odx = this.ody = 0;
-}
-
-function control_hoverIn (item) {
-    return function (event) {
-        if (CURR_TOOL == "adjust") {
-            item.attr("r", "5");
-            item.attr("stroke-width", "3");
-        }
-    };
-};
-
-function control_hoverOut (item) {
-    return function (event) {
-        item.attr("r", "3");
-        item.attr("stroke-width", "2");
-    };
-};
-
-
 /* ---------------- Shape class ------------------ */
 class Shape {
     constructor(start_freq, id_num) {
@@ -63,13 +31,17 @@ class Shape {
             this.ody = 0;
         },
         this.move = function (dx, dy) {
-            //this.translate(dx - this.odx, dy - this.ody);
             var i = this.data("i");
-            //console.log(this.data("i"));
-            //this.controls.translate(dx - this.odx, dy - this.ody);
-            
-            shapesList[i].controls.translate(dx - this.odx, dy - this.ody);
             var currShape = shapesList[i];
+            
+            dx = snap_to_grid(dx);
+            dy = snap_to_grid(dy);
+
+            for (var j = currShape.handles.length - 1; j >= 0; j--) {
+                (currShape.handles[j]).circle.translate(dx - this.odx, dy - this.ody);
+            }
+          
+            
             var tempPath = currShape.path.attr("path");
 
             for (var i = 0; i < tempPath.length - 1; i++) {
@@ -83,19 +55,9 @@ class Shape {
             this.ody = dy;
         },
         this.up = function () {
-          /*  var path = this.attr("path");
-            for (var i = 0; i < path.length - 1; i++) {
-                console.log(path[i]);
-                path[i][1] += this.odx;
-                path[i][2] += this.ody;
-            }*/
             this.odx = this.ody = 0;
-
         };
 
-        
-
-        /* --------- on hover --------- */
         this.hoverIn = function (item) {
             return function (event) {
                 if (CURR_TOOL == "adjust") {
@@ -113,17 +75,24 @@ class Shape {
             };
         };
 
+        this.hide_handles = function () {
+            for (var i = this.handles.length - 1; i >= 1; i--) {
+                this.handles[i].hide();
+            }
+        }
+
+        this.show_handles = function () {
+            for (var i = this.handles.length - 1; i >= 0; i--) {
+                this.handles[i].show();
+            }
+        }
+
         /* --------- path attributes --------- */
         this.path = r.path().attr({"stroke": "#111", "stroke-width": "2"});
         this.path.hover(this.hoverIn(this), this.hoverOut(this));
         this.path.drag(this.move, this.start, this.up);
 
-        this.controls = r.set();
-        //this.controls.hover(control_hoverIn(this), control_hoverOut(this));
-
-        //this.controls.drag(this.move, this.up);
-        //this.bBox = this.path.getBBox();
-        //this.origin = this.path.attrs.path;
+        this.handles = [];
 
         this.start_freq = start_freq;
         this.completed = false;
@@ -157,6 +126,91 @@ class Shape {
     }
 }
 
+
+/* ---------------- Vertex Handle class ------------------ */
+class VertexHandle {
+    constructor(x, y, i, shapeId) {
+        //this.hidden = true;
+        if ((i-1) == 0) {
+            this.discattr = {fill: "#000", stroke: "#000", "stroke-width": 1, opacity: 1};
+            this.isFirst = true;
+        } else {
+            this.discattr = {fill: "#eee", stroke: "#000", "stroke-width": 2, opacity: 0};
+        }
+        
+        this.circle = r.circle(x,y,3).attr(this.discattr);
+        
+        this.circle.data("i", i);
+        this.circle.data("shapeId", shapeId);
+        
+        this.circle.click(function(){
+            console.log("index:", this.data("i"));
+            console.log("shape id:", this.data("shapeId"));
+        });
+        
+        this.circle.control_update = function (x, y) {
+            var i = this.data("i");
+            var currShapeId = this.data('shapeId');
+
+            var currShape = shapesList[currShapeId];
+            var tempPath = currShape.path.attr("path");
+
+            tempPath[i-1][1] += x;
+            tempPath[i-1][2] += y;
+
+            currShape.path.attr("path", tempPath);
+        }
+
+        this.move = function (dx, dy) {
+            
+            dx = snap_to_grid(dx);
+            dy = snap_to_grid(dy);
+
+            this.translate(dx - (this.odx || 0), dy - (this.ody || 0));
+            this.control_update(dx - (this.odx || 0), dy - (this.ody || 0));
+            
+            this.odx = dx;
+            this.ody = dy;
+        }
+
+        this.up = function (){
+            this.odx = this.ody = 0;
+        }
+
+        this.hoverIn = function (item) {
+            return function (event) {
+                if (CURR_TOOL == "adjust") {
+                    item.attr("r", "5");
+                    item.attr("stroke-width", "3");
+                }
+            };
+        };
+
+        this.hoverOut = function (item) {
+            return function (event) {
+                if (CURR_TOOL == "adjust") {
+                    item.attr("r", "3");
+                    item.attr("stroke-width", "2");
+                };
+            };
+        };
+        
+        this.hide = function () {
+            this.circle.attr("opacity", 0);
+        }
+
+        this.show = function () {
+            this.circle.attr("opacity", 1);
+        }
+
+        this.circle.drag(this.move, this.up);
+        this.circle.hover(this.hoverIn(this.circle), this.hoverOut(this.circle));
+    }
+}
+
+
+
+
 var GRID_SIZE = 50;
 var GLOBAL_MARGIN = 5;
 // TOOLS: draw, adjust
@@ -166,7 +220,11 @@ var ACTIVE_SHAPE = new Shape;
 var lineToMouseIsActive = false;
 var shapesList = [];
 var lineToMouse = r.path().attr({"stroke": "#AAA", "stroke-width": "2"});
-var gridDots = [];
+var circleAtMouseAttr = {fill: "#AAA", stroke: "#aaa"};
+
+var circleAtMouse = r.circle(0,0,3).attr(circleAtMouseAttr);
+
+var gridDots = r.set();
 //var HOVER_OVER_ORIGIN = false;
 
 
@@ -176,6 +234,7 @@ $(document).ready(function() {
     /* ----------------------- HANDLERS ----------------------- */
 
     init_grid();
+    hide_handles();
 
     // PLAY
     $("#play").click(function(){
@@ -210,24 +269,46 @@ $(document).ready(function() {
     // CLEAR
     $("#clear").click(function(){
         //stop_all();
-        //r.clear();
-        for (var i = shapesList.length - 1; i >= 0; i--) {
+        r.clear();
+        init_grid();
+        if ($("#grid").is(":checked")) {
+            show_grid();
+        } 
+        else {
+            hide_grid();
+        }
+       /* for (var i = shapesList.length - 1; i >= 0; i--) {
             shapesList[i].path.hide();
             shapesList[i].circ1.remove();
-            shapesList[i].controls.remove();
-        }
+            //shapesList[i].controls.remove();
+            shapesList[i].handles = [];
+        }*/
         shapesList = [];
         ACTIVE_SHAPE = new Shape();
         lineToMouse = r.path().attr({"stroke": "#AAA", "stroke-width": "2"});
+        circleAtMouse = r.circle(0,0,3).attr(circleAtMouseAttr);
     });
 
 
     $("#draw-tool").click(function(){
         CURR_TOOL = "draw";
+
+        //$( "#holder" ).css("cursor", "crosshair");
+        $( ".tool" ).removeClass("active");
+        $( "#draw-tool" ).addClass("active");
+        circleAtMouse.show();
+        hide_handles();
     });
 
     $("#adjust-tool").click(function(){
         CURR_TOOL = "adjust";
+
+        $( "#holder" ).css("cursor", "default");
+        $( ".tool" ).removeClass("active");
+        $( "#adjust-tool" ).addClass("active");
+
+        circleAtMouse.hide();
+        show_handles();
     });
     /*
     $( "#complete-shape" ).on( "click", function( event ) {
@@ -245,35 +326,16 @@ $(document).ready(function() {
     });
 
 
-
-
     $( "#holder" ).on( "mousemove", function( event ) {
-        if(CURR_TOOL == "draw"){
-            $( "#holder" ).css("cursor", "crosshair");
-            $( "#draw-tool" ).css("background", "#AAA");
-            $( "#adjust-tool" ).css("background", "#fff");
-
-        }
-        if(CURR_TOOL == "adjust"){
-            $( "#holder" ).css("cursor", "default");
-            $( "#draw-tool" ).css("background", "#fff");
-            $( "#adjust-tool" ).css("background", "#aaa");
-        }
-
         var x = event.pageX - GLOBAL_MARGIN;
         var y = event.pageY - GLOBAL_MARGIN;
+        
+        x = snap_to_grid(x);
+        y = snap_to_grid(y);
 
-        if ($("#snap").is(":checked")) {
-            x = (Math.round(x / GRID_SIZE) * GRID_SIZE);
-            y = (Math.round(y / GRID_SIZE) * GRID_SIZE);
-        };
-
-        //console.log(ACTIVE_SHAPE.path.attr("path")[0][1]);
         if ((ACTIVE_SHAPE.path.attr("path")).length) {
             var origin_x = ACTIVE_SHAPE.path.attr("path")[0][1];
             var origin_y = ACTIVE_SHAPE.path.attr("path")[0][2];
-            //console.log(origin_x);
-            //console.log(origin_y);
         }
 
         if (x < (origin_x + 20) && x > (origin_x - 20) && 
@@ -286,11 +348,12 @@ $(document).ready(function() {
         else {
             ACTIVE_SHAPE.path.attr("fill", "");
         }
-            
-
 
         var endpoint = "L" + x + "," + y;
-        
+        //console.log(circleAtMouse);
+        circleAtMouse.attr({cx: x, cy: y});
+        //circleAtMouse.remove();
+        //circleAtMouse = r.circle(x,y,3).attr(circleAtMouseAttr).toBack();
 
         if (lineToMouse.attr("path")) {
             lineToMouse.attr("path", subpath_to_string(lineToMouse, 0) + endpoint);
@@ -302,10 +365,8 @@ $(document).ready(function() {
             var x = event.pageX - GLOBAL_MARGIN;
             var y = event.pageY - GLOBAL_MARGIN;
             
-            if ($("#snap").is(":checked")) {
-                x = (Math.round(x / GRID_SIZE) * GRID_SIZE);
-                y = (Math.round(y / GRID_SIZE) * GRID_SIZE);
-            };
+            x = snap_to_grid(x);
+            y = snap_to_grid(y);
 
             if ((ACTIVE_SHAPE.path.attr("path")).length) {
                 var origin_x = ACTIVE_SHAPE.path.attr("path")[0][1];
@@ -328,62 +389,13 @@ $(document).ready(function() {
                 } else {
                     ACTIVE_SHAPE.path.attr("path", path_to_string(ACTIVE_SHAPE.path) + lineTo);
                 }
+
+                var newVertexHandle = new VertexHandle(x, y, ACTIVE_SHAPE.length(), shapesList.length);
                 
-                var discattr = {fill: "#fff", stroke: 2, "stroke-width": 2};
-                
-                var newControl = r.circle(x, y, 3).attr(discattr);
-                console.log(ACTIVE_SHAPE);
-                var shapeId = shapesList.length;
-                
-                newControl.data("i", ACTIVE_SHAPE.length());
-                
-                newControl.data("shapeId", shapeId);
-                newControl.drag(control_move, control_up);
-                newControl.hover(control_hoverIn(newControl), control_hoverOut(newControl));
-
-                newControl.click(function(){
-                    console.log("index:", this.data("i"));
-                    console.log("shape id:", this.data("shapeId"));
-                });
-
-                newControl.control_update = function (x, y) {
-                    //this.translate(x, y);
-                    //this.controls.forEach(function(){this.translate(dx - this.odx, dy - this.ody);})
-                    //this.odx = dx;
-                    //this.ody = dy;
-                    //console.log("cx:", this.attr("cx"));
-                    //console.log("odx:", this.odx);
-                    //var X = this.attr("cx") + x, Y = this.attr("cy") + y;
-                    //this.attr({cx: X, cy: Y});
-                   
-                    var i = this.data("i");
-                    var currShapeId = this.data('shapeId');
-                    //console.log("i__:", i);
-                   
-                    var currShape = shapesList[currShapeId];
-                    
-                    var tempPath = currShape.path.attr("path");
-                    //console.log(tempPath);
-
-                    console.log("temp path:", tempPath);
-                    //var dx = (this.odx - x);
-                    console.log("x:", x);
-                    console.log("y:", y);
-                    console.log("odx:", this.odx);
-                    console.log("ody:", this.ody);
-
-                    tempPath[i-1][1] += x;
-                    tempPath[i-1][2] += y;
-
-                    currShape.path.attr("path", tempPath);
-                }
-
-                ACTIVE_SHAPE.controls.push(newControl);
-                console.log(ACTIVE_SHAPE.controls);
+                ACTIVE_SHAPE.handles.push(newVertexHandle);
+                console.log(ACTIVE_SHAPE.handles);
 
             }
-            /*console.log("lineToMouse:");
-            console.log(lineToMouse);*/
         }
     });
 
@@ -428,26 +440,39 @@ function init_grid () {
     var canvas_width = $("#holder").width();
     var canvas_height = $("#holder").height();
 
-
     for (var x = GRID_SIZE; x < canvas_width; x += GRID_SIZE) {
         for (var y = GRID_SIZE; y < canvas_height; y += GRID_SIZE) {
-            var gridDot = r.circle(x ,y, 2);
+            var gridDot = r.circle(x ,y, 2).toBack();
             gridDot.attr({"fill": "#777", "stroke-width": 1, "stroke": "#FFF"});
             gridDots.push(gridDot);
             hide_grid();
         }
     }
-    
 }
 
 function hide_grid () {
-    for (var i = gridDots.length - 1; i >= 0; i--) {
-        gridDots[i].hide();
-    }
+    gridDots.hide();
 }
 
 function show_grid () {
-    for (var i = gridDots.length - 1; i >= 0; i--) {
-        gridDots[i].show();
+    gridDots.show();
+}
+
+function hide_handles () {
+    for (var i = shapesList.length - 1; i >= 0; i--) {
+        shapesList[i].hide_handles();
     }
+}
+
+function show_handles () {
+    for (var i = shapesList.length - 1; i >= 0; i--) {
+        shapesList[i].show_handles();
+    }
+}
+
+function snap_to_grid (p) {
+    if ($("#snap").is(":checked")) {
+        return (Math.round(p / GRID_SIZE) * GRID_SIZE);
+    };
+    return p;
 }

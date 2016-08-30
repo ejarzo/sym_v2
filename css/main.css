@@ -111,7 +111,7 @@ body {
     width: 100%;
     border: 5px solid #FFF;
     /*margin: 50px 50px;*/
-    cursor: crosshair;
+    /*cursor: none;*/
 }
 /*canvas:hover{
     cursor: crosshair;
@@ -124,6 +124,10 @@ button {
     margin-right: 5px;  
 }
 
+.active {
+    background-color: #555;
+    color: #eee;
+}
 button:hover {
     border-color: #BBB;
 /*    background-color: #FFF;*/
