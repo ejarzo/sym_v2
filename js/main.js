@@ -1,7 +1,18 @@
 /* Raphael */
 var r = Raphael("holder", "100%", "100%");
+var warningRed = "rgba(255,100,100,.5)";
+var black = "rgba(30,30,30,1)";
 
-var TEMPO = 4;
+var TEMPO = 3;
+var ORIGIN_RADIUS = 15;
+
+var shapeDefaultAttr = {"stroke": black, "stroke-width": "2"};
+var shapeSelectedAttr = {"stroke-width": 3};
+var shapeFilledAttr = {"fill": "rgba(100,100,100,.1)", stroke: black, "stroke-width": 2};
+var shapeWarningAttr = {"fill": warningRed, "stroke": warningRed};
+var handlesWarningAttr = {"opacity": 0.2};
+var handlesDefaultAttr = {"opacity": 1};
+
 
 r.customAttributes.progress = function (v) {
     var path = this.data("mypath");
@@ -19,49 +30,67 @@ r.customAttributes.progress = function (v) {
     };
 };
 
-
+var DRAG = false;
 /* ---------------- Shape class ------------------ */
 class Shape {
     constructor(start_freq, id_num) {
         
         /* ----- Drag ----- */
         this.start = function () {
-            this.odx = 0;
-            this.ody = 0;
+            if (CURR_TOOL == "adjust") {
+                this.odx = 0;
+                this.ody = 0;
+                this.drag = false;
+            }
         },
         this.move = function (dx, dy) {
-            var i = this.data("i");
-            var currShape = shapesList[i];
-            
-            dx = snap_to_grid(dx);
-            dy = snap_to_grid(dy);
+            if (CURR_TOOL == "adjust") {
+                $("#details").hide();
+                var i = this.data("i");
+                var currShape = shapesList[i];
+                
+                dx = snap_to_grid(dx);
+                dy = snap_to_grid(dy);
 
-            for (var j = currShape.handles.length - 1; j >= 0; j--) {
-                (currShape.handles[j]).circle.translate(dx - this.odx, dy - this.ody);
+                for (var j = currShape.handles.length - 1; j >= 0; j--) {
+                    (currShape.handles[j]).circle.translate(dx - this.odx, dy - this.ody);
+                }
+              
+                var tempPath = currShape.path.attr("path");
+
+                for (var i = 0; i < tempPath.length - 1; i++) {
+                    tempPath[i][1] += (dx -this.odx);
+                    tempPath[i][2] += (dy -this.ody);
+                }
+
+                currShape.path.attr("path", tempPath);
+
+                this.odx = dx;
+                this.ody = dy;
+
+                this.drag = true;
             }
-          
-            
-            var tempPath = currShape.path.attr("path");
 
-            for (var i = 0; i < tempPath.length - 1; i++) {
-                tempPath[i][1] += (dx -this.odx);
-                tempPath[i][2] += (dy -this.ody);
-            }
-
-            currShape.path.attr("path", tempPath);
-
-            this.odx = dx;
-            this.ody = dy;
         },
-        this.up = function () {
+        this.up = function (e) {
+            if (this.drag == false && CURR_TOOL == "adjust") {
+                e.stopPropagation();
+                console.log(e);
+                var i = this.data("i");
+                var currShape = shapesList[i];
+                currShape.show_details(e);   
+            }
             this.odx = this.ody = 0;
+            //hide_details();
+            //console.log("up")
+            //DRAG = false;
         };
         
         /* ----- Hover ----- */
         this.hoverIn = function (item) {
             return function (event) {
                 if (CURR_TOOL == "adjust") {
-                    item.path.attr("stroke-width", "3");
+                    item.path.attr(shapeSelectedAttr);
                     //item.path.attr("cursor", "move");
 
                     //var id = item.path.id;
@@ -71,7 +100,7 @@ class Shape {
 
         this.hoverOut = function (item) {
             return function (event) {
-                item.path.attr("stroke-width", "2");
+                item.path.attr(shapeDefaultAttr);
             };
         };
 
@@ -88,29 +117,37 @@ class Shape {
             }
         }
 
+        /* ----- Details ----- */
         this.show_details = function (event) {
+            //console.log("dets");
             $("#details").empty();
             var hideButton = "<button class='hide-details' onclick='hide_details()'>X</button>"
-
-            console.log(event);
+            //console.log(event);
             var x = event.clientX + 10;
-            var y = event.clientY - 50;
+            var y = event.clientY - 25;
             $("#details").css({left: x, top: y});
-            var deleteButton = "<button onclick='delete_shape(" + this.path.data("i") + ")'>DELETE</button>"
+
+            var i = this.path.data("i");
+            var deleteButton = "<button class='delete-shape' data='" + i + "' onclick='delete_shape(" + i + ")' onmouseover='delete_hoverin(" + i + ")' onmouseout='delete_hoverout(" + i + ")'>DELETE</button>"
             $("#details").append(hideButton, deleteButton);
 
-            $("#details").fadeIn();
+            //this.path.attr({stroke: "#f00"});
+            $("#details").show();
         }
+
         /* ----- Click ----- */
         this.click = function (item) {
             return function (event) {
-                if (CURR_TOOL == "adjust") {
-                    console.log(item);
+                if (CURR_TOOL == "adjust" && DRAG == false) {
+                    console.log(event);
+                    event.stopPropagation();
                     item.show_details(event);
+                    DRAG == true;
                 }
             };
         };
 
+        /* ----- Delete ----- */
         this.delete = function () {
             this.pause();
             this.path.remove();
@@ -121,12 +158,11 @@ class Shape {
         }
 
 
-
         /* --------- path attributes --------- */
-        this.path = r.path().attr({"stroke": "#111", "stroke-width": "2"});
+        this.path = r.path().attr(shapeDefaultAttr);
         this.path.hover(this.hoverIn(this), this.hoverOut(this));
         this.path.drag(this.move, this.start, this.up);
-        this.path.click(this.click(this));
+        //this.path.click(this.click(this));
 
         this.handles = [];
 
@@ -138,6 +174,7 @@ class Shape {
         this.circ1.attr("progress", 0);
         this.anim;
         this.included = true;
+        this.dragging = false;
     }
 
     animate () {
@@ -199,19 +236,22 @@ class VertexHandle {
         }
 
         this.move = function (dx, dy) {
-            
-            dx = snap_to_grid(dx);
-            dy = snap_to_grid(dy);
+            if (CURR_TOOL == "adjust") {
+                dx = snap_to_grid(dx);
+                dy = snap_to_grid(dy);
 
-            this.translate(dx - (this.odx || 0), dy - (this.ody || 0));
-            this.control_update(dx - (this.odx || 0), dy - (this.ody || 0));
-            
-            this.odx = dx;
-            this.ody = dy;
+                this.translate(dx - (this.odx || 0), dy - (this.ody || 0));
+                this.control_update(dx - (this.odx || 0), dy - (this.ody || 0));
+                
+                this.odx = dx;
+                this.ody = dy;  
+            }
         }
 
         this.up = function (){
-            this.odx = this.ody = 0;
+            if (CURR_TOOL == "adjust") {
+                this.odx = this.ody = 0;
+            }
         }
 
         this.hoverIn = function (item) {
@@ -351,10 +391,6 @@ $(document).ready(function() {
         circleAtMouse.hide();
         show_handles();
     });
-    /*
-    $( "#complete-shape" ).on( "click", function( event ) {
-        complete_shape();
-    });*/
     
     // TOGGLE GRID
     $("#grid").click(function(){
@@ -366,7 +402,14 @@ $(document).ready(function() {
         }
     });
 
+    $(".delete-shape").hover(function(){
+        console.log("in");
+        var i = $(this).attr("data");
+        console.log(i);
+    }, function () {
+        console.log("out");
 
+    });
 
     $( "#holder" ).on( "mousemove", function( event ) {
         var x = event.pageX - GLOBAL_MARGIN;
@@ -380,11 +423,11 @@ $(document).ready(function() {
             var origin_y = ACTIVE_SHAPE.path.attr("path")[0][2];
         }
 
-        if (x < (origin_x + 20) && x > (origin_x - 20) && 
-                y < (origin_y + 20) && y > (origin_y - 20)) {
+        if (x < (origin_x + ORIGIN_RADIUS) && x > (origin_x - ORIGIN_RADIUS) && 
+                y < (origin_y + ORIGIN_RADIUS) && y > (origin_y - ORIGIN_RADIUS)) {
             x = origin_x;
             y = origin_y;
-            ACTIVE_SHAPE.path.attr("fill", "rgba(100,100,100,.1)");
+            ACTIVE_SHAPE.path.attr(shapeFilledAttr);
             //HOVER_OVER_ORIGIN = true;
         } 
         else {
@@ -401,8 +444,14 @@ $(document).ready(function() {
             lineToMouse.attr("path", subpath_to_string(lineToMouse, 0) + endpoint);
         }
     });
-
-    $( "#holder" ).on( "click", function( event ) {
+    $( "#details" ).on( "mousedown", function( event ) {
+        event.stopPropagation();
+    });
+    $( "#holder" ).on( "mousedown", function( event ) {
+        if ($("#details").is(":visible")) {
+            hide_details();
+        }
+        
         if (CURR_TOOL == "draw") {
             var x = event.pageX - GLOBAL_MARGIN;
             var y = event.pageY - GLOBAL_MARGIN;
@@ -415,10 +464,11 @@ $(document).ready(function() {
                 var origin_y = ACTIVE_SHAPE.path.attr("path")[0][2];
             }
 
-            if (x < (origin_x + 20) && x > (origin_x - 20) && 
-                    y < (origin_y + 20) && (y > origin_y) - 20) {
+            if (x < (origin_x + ORIGIN_RADIUS) && x > (origin_x - ORIGIN_RADIUS) && 
+                y < (origin_y + ORIGIN_RADIUS) && y > (origin_y - ORIGIN_RADIUS)) {
                 complete_shape();
             } 
+
             else {        
                 PREV_ENDPOINT = "M" + x + "," + y;
                 var moveTo = "M" + x + "," + y;
@@ -435,8 +485,7 @@ $(document).ready(function() {
                 var newVertexHandle = new VertexHandle(x, y, ACTIVE_SHAPE.length(), shapesList.length);
                 
                 ACTIVE_SHAPE.handles.push(newVertexHandle);
-                console.log(ACTIVE_SHAPE.handles);
-
+                //console.log(ACTIVE_SHAPE.handles);
             }
         }
     });
@@ -528,4 +577,18 @@ function delete_shape (i) {
 }
 function hide_details () {
     $("#details").hide();
+}
+
+function delete_hoverin (i) {
+    shapesList[i].path.attr(shapeWarningAttr);
+    for (var j = shapesList[i].handles.length - 1; j >= 0; j--) {
+        shapesList[i].handles[j].circle.attr(handlesWarningAttr)
+    }
+}
+
+function delete_hoverout (i) {
+    shapesList[i].path.attr(shapeFilledAttr);
+    for (var j = shapesList[i].handles.length - 1; j >= 0; j--) {
+        shapesList[i].handles[j].circle.attr(handlesDefaultAttr)
+    }
 }
