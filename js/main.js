@@ -23,9 +23,8 @@ r.customAttributes.progress = function (v) {
 /* ---------------- Shape class ------------------ */
 class Shape {
     constructor(start_freq, id_num) {
-        this.nodes = [];
         
-        //var newobj;
+        /* ----- Drag ----- */
         this.start = function () {
             this.odx = 0;
             this.ody = 0;
@@ -57,7 +56,8 @@ class Shape {
         this.up = function () {
             this.odx = this.ody = 0;
         };
-
+        
+        /* ----- Hover ----- */
         this.hoverIn = function (item) {
             return function (event) {
                 if (CURR_TOOL == "adjust") {
@@ -75,6 +75,7 @@ class Shape {
             };
         };
 
+        /* ----- Handles ----- */
         this.hide_handles = function () {
             for (var i = this.handles.length - 1; i >= 1; i--) {
                 this.handles[i].hide();
@@ -87,10 +88,45 @@ class Shape {
             }
         }
 
+        this.show_details = function (event) {
+            $("#details").empty();
+            var hideButton = "<button class='hide-details' onclick='hide_details()'>X</button>"
+
+            console.log(event);
+            var x = event.clientX + 10;
+            var y = event.clientY - 50;
+            $("#details").css({left: x, top: y});
+            var deleteButton = "<button onclick='delete_shape(" + this.path.data("i") + ")'>DELETE</button>"
+            $("#details").append(hideButton, deleteButton);
+
+            $("#details").fadeIn();
+        }
+        /* ----- Click ----- */
+        this.click = function (item) {
+            return function (event) {
+                if (CURR_TOOL == "adjust") {
+                    console.log(item);
+                    item.show_details(event);
+                }
+            };
+        };
+
+        this.delete = function () {
+            this.pause();
+            this.path.remove();
+            for (var i = this.handles.length - 1; i >= 0; i--) {
+                this.handles[i].circle.remove();
+            }
+            this.included = false;
+        }
+
+
+
         /* --------- path attributes --------- */
         this.path = r.path().attr({"stroke": "#111", "stroke-width": "2"});
         this.path.hover(this.hoverIn(this), this.hoverOut(this));
         this.path.drag(this.move, this.start, this.up);
+        this.path.click(this.click(this));
 
         this.handles = [];
 
@@ -101,6 +137,7 @@ class Shape {
         this.circ1 = r.circle(0, 0, 5).attr("fill", "#111");
         this.circ1.attr("progress", 0);
         this.anim;
+        this.included = true;
     }
 
     animate () {
@@ -240,7 +277,9 @@ $(document).ready(function() {
     $("#play").click(function(){
         // TODO
         for (var i = shapesList.length - 1; i >= 0; i--) {
-            shapesList[i].animate();
+            if (shapesList[i].included) {
+                shapesList[i].animate();
+            }
         }
     });
 
@@ -248,7 +287,9 @@ $(document).ready(function() {
     $("#stop").click(function(){
         // TODO
         for (var i = shapesList.length - 1; i >= 0; i--) {
-            shapesList[i].pause();
+            if (shapesList[i].included) {
+                shapesList[i].pause();
+            }        
         }
     });
 
@@ -326,6 +367,7 @@ $(document).ready(function() {
     });
 
 
+
     $( "#holder" ).on( "mousemove", function( event ) {
         var x = event.pageX - GLOBAL_MARGIN;
         var y = event.pageY - GLOBAL_MARGIN;
@@ -400,6 +442,7 @@ $(document).ready(function() {
     });
 
     $( "#holder" ).on( "dblclick", function( event ) {
+        console.log(event);
         if (CURR_TOOL == "draw") {
             complete_shape();
         }
@@ -475,4 +518,14 @@ function snap_to_grid (p) {
         return (Math.round(p / GRID_SIZE) * GRID_SIZE);
     };
     return p;
+}
+
+function delete_shape (i) {
+    shapesList[i].delete();
+ //   shapesList.splice(i, 1);
+    $("#details").hide();
+    console.log(shapesList);
+}
+function hide_details () {
+    $("#details").hide();
 }

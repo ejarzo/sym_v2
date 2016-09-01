@@ -116,6 +116,21 @@ body {
 /*canvas:hover{
     cursor: crosshair;
 }*/
+.hide-details {
+    float: right;
+}
+#details {
+    /*border: 1px solid #222;*/
+    background-color: #fff;
+    z-index: 1000;
+    display: none;
+    height: 50px;
+    width: 150px;
+    position: absolute;
+    left: 100px;
+    top: 100px;
+    box-shadow: -2px 2px 25px rgba(0,0,0,0.1);
+}
 button {
     border: 2px solid #FFF;
     border-radius: 0px;
