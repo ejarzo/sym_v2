@@ -1,18 +1,29 @@
-/* Raphael */
+/* ---------------- GLOBALS ---------------- */
 var r = Raphael("holder", "100%", "100%");
-var warningRed = "rgba(255,100,100,.5)";
-var black = "rgba(30,30,30,1)";
 
 var TEMPO = 3;
 var ORIGIN_RADIUS = 15;
+var ROOT_NOTE = "A";
 
+/* ---------------- COLORS ---------------- */
+var warningRed = "rgba(255,100,100,.5)";
+var black = "rgba(30,30,30,1)";
+var white = "rgba(255,255,255, .8)"
+
+/* ---------------- ATTRIBUTES ---------------- */
+/* shapes */
 var shapeDefaultAttr = {"stroke": black, "stroke-width": "2"};
-var shapeSelectedAttr = {"stroke-width": 3};
-var shapeFilledAttr = {"fill": "rgba(100,100,100,.1)", stroke: black, "stroke-width": 2};
+var shapeHoverAttr = {"stroke-width": 3};
+var shapeFilledPreviewAttr = {"fill": "rgba(120,120,120,.1)", stroke: black, "stroke-width": 2};
+var shapeFilledAttr = {"fill": "rgba(100,100,100,.2)", stroke: black, "stroke-width": 2};
 var shapeWarningAttr = {"fill": warningRed, "stroke": warningRed};
+var shapeSelectedAttr = {"fill": "rgba(0,0,0,.5)", stroke: black, "stroke-width": 3};
+
+/* handles */
 var handlesWarningAttr = {"opacity": 0.2};
 var handlesDefaultAttr = {"opacity": 1};
 
+/* ---------------- Raphael ---------------- */
 
 r.customAttributes.progress = function (v) {
     var path = this.data("mypath");
@@ -30,7 +41,6 @@ r.customAttributes.progress = function (v) {
     };
 };
 
-var DRAG = false;
 /* ---------------- Shape class ------------------ */
 class Shape {
     constructor(start_freq, id_num) {
@@ -78,7 +88,8 @@ class Shape {
                 console.log(e);
                 var i = this.data("i");
                 var currShape = shapesList[i];
-                currShape.show_details(e);   
+                
+                currShape.show_details(e);
             }
             this.odx = this.ody = 0;
             //hide_details();
@@ -90,7 +101,7 @@ class Shape {
         this.hoverIn = function (item) {
             return function (event) {
                 if (CURR_TOOL == "adjust") {
-                    item.path.attr(shapeSelectedAttr);
+                    item.path.attr(shapeHoverAttr);
                     //item.path.attr("cursor", "move");
 
                     //var id = item.path.id;
@@ -119,17 +130,20 @@ class Shape {
 
         /* ----- Details ----- */
         this.show_details = function (event) {
-            //console.log("dets");
+            this.path.attr(shapeSelectedAttr);
+            
             $("#details").empty();
+            
             var hideButton = "<button class='hide-details' onclick='hide_details()'>X</button>"
-            //console.log(event);
-            var x = event.clientX + 10;
+            var x = event.clientX + 20;
             var y = event.clientY - 25;
+
             $("#details").css({left: x, top: y});
 
             var i = this.path.data("i");
             var deleteButton = "<button class='delete-shape' data='" + i + "' onclick='delete_shape(" + i + ")' onmouseover='delete_hoverin(" + i + ")' onmouseout='delete_hoverout(" + i + ")'>DELETE</button>"
-            $("#details").append(hideButton, deleteButton);
+            var start_freq = this.start_freq;
+            $("#details").append(hideButton, deleteButton, start_freq);
 
             //this.path.attr({stroke: "#f00"});
             $("#details").show();
@@ -170,8 +184,8 @@ class Shape {
         this.completed = false;
         this.loop = false;
         this.length = function () {return (this.path.attr("path")).length};
-        this.circ1 = r.circle(0, 0, 5).attr("fill", "#111");
-        this.circ1.attr("progress", 0);
+        this.animCircle = r.circle(0, 0, 5).attr("fill", "#111");
+        this.animCircle.attr("progress", 0);
         this.anim;
         this.included = true;
         this.dragging = false;
@@ -180,9 +194,9 @@ class Shape {
     animate () {
         var length = this.path.getTotalLength() * TEMPO;
   
-        this.circ1.data("mypath", this.path);
+        this.animCircle.data("mypath", this.path);
         this.anim = Raphael.animation({progress: 1}, length).repeat(Infinity);
-        this.circ1.animate(this.anim);    
+        this.animCircle.animate(this.anim);    
     }
     
     pause () {
@@ -191,12 +205,12 @@ class Shape {
         var origin_y = (this.path.attr("path")[0])[2];
         //console.log(origin_x, origin_y);
         
-        this.circ1.stop(this.anim);
+        this.animCircle.stop(this.anim);
         this.anim = "";
-        this.circ1.remove();
+        this.animCircle.remove();
 
-        this.circ1 = r.circle(0, 0, 5).attr("fill", "#111");
-        this.circ1.attr("progress", 0);
+        this.animCircle = r.circle(0, 0, 5).attr("fill", "#111");
+        this.animCircle.attr("progress", 0);
     }
 }
 
@@ -293,7 +307,7 @@ var GLOBAL_MARGIN = 5;
 // TOOLS: draw, adjust
 var CURR_TOOL = "draw";
 var PREV_ENDPOINT;
-var ACTIVE_SHAPE = new Shape;
+var ACTIVE_SHAPE = new Shape(ROOT_NOTE);
 var lineToMouseIsActive = false;
 var shapesList = [];
 var lineToMouse = r.path().attr({"stroke": "#AAA", "stroke-width": "2"});
@@ -349,7 +363,7 @@ $(document).ready(function() {
 
     // CLEAR
     $("#clear").click(function(){
-        //stop_all();
+        hide_details();
         r.clear();
         init_grid();
         if ($("#grid").is(":checked")) {
@@ -358,36 +372,24 @@ $(document).ready(function() {
         else {
             hide_grid();
         }
-       /* for (var i = shapesList.length - 1; i >= 0; i--) {
-            shapesList[i].path.hide();
-            shapesList[i].circ1.remove();
-            //shapesList[i].controls.remove();
-            shapesList[i].handles = [];
-        }*/
         shapesList = [];
-        ACTIVE_SHAPE = new Shape();
+        ACTIVE_SHAPE = new Shape(ROOT_NOTE);
         lineToMouse = r.path().attr({"stroke": "#AAA", "stroke-width": "2"});
         circleAtMouse = r.circle(0,0,3).attr(circleAtMouseAttr);
+        if (CURR_TOOL == "adjust") {
+            circleAtMouse.hide();
+        }
     });
-
-
+    
+    /* TOOLS */
     $("#draw-tool").click(function(){
-        CURR_TOOL = "draw";
-
-        //$( "#holder" ).css("cursor", "crosshair");
-        $( ".tool" ).removeClass("active");
-        $( "#draw-tool" ).addClass("active");
+        select_tool("draw");
         circleAtMouse.show();
         hide_handles();
     });
 
     $("#adjust-tool").click(function(){
-        CURR_TOOL = "adjust";
-
-        $( "#holder" ).css("cursor", "default");
-        $( ".tool" ).removeClass("active");
-        $( "#adjust-tool" ).addClass("active");
-
+        select_tool("adjust");
         circleAtMouse.hide();
         show_handles();
     });
@@ -402,15 +404,7 @@ $(document).ready(function() {
         }
     });
 
-    $(".delete-shape").hover(function(){
-        console.log("in");
-        var i = $(this).attr("data");
-        console.log(i);
-    }, function () {
-        console.log("out");
-
-    });
-
+    /* Holder Mouse move */
     $( "#holder" ).on( "mousemove", function( event ) {
         var x = event.pageX - GLOBAL_MARGIN;
         var y = event.pageY - GLOBAL_MARGIN;
@@ -427,7 +421,7 @@ $(document).ready(function() {
                 y < (origin_y + ORIGIN_RADIUS) && y > (origin_y - ORIGIN_RADIUS)) {
             x = origin_x;
             y = origin_y;
-            ACTIVE_SHAPE.path.attr(shapeFilledAttr);
+            ACTIVE_SHAPE.path.attr(shapeFilledPreviewAttr);
             //HOVER_OVER_ORIGIN = true;
         } 
         else {
@@ -504,12 +498,12 @@ $(document).ready(function() {
 function complete_shape(){
 
     ACTIVE_SHAPE.path.attr("path", path_to_string(ACTIVE_SHAPE.path) + "Z");
-    ACTIVE_SHAPE.path.attr("fill", "rgba(100,100,100,.2)");
+    ACTIVE_SHAPE.path.attr(shapeFilledAttr);
     ACTIVE_SHAPE.path.data("i", shapesList.length);
 
     shapesList.push(ACTIVE_SHAPE);
 
-    ACTIVE_SHAPE = new Shape();
+    ACTIVE_SHAPE = new Shape(ROOT_NOTE);
 
     lineToMouse.attr("path", "");
     lineToMouseIsActive = false;
@@ -527,7 +521,7 @@ function subpath_to_string(path, i){
     return path.attr("path")[i].join()
 }
 
-
+/* -------- GRID -------- */
 function init_grid () {
     var canvas_width = $("#holder").width();
     var canvas_height = $("#holder").height();
@@ -550,6 +544,14 @@ function show_grid () {
     gridDots.show();
 }
 
+function snap_to_grid (p) {
+    if ($("#snap").is(":checked")) {
+        return (Math.round(p / GRID_SIZE) * GRID_SIZE);
+    };
+    return p;
+}
+
+/* -------- HANDLES -------- */
 function hide_handles () {
     for (var i = shapesList.length - 1; i >= 0; i--) {
         shapesList[i].hide_handles();
@@ -562,13 +564,17 @@ function show_handles () {
     }
 }
 
-function snap_to_grid (p) {
-    if ($("#snap").is(":checked")) {
-        return (Math.round(p / GRID_SIZE) * GRID_SIZE);
-    };
-    return p;
+/* -------- TOOLS -------- */
+function select_tool(tool) {
+    CURR_TOOL = tool;
+    hide_details();
+    $( ".tool" ).removeClass("active");
+    
+    var toolName = "#" + tool + "-tool";
+    $( toolName ).addClass("active");
 }
 
+/* -------- DETAILS -------- */
 function delete_shape (i) {
     shapesList[i].delete();
  //   shapesList.splice(i, 1);
@@ -576,6 +582,9 @@ function delete_shape (i) {
     console.log(shapesList);
 }
 function hide_details () {
+    for (var i = shapesList.length - 1; i >= 0; i--) {
+        shapesList[i].path.attr(shapeFilledAttr);
+    }
     $("#details").hide();
 }
 
@@ -587,7 +596,7 @@ function delete_hoverin (i) {
 }
 
 function delete_hoverout (i) {
-    shapesList[i].path.attr(shapeFilledAttr);
+    shapesList[i].path.attr(shapeSelectedAttr);
     for (var j = shapesList[i].handles.length - 1; j >= 0; j--) {
         shapesList[i].handles[j].circle.attr(handlesDefaultAttr)
     }
