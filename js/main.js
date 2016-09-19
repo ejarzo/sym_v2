@@ -53,7 +53,7 @@ var MAJOR_INTERVALS = [2,2,1,2,2,2,1];
 var MINOR_INTERVALS = [2,1,2,2,1,2,2];
 
 var ROOT_MIDI = Tone.Frequency(ROOT_NOTE).toMidi();
-var INTERVALS = MINOR_INTERVALS;
+var INTERVALS = MAJOR_INTERVALS;
 
 var SCALE_LETTERS = ["A", "B", "C", "D", "E", "F", "G"];
 
@@ -224,7 +224,9 @@ class Shape {
         this.synth = synth_chooser(synth_name);
         var synth = this.synth;
         this.part  = new Tone.Part(function(time, value){
-            //console.log("VALUE", value);
+            synth.volume.value = 0;
+
+            console.log("VALUE", value);
             //console.log("part callback");
             //console.log(value);
             
@@ -292,7 +294,7 @@ class Shape {
     stop () {
         // TODO
         this.animCircle.hide();
-
+        this.synth.volume.value = -60;
         this.animCircle.stop(this.anim);
         /*this.reset_anim_circle_position();*/
 
@@ -890,12 +892,18 @@ function lineDistance( point1, point2 )
 
 
 
+// length = 7
+// 0 1 2 3 4 5 6
+// A B C D E F G    - scale leters
+//  2 2 1 2 2 2 1   - Intervals
 
 function findSumUp (i, deg){
+    //console.log("starting with:", SCALE_LETTERS[i]);
+    //console.log("INCREASING:", deg);
     var sum = 0;
     
     while (deg > 0) {
-        console.log(i, INTERVALS[i]);
+        //console.log("i, at i", i, INTERVALS[i]);
 
         sum += INTERVALS[i];
         i++;
@@ -909,15 +917,19 @@ function findSumUp (i, deg){
 }
 
 function findSumDown (i, deg){
-    console.log("I -------------------- ", i);
+    //console.log("starting with:", SCALE_LETTERS[i]);
+    //console.log("DECREASING:", deg);    
+    
     var sum = 0;
+    
     if (i === 0) {
         i = INTERVALS.length;
     }
 
-    i = i - 1
+    i = i - 1;
+
     while (deg > 0) {
-        console.log(i, INTERVALS[i]);
+        //console.log("i, at i", i, INTERVALS[i]);
         sum += INTERVALS[i];
         i--;
         if (i < 0) {
@@ -954,8 +966,8 @@ function increase_by_scale_degree (note, deg, neg_mult) {
 
     var newNote = Tone.Frequency(newMidiNote, "midi").toNote();
     newNote = Tone.Frequency(newNote).toNote();
-/*    console.log("NEW NOTE", newNote);
-    console.log("NEW MIDI NOTE", newMidiNote);*/
+    console.log("NEW NOTE", newNote);
+    //console.log("NEW MIDI NOTE", newMidiNote);
 
     return newNote;
 }
