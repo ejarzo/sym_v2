@@ -9,10 +9,14 @@
 
         <link rel="apple-touch-icon" href="apple-touch-icon.png">
         <!-- Place favicon.ico in the root directory -->
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet">
 
         <link rel="stylesheet" href="css/normalize.css">
         <link rel="stylesheet" href="css/main.css">
         <script src="js/vendor/modernizr-2.8.3.min.js"></script>
+        <script type="text/javascript" src="js/vendor/tone/build/Tone.js"></script>
+
     </head>
     <body>
         <!--[if lt IE 8]>
@@ -20,15 +24,20 @@
         <![endif]-->
 
         <div id="controls">
-            <button id="play">PLAY</button>
-            <button id="stop">STOP</button> 
-           <!--  <button id="new-shape">NEW SHAPE</button> -->
+           <!--  <div class="play-stop-toggle-cont"> -->
+            <button id="play-stop-toggle">
+                <i class='material-icons play-stop-toggle-icon'>play_arrow</i>
+               <!--  <img src="img/ic_play_arrow_black_24px.svg"> -->
+            </button>
+         <!--    </div> -->
+<!--             <button id="stop">STOP</button> 
+ -->           <!--  <button id="new-shape">NEW SHAPE</button> -->
             <button id="clear">CLEAR</button>
             <button class="tool active" id="draw-tool">DRAW</button>
             <button class="tool" id="adjust-tool">ADJUST</button>
 
-            <input type="checkbox" name="grid" id="grid">Grid
-            <input type="checkbox" name="snap" id="snap">Snap to Grid
+            <input class="checkbox" type="checkbox" name="grid" id="grid"><label for="grid" class="noselect">Grid</label>
+            <input class="checkbox" type="checkbox" name="snap" id="snap"><label for="snap" class="noselect">Snap to Grid</label>
             <!-- TEMPO:<input id="tempo" min="10" max="600" defaultValue="200"> -->
         </div>
 

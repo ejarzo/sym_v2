@@ -102,29 +102,28 @@ textarea {
 
 body {
     margin: auto;
-    font-family: Helvetica;
+    font-family: "Consolas", Helvetica;
     font-size: .8em;
 }
+
 #holder {
     background-color: #EEE;
     height: 100vh;
     width: 100%;
     border: 5px solid #FFF;
-    /*margin: 50px 50px;*/
-    /*cursor: none;*/
+
 }
-/*canvas:hover{
-    cursor: crosshair;
-}*/
+
 .hide-details {
     float: right;
 }
+
 #details {
     /*border: 1px solid #222;*/
     background-color: #fff;
     z-index: 1000;
     display: none;
-    height: 50px;
+    height: 150px;
     width: 150px;
     position: absolute;
     left: 100px;
@@ -146,73 +145,72 @@ body {
     border-width: 10px;
     margin-top: -10px;
 }
+
 button {
     border: 2px solid #FFF;
     border-radius: 0px;
     background-color: #fff;
     color: #777;
     margin-right: 5px;  
+    height: 40px;
+    padding: 0 20px 0 20px
 }
 
 .active {
     background-color: #555;
     color: #eee;
 }
+
 button:hover {
-    border-color: #BBB;
-/*    background-color: #FFF;*/
+    /*border-color: #BBB;*/
+    background-color: #777;
+    color: #fff;
 }
 button:focus{
     outline: none;
 }
+
+label {
+    margin-right: 20px;
+    padding-left: 5px;
+}
 #controls {
     position: absolute;
-    margin-left: 10px;
-    margin-top: 10px;
-    height: 40px;
+    padding-left: 10px;
+    padding-top: 10px;
+    height: 60px;
+    width: 100%;
     z-index: 100;
-}
-#grid-overlay {
-    position: absolute;
-    top: 40px;
-    left: 70px;
-    width: 1047px;
-    height: 650px;
-    overflow: hidden;
-}
-/*#grid-overlay:hover {
-    cursor: crosshair;
-}*/
-#grid-overlay img {
-    height: 100%;
-    opacity: 0.2;
-    /*pointer-effects: none;*/
+    background-color: #fff;
 }
 
-.play-dot {
-    width: 10px;
-    height: 10px;
-    background-color: red;
-    border-radius: 5px;
-    position: absolute;
-    left: 100px;
-    top: 100px;
-    opacity: 0.8;
+.noselect {
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none;   /* Chrome/Safari/Opera */
+  -khtml-user-select: none;    /* Konqueror */
+  -moz-user-select: none;      /* Firefox */
+  -ms-user-select: none;       /* Internet Explorer/Edge */
+  user-select: none;           /* Non-prefixed version, currently
+                                  not supported by any browser */
 }
 
-.hidden {
-    display: none;
+input[type="checkbox"] {
+    border-radius: 0;
+}
+
+.play-stop-toggle-cont {
+    display: inline-block;
+    width: 50px;
+}
+
+#play-stop-toggle {
+    vertical-align: middle;
 }
 
 
-
-
-
-
-
-
-
-
+#play-stop-toggle i {
+    vertical-align: middle;
+}
 
 
 /* ==========================================================================
