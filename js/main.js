@@ -42,7 +42,7 @@ var animCircleAttr      = {"fill": "#111", "stroke": "#111", "stroke-width": 2};
 /* --------------------------------- GLOBALS -------------------------------- */
 
 // AUDIO
-var TEMPO = 4;
+var TEMPO = 6;
 var ORIGIN_RADIUS = 15;
 var ROOT_NOTE = "A2";
 var PLAYING = false;
@@ -224,25 +224,44 @@ class Shape {
         this.synth = synth_chooser(synth_name);
         var synth = this.synth;
         this.part  = new Tone.Part(function(time, value){
-            console.log("VALUE", value);
+            //console.log("VALUE", value);
             //console.log("part callback");
             //console.log(value);
+            
             var parentShape = value.parentShape;
-            var targetX = value.x;
-            var targetY = value.y;
+            parentShape.animCircle.show().toFront();
+            
             var lengthToMiliseconds = (value.dur * 1000).toFixed(9);
             var duration = (lengthToMiliseconds / 1000).toFixed(12);
             var note = value.note;
-            console.log("DURATION", duration);
+            
+            if (value.first) {
+                parentShape.animCircle.attr("progress", 0);
+                var length = ((parentShape.path.getTotalLength() * TEMPO) / 1000) * 1000;
+
+                parentShape.animCircle.data("mypath", parentShape.path);
+                parentShape.anim = Raphael.animation({progress: 1}, length);
+                parentShape.animCircle.animate(parentShape.anim);
+            }
+            /*var targetX = value.x;
+            var targetY = value.y;
+            */
+/*            parentShape.animCircle.animate({"cx": targetX, "cy": targetY}, lengthToMiliseconds, function() {
+                console.log("X,Y:", this.attr("cx"), this.attr("cy"));
+            });*/
+/*            console.log("DURATION", duration);
             console.log("IN MILI", lengthToMiliseconds);
             
-            parentShape.animCircle.animate({"cx": targetX, "cy": targetY}, lengthToMiliseconds);
-            synth.triggerAttackRelease(note, duration, time);
-
+            console.log("targetx, y:", targetX, targetY)*/
+            
+            
+            
+            //synth.triggerAttack(note, duration);
             parentShape.animCircle.animate({"r": 7, "fill": "#fff"}, 0, "linear", function(){
                 this.animate({"r": 3, "fill": "#111"}, 800, "ease-out");
             });
 
+            synth.triggerAttackRelease(note, duration, time);
 
 
         }, []).start(0);
@@ -257,16 +276,17 @@ class Shape {
 
     animate () {
         
-        var length = ((this.path.getTotalLength() * TEMPO) / 1000) * 1000;
         //console.log("total length:", length);
-        /*this.animCircle.data("mypath", this.path);
-        this.anim = Raphael.animation({progress: 1}, length).repeat(Infinity);
-        this.animCircle.animate(this.anim);    */
+       
     }
     
     play2 () {
         this.animCircle.show();
-        this.animate();
+/*        var length = ((this.path.getTotalLength() * TEMPO) / 1000) * 1000;
+
+        this.animCircle.data("mypath", this.path);
+        this.anim = Raphael.animation({progress: 1}, length).repeat(Infinity);
+        this.animCircle.animate(this.anim);   */ 
     }
 
     stop () {
@@ -274,7 +294,7 @@ class Shape {
         this.animCircle.hide();
 
         this.animCircle.stop(this.anim);
-        this.reset_anim_circle_position();
+        /*this.reset_anim_circle_position();*/
 
         this.anim = "";
         this.animCircle.attr("progress", 0);
@@ -284,7 +304,7 @@ class Shape {
         var origin = this.nodes[0];
         var ox = origin.handle.attr("cx");
         var oy = origin.handle.attr("cy");
-        this.animCircle.attr({"cx": ox, "cy": oy});
+        //this.animCircle.attr({"cx": ox, "cy": oy});
         this.animCircle.hide();
     }
 
@@ -310,7 +330,8 @@ class Shape {
             "dur": dur1,
             "parentShape": parentShape,
             "x": this.nodes[1].handle.attr("cx"),
-            "y": this.nodes[1].handle.attr("cy")
+            "y": this.nodes[1].handle.attr("cy"),
+            "first": true
         }
         this.part.add(0, value);
 
@@ -417,11 +438,11 @@ class Node {
 
         this.handle.click(function(){
             console.log("NODE CLICK");
-            console.log("index:", this.data("i"));
-            console.log("X", this.attr("cx"), "Y", this.attr("cy"));
+            //console.log("index:", this.data("i"));
+            //console.log("X", this.attr("cx"), "Y", this.attr("cy"));
             //console.log("parent shape:", shapesList[shapeId]);
             shapesList[shapeId].set_note_values();
-            shapesList[shapeId].reset_anim_circle_position();
+            //shapesList[shapeId].reset_anim_circle_position();
         });
         
         this.handle.control_update = function (x, y) {
@@ -510,11 +531,11 @@ function play_handler() {
     PLAYING = true;
     Tone.Transport.start();
 
-    for (var i = shapesList.length - 1; i >= 0; i--) {
+/*    for (var i = shapesList.length - 1; i >= 0; i--) {
         if (shapesList[i].included) {
             shapesList[i].play2();
         }
-    }
+    }*/
 }
 
 function stop_handler(){
@@ -554,6 +575,13 @@ $(document).ready(function() {
         togglePlayStop();
     });
 
+    $("#tempo-slider").on("mouseup", function () {
+        console.log(this.value);
+        set_tempo(this.value * -1);
+        for (var i = shapesList.length - 1; i >= 0; i--) {
+            shapesList[i].set_note_values();
+        }
+    })
     $(window).keypress(function(e) {
         if (e.which === 32) {
             togglePlayStop();
@@ -686,7 +714,7 @@ $(document).ready(function() {
 
                 if (ACTIVE_SHAPE.path.attr("path") === "") { // shape is empty
                     ACTIVE_SHAPE.path.attr("path", moveTo);
-                    ACTIVE_SHAPE.animCircle.attr({"cx": x, "cy": y});
+                    //ACTIVE_SHAPE.animCircle.attr({"cx": x, "cy": y});
                     ACTIVE_SHAPE.animCircle.show();
                 } else {
                 //    if (x != prev_n[1] && y != prev_n[2]) { // double click check TODO
@@ -1011,4 +1039,8 @@ function synth_chooser (name) {
     }
     return synth.toMaster();
 
+}
+
+function set_tempo(val) {
+    TEMPO = val;
 }
