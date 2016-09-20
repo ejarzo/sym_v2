@@ -170,15 +170,51 @@ class Shape {
             var hideButton = "<button class='hide-details' onclick='hide_details()'>X</button>"
             var x = event.clientX + 20;
             var y = event.clientY - 25;
+/*       case "AM":
+            synth = new Tone.AMSynth();
+            break;
+        case "FM":
+            synth = new Tone.FMSynth();
+            break;
+        case "Duo":
+            synth = new Tone.DuoSynth();
+            break;
+        case "Metal":
+            synth = new Tone.MetalSynth();
+            break;
+        case "Pluck":
+            synth = new Tone.PluckSynth();
+            break;
+        case "Poly":
+            synth = new Tone.PolySynth();
+            break;
+        case "Simple":
+            synth = new Tone.SimpleSynth();
+            break;
+        case "Membrane":
+            synth = new Tone.MembraneSynth();
+            break;
+        default:
+        */
+            var i = this.path.data("i");
+
+
+            var selectInstrument = '<select class="instrument-select" data="' + i + '">        \
+                <option value="AM">AM</option>                \
+                <option value="FM">FM</option>                \
+                <option value="Duo">Duo</option>                \
+                <option value="Poly">Poly</option>                \
+                <option value="Simple">Simple</option>                \
+                <option value="Membrane">Membrane</option>                \
+            </select>'
 
             $("#details").css({left: x, top: y});
 
-            var i = this.path.data("i");
             var deleteButton = "<button class='delete-shape' data='" + i + "' onclick='delete_shape(" + i + ")' onmouseover='delete_hoverin(" + i + ")' onmouseout='delete_hoverout(" + i + ")'>DELETE</button>"
             var input = "<input type='text' id='start-freq-input' data='" + i + "'> <button onclick='update_start_freq(" + i + ")'>GO</button>"
 
             var startFreq = this.start_freq;
-            $("#details").append(hideButton, deleteButton, startFreq, input);
+            $("#details").append(hideButton, deleteButton, startFreq, input, selectInstrument);
 
             //this.path.attr({stroke: "#f00"});
             $("#details").show();
@@ -222,20 +258,24 @@ class Shape {
 
         //tone
         this.synth = synth_chooser(synth_name);
-        var synth = this.synth;
+        //var synth = this.synth;
         this.part  = new Tone.Part(function(time, value){
-            synth.volume.value = 0;
+            var parentShape = value.parentShape;
+            var thisSynth = get_this_synth(parentShape);
 
             console.log("VALUE", value);
+
             //console.log("part callback");
             //console.log(value);
             
-            var parentShape = value.parentShape;
+            thisSynth.volume.value = 0;
             parentShape.animCircle.show().toFront();
             
-            var lengthToMiliseconds = (value.dur * 1000).toFixed(9);
-            var duration = (lengthToMiliseconds / 1000).toFixed(12);
+            //var lengthToMiliseconds = (value.dur * 1000).toFixed(9);
+            //var duration = (lengthToMiliseconds / 1000).toFixed(12);
             var note = value.note;
+            var duration = value.dur;
+            thisSynth.triggerAttackRelease(note, duration, time);
             
             if (value.first) {
                 parentShape.animCircle.attr("progress", 0);
@@ -258,18 +298,16 @@ class Shape {
             
             
             
-            //synth.triggerAttack(note, duration);
+            //thisSynth.triggerAttack(note, duration);
             parentShape.animCircle.animate({"r": 7, "fill": "#fff"}, 0, "linear", function(){
                 this.animate({"r": 3, "fill": "#111"}, 800, "ease-out");
             });
 
-            synth.triggerAttackRelease(note, duration, time);
 
 
         }, []).start(0);
         this.part.loop = true;
     }
-    
     set_start_freq (freq) {
         console.log(this.start_freq);
         console.log("setting start freq:", freq);
@@ -580,12 +618,24 @@ $(document).ready(function() {
     $("#tempo-slider").on("mouseup", function () {
         console.log(this.value);
         set_tempo(this.value * -1);
-        for (var i = shapesList.length - 1; i >= 0; i--) {
-            shapesList[i].set_note_values();
-        }
     })
+
+    $(document).on('change','#key-select',function(){
+        console.log(this.value);
+        set_key(this.value);
+    });
+
+    $(document).on('change','.instrument-select',function(){
+        console.log($(this).attr("data"));
+        var i = $(this).attr("data");
+//        console.log(i);
+        console.log("changing to", this.value);
+        shapesList[i].synth = synth_chooser(this.value);
+    });
+
     $(window).keypress(function(e) {
         if (e.which === 32) {
+            e.preventDefault();
             togglePlayStop();
         }
     });
@@ -1055,4 +1105,24 @@ function synth_chooser (name) {
 
 function set_tempo(val) {
     TEMPO = val;
+    reset_all_notes();
+}
+
+function set_key(key) {
+    if (key === "major") {
+        INTERVALS = MAJOR_INTERVALS;
+    } else if (key === "minor"){
+        INTERVALS = MINOR_INTERVALS;
+    }
+    reset_all_notes();
+}
+
+function reset_all_notes() {
+    for (var i = shapesList.length - 1; i >= 0; i--) {
+        shapesList[i].set_note_values();
+    }
+}
+
+function get_this_synth (shape) {
+    return shape.synth;
 }

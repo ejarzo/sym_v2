@@ -151,9 +151,18 @@ button {
     border-radius: 0px;
     background-color: #fff;
     color: #777;
-    margin-right: 5px;  
     height: 40px;
     padding: 0 20px 0 20px
+}
+
+.ctrl-elem {
+    margin-right: 15px;
+}
+
+.ctrl-elem #tempo-slider {
+    display: inline-block;
+    position: relative;
+    top: 3px;
 }
 
 .active {
@@ -170,10 +179,6 @@ button:focus{
     outline: none;
 }
 
-label {
-    margin-right: 20px;
-    padding-left: 5px;
-}
 #controls {
     position: absolute;
     padding-left: 10px;

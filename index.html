@@ -32,13 +32,28 @@
          <!--    </div> -->
 <!--             <button id="stop">STOP</button> 
  -->           <!--  <button id="new-shape">NEW SHAPE</button> -->
-            <button id="clear">CLEAR</button>
-            <button class="tool active" id="draw-tool">DRAW</button>
-            <button class="tool" id="adjust-tool">ADJUST</button>
+            <button class="ctrl-elem" id="clear">CLEAR</button>
+            <button class="ctrl-elem tool active" id="draw-tool">DRAW</button>
+            <button class="ctrl-elem tool" id="adjust-tool">ADJUST</button>
+            <span class="ctrl-elem">
+                <input class="checkbox" type="checkbox" name="grid" id="grid">
+                <label for="grid" class="noselect">Grid</label>
+            </span>
+            <span class="ctrl-elem">
+                <input class="checkbox" type="checkbox" name="snap" id="snap">
+                <label for="snap" class="noselect">Snap to Grid</label>
+            </span>
+            <span class="ctrl-elem">
+                TEMPO:<input type="range" id="tempo-slider" value="-4" min="-6" max="-1">
+            </span>
+            <span class="ctrl-elem">
+                Key:
 
-            <input class="checkbox" type="checkbox" name="grid" id="grid"><label for="grid" class="noselect">Grid</label>
-            <input class="checkbox" type="checkbox" name="snap" id="snap"><label for="snap" class="noselect">Snap to Grid</label>
-            TEMPO:<input type="range" id="tempo-slider" value="-4" min="-6" max="-1">
+                <select id="key-select">
+                    <option value="major">Major</option>
+                    <option value="minor">Minor</option>
+                </select>
+            </span>
         </div>
 
         <div id="holder">
