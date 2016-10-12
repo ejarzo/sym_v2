@@ -164,12 +164,18 @@ class Shape {
         /* ----- Details ----- */
         this.show_details = function (event) {
             this.path.attr(shapeSelectedAttr);
+            var x = event.clientX + 23;
+            var y = event.clientY - 43;
+            var i = this.path.data("i");
+            var popup = $("#shape-attr-popup-"+i);
             
-            $("#details").empty();
+           /* $("#details").empty();*/
             
-            var hideButton = "<button class='hide-details' onclick='hide_details()'>X</button>"
-            var x = event.clientX + 20;
-            var y = event.clientY - 25;
+            console.log(popup);
+            popup.css({left: x, top: y});
+            popup.show();
+
+
 /*       case "AM":
             synth = new Tone.AMSynth();
             break;
@@ -196,7 +202,7 @@ class Shape {
             break;
         default:
         */
-            var i = this.path.data("i");
+           /* var i = this.path.data("i");
 
 
             var selectInstrument = '<select class="instrument-select" data="' + i + '">        \
@@ -206,18 +212,16 @@ class Shape {
                 <option value="Poly">Poly</option>                \
                 <option value="Simple">Simple</option>                \
                 <option value="Membrane">Membrane</option>                \
-            </select>'
+            </select>'*/
 
-            $("#details").css({left: x, top: y});
 
-            var deleteButton = "<button class='delete-shape' data='" + i + "' onclick='delete_shape(" + i + ")' onmouseover='delete_hoverin(" + i + ")' onmouseout='delete_hoverout(" + i + ")'>DELETE</button>"
+          /*  var deleteButton = "<button class='delete-shape' data='" + i + "' onclick='delete_shape(" + i + ")' onmouseover='delete_hoverin(" + i + ")' onmouseout='delete_hoverout(" + i + ")'>DELETE</button>"
             var input = "<input type='text' id='start-freq-input' data='" + i + "'> <button onclick='update_start_freq(" + i + ")'>GO</button>"
 
             var startFreq = this.start_freq;
-            $("#details").append(hideButton, deleteButton, startFreq, input, selectInstrument);
+            $("#details").append(hideButton, deleteButton, startFreq, input, selectInstrument);*/
 
             //this.path.attr({stroke: "#f00"});
-            $("#details").show();
         }
 
         /* ----- Delete ----- */
@@ -263,12 +267,12 @@ class Shape {
             var parentShape = value.parentShape;
             var thisSynth = get_this_synth(parentShape);
 
-            console.log("VALUE", value);
+            /*console.log("VALUE", value);*/
 
             //console.log("part callback");
             //console.log(value);
             
-            thisSynth.volume.value = 0;
+            thisSynth.volume.value = -5;
             parentShape.animCircle.show().toFront();
             
             //var lengthToMiliseconds = (value.dur * 1000).toFixed(9);
@@ -340,6 +344,50 @@ class Shape {
         this.animCircle.attr("progress", 0);
     }
     
+    init_shape_attr_popup(){
+        /*var synth = this.synth;
+        console.log(synth);*/
+        var i = this.path.data("i");
+        console.log("====>", i);
+
+        var test = this.delete;
+        var popupHtml = '\
+            <div class="shape-attr-popup" id="shape-attr-popup-' + i + '">\
+                <!-- <div>\
+                    <span class="hide-details" onclick="">X</span>\
+                </div> -->\
+                <div class="section">\
+                    <label>Instrument:</label>\
+                    <select class="shape-attr-inst-select" data="'+i+'">\
+                        <option value="AM">AM</option>\
+                        <option value="FM">FM</option>\
+                        <option value="Duo">Duo</option>\
+                        <option value="Poly">Poly</option>\
+                        <option value="Simple">Simple</option>\
+                        <option value="Membrane">Membrane</option>\
+                    </select>\
+                </div>\
+                <div class="section">\
+                    <label>Starting Note:</label>\
+                    <span class="shape-attr-start-freq">\
+                        <span>A2</span>\
+                        <button class="arrow arrow-up">&#9650;</button>\
+                        <button class="arrow arrow-down">&#9660;</button>\
+                    </span>\
+                </div>\
+                <div class="section">\
+                    <button class="shape-attr-delete-shape" data=""\
+                            onclick="delete_shape('+i+')"\
+                            onmouseover="delete_hoverin('+i+')"\
+                            onmouseout="delete_hoverout('+i+')">Delete Shape</button>\
+                </div>\
+            </div>';
+
+        $("body").append(popupHtml);
+
+    }
+
+
     reset_anim_circle_position () {
         var origin = this.nodes[0];
         var ox = origin.handle.attr("cx");
@@ -592,11 +640,13 @@ function stop_handler(){
 
 function togglePlayStop () {
     console.log(PLAYING);
-    if (PLAYING) {
+    if (PLAYING) { // we stop
         stop_handler();
+        $("#disable-overlay").hide();
         $(".play-stop-toggle-icon").html("play_arrow");
-    } else {
+    } else { // we play
         play_handler();
+        $("#disable-overlay").show();
         $(".play-stop-toggle-icon").html("stop");
     }
 }
@@ -625,13 +675,13 @@ $(document).ready(function() {
         set_key(this.value);
     });
 
-    $(document).on('change','.instrument-select',function(){
+    $(document).on('change','.shape-attr-inst-select',function(){
         console.log($(this).attr("data"));
         var i = $(this).attr("data");
-//        console.log(i);
         console.log("changing to", this.value);
         shapesList[i].synth = synth_chooser(this.value);
     });
+
 
     $(window).keypress(function(e) {
         if (e.which === 32) {
@@ -727,11 +777,11 @@ $(document).ready(function() {
             lineToMouse.attr("path", subpath_to_string(lineToMouse, 0) + endpoint);
         }
     });
-    $( "#details" ).on( "mousedown", function( event ) {
+    $( ".shape-attr-popup" ).on( "mousedown", function( event ) {
         event.stopPropagation();
     });
     $( "#holder" ).on( "mousedown", function( event ) {
-        if ($("#details").is(":visible")) {
+        if ($(".shape-attr-popup").is(":visible")) {
             hide_details();
         }
         
@@ -802,6 +852,7 @@ function complete_shape(){
     ACTIVE_SHAPE.path.attr("path", path_to_string(ACTIVE_SHAPE.path) + "Z");
     ACTIVE_SHAPE.path.attr(shapeFilledAttr);
     ACTIVE_SHAPE.path.data("i", shapesList.length);
+    ACTIVE_SHAPE.init_shape_attr_popup();
 
     ACTIVE_SHAPE.set_note_values();
 
@@ -891,7 +942,7 @@ function select_tool(tool) {
 function delete_shape (i) {
     shapesList[i].delete();
  //   shapesList.splice(i, 1);
-    $("#details").hide();
+    $(".shape-attr-popup").hide();
     console.log(shapesList);
 }
 
@@ -904,7 +955,7 @@ function hide_details () {
     for (var i = shapesList.length - 1; i >= 0; i--) {
         shapesList[i].path.attr(shapeFilledAttr);
     }
-    $("#details").hide();
+    $(".shape-attr-popup").hide();
 }
 
 function delete_hoverin (i) {
@@ -967,8 +1018,8 @@ function findSumUp (i, deg){
 }
 
 function findSumDown (i, deg){
-    //console.log("starting with:", SCALE_LETTERS[i]);
-    //console.log("DECREASING:", deg);    
+    console.log("starting with:", SCALE_LETTERS[i]);
+    console.log("DECREASING:", deg);    
     
     var sum = 0;
     
@@ -979,7 +1030,7 @@ function findSumDown (i, deg){
     i = i - 1;
 
     while (deg > 0) {
-        //console.log("i, at i", i, INTERVALS[i]);
+        console.log("i, at i", i, INTERVALS[i]);
         sum += INTERVALS[i];
         i--;
         if (i < 0) {
@@ -1067,6 +1118,10 @@ function isBetween (val, a, b) {
     return (val > a && val <= b);
 }
 
+function change_instrument (i){
+    shapesList[i].synth = synth_chooser(this.value);
+}
+    
 function synth_chooser (name) {
     var synth = new Tone.AMSynth();
 
@@ -1090,17 +1145,14 @@ function synth_chooser (name) {
             synth = new Tone.PolySynth();
             break;
         case "Simple":
-            synth = new Tone.SimpleSynth();
+            synth = new Tone.Synth();
             break;
         case "Membrane":
             synth = new Tone.MembraneSynth();
             break;
         default:
-            
-
     }
     return synth.toMaster();
-
 }
 
 function set_tempo(val) {
