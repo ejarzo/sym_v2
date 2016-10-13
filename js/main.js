@@ -349,7 +349,7 @@ class Shape {
         console.log(synth);*/
         var i = this.path.data("i");
         console.log("====>", i);
-
+        var start_freq = this.start_freq;
         var test = this.delete;
         var popupHtml = '\
             <div class="shape-attr-popup" id="shape-attr-popup-' + i + '">\
@@ -370,9 +370,9 @@ class Shape {
                 <div class="section">\
                     <label>Starting Note:</label>\
                     <span class="shape-attr-start-freq">\
-                        <span>A2</span>\
-                        <button class="arrow arrow-up">&#9650;</button>\
-                        <button class="arrow arrow-down">&#9660;</button>\
+                        <span class="start-freq-label" id="start-freq-label-'+i+'">'+start_freq+'</span>\
+                        <button class="arrow arrow-up" onclick="increment_start_freq(1,'+i+')">&#9650;</button>\
+                        <button class="arrow arrow-down" onclick="increment_start_freq(0,'+i+')">&#9660;</button>\
                     </span>\
                 </div>\
                 <div class="section">\
@@ -658,7 +658,27 @@ $(document).ready(function() {
     init_grid();
     hide_handles();
     
+
     /* ----------------------- HANDLERS ----------------------- */
+    window.onkeydown = function (e) {
+
+   /* $(window).keypress(function(e) {*/
+        if (e.which == 97) { // a
+            console.log("a");
+            select_tool("draw");
+        }
+        if (e.which == 115) { // s
+            console.log("s");
+            select_tool("adjust");
+        }
+        if (e.which === 32) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+                e.preventDefault();
+            }
+            togglePlayStop();
+        }
+    };
 
     // PLAY
     $("#play-stop-toggle").click(function(){
@@ -681,14 +701,15 @@ $(document).ready(function() {
         console.log("changing to", this.value);
         shapesList[i].synth = synth_chooser(this.value);
     });
+/*window.onkeydown = function (e) {
+    if (event.keyCode === 32) {
+        e.stopPropagation();
+        e.preventDefault();
+        togglePlayStop();
+    }
+};*/
 
-
-    $(window).keypress(function(e) {
-        if (e.which === 32) {
-            e.preventDefault();
-            togglePlayStop();
-        }
-    });
+    
 
     // NEW SHAPE
     $("#new-shape").click(function(){
@@ -1118,6 +1139,29 @@ function isBetween (val, a, b) {
     return (val > a && val <= b);
 }
 
+function increment_start_freq(dir, i){
+    //console.log(this);
+    var freq = shapesList[i].start_freq;
+    var note = Tone.Frequency(freq).toMidi();
+
+    console.log(freq);
+    var new_freq;
+
+    if (dir === 1) { //up
+        //console.log("up");
+        new_freq = increase_by_scale_degree (note, 1, 1)
+    }  
+    if (dir === 0) { //down
+        //console.log("down");
+        new_freq = increase_by_scale_degree (note, 1, -1)
+    }
+
+    shapesList[i].set_start_freq(new_freq);
+    shapesList[i].set_note_values();
+
+    $("#start-freq-label-"+i).html(new_freq);
+    //console.log(new_freq);
+}
 function change_instrument (i){
     shapesList[i].synth = synth_chooser(this.value);
 }

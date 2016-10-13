@@ -189,11 +189,11 @@ body {
     width: 25px;
 }
 
-.shape-attr-start-freq span {
+/*.shape-attr-start-freq span {
     padding-left: 10px;
     margin-right: -3px;
     width: 10px;
-}
+}*/
 
 .arrow {
     padding: 0;
@@ -227,16 +227,20 @@ button.shape-attr-delete-shape{
     /*border-top: 1px solid #ddd;*/
     display: block;
     height: auto;
-    color: red;
+    color: rgba(255,100,100,1);
     padding: 0;
     padding-top: 4px;
 }
 .shape-attr-delete-shape:hover{
     text-decoration: underline;
     background-color: transparent;
-    color: red;
+    color: rgba(255,100,100,1);
 }
 
+.start-freq-label{
+    display: inline-block;
+    width: 25px;
+}
 
 .shape-attr-popup-section {
     padding: 20px;
