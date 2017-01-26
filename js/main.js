@@ -1,3 +1,16 @@
+/* =============================================================================
+    
+    SHAPE YOUR MUSIC
+    
+    A web application for composing visually. Shapes are loops, where each side
+    is a note. The melodies are determined by the angles between sides.
+
+    Charlie Colony and Elias Jarzombek
+    Code written by Elias Jarzombek
+
+============================================================================= */
+Tone.Transport.latencyHint = 'fastest'
+
 /* --------------------------------- RAPHAEL -------------------------------- */
 var r = Raphael("holder", "100%", "100%");
 r.customAttributes.progress = function (v) {
@@ -19,35 +32,42 @@ r.customAttributes.progress = function (v) {
 /* --------------------------------- COLORS --------------------------------- */
 var warningRed  = "rgba(255,100,100,.5)";
 var black       = "rgba(30,30,30,1)";
-var white       = "rgba(255,255,255, .8)"
+var white       = "rgba(255,255,255, .8)";
 
 /* ------------------------------- ATTRIBUTES ------------------------------- */
 /* shapes */
-var shapeDefaultAttr    = {"stroke": black, "stroke-width": "2"};
-var shapeHoverAttr      = {"stroke-width": 3};
-var shapeFilledPreviewAttr = {"fill": "rgba(120,120,120,.1)", stroke: black, "stroke-width": 2};
-var shapeFilledAttr     = {"fill": "rgba(100,100,100,.2)", stroke: black, "stroke-width": 2};
-var shapeWarningAttr    = {"fill": warningRed, "stroke": warningRed};
-var shapeSelectedAttr   = {"fill": "rgba(0,0,0,.5)", stroke: black, "stroke-width": 3};
+var shapeDefaultAttr        = {stroke: black, "stroke-width": 2};
+var shapeHoverAttr          = {"stroke-width": 3};
+var shapeFilledPreviewAttr  = {fill: "rgba(120,120,120,.1)", stroke: black, "stroke-width": 2};
+var shapeFilledAttr         = {fill: "rgba(100,100,100,.2)", stroke: black, "stroke-width": 2};
+var shapeWarningAttr        = {fill: warningRed, stroke: warningRed};
+var shapeSelectedAttr       = {fill: "rgba(0,0,0,.5)", stroke: black, "stroke-width": 3};
+
+/* animated circle */
+var animCircleAttr          = {"fill": "#111", "stroke": "#111", "stroke-width": 2};
+var animCircleBangStartAttr = {"r": 7, "fill": "#fff"};
+var animCircleBangEndAttr   = {"r": 3, "fill": "#111"};
 
 /* handles */
 var handlesWarningAttr = {"opacity": 0.2};
 var handlesDefaultAttr = {"opacity": 1};
 
-var circleAtMouseAttr   = {fill: "#AAA", stroke: "#aaa"};
-var lineToMouseAttr     = {"stroke": "#AAA", "stroke-width": "2"};
-var gridDotAttr         = {"fill": "#777", "stroke-width": 1, "stroke": "#FFF"};
-var animCircleAttr      = {"fill": "#111", "stroke": "#111", "stroke-width": 2};
+/* hover hint */
+var hoverCircleAttr   = {fill: "#AAA", stroke: "#aaa"};
+var hoverLineAttr     = {"stroke": "#AAA", "stroke-width": "2"};
+
+/* grid */
+var gridDotAttr       = {"fill": "#777", "stroke-width": 1, "stroke": "#FFF"};
 
 /* --------------------------------- GLOBALS -------------------------------- */
 
 // AUDIO
 var TEMPO = 6;
 var ORIGIN_RADIUS = 15;
-var ROOT_NOTE = "A2";
+var ROOT_NOTE = "C2";
 var PLAYING = false;
 var DEFAULT_SYNTH = "FM";
-
+var PRESETS = new Presets();
 // SCALE
 var MAJOR_INTERVALS = [2,2,1,2,2,2,1];
 var MINOR_INTERVALS = [2,1,2,2,1,2,2];
@@ -69,8 +89,8 @@ var CURR_TOOL = "draw";
 
 // LINE TO MOUSE
 var PREV_ENDPOINT;
-var lineToMouse = r.path().attr(lineToMouseAttr);
-var circleAtMouse = r.circle(0,0,3).attr(circleAtMouseAttr);
+var hoverLine = r.path().attr(hoverLineAttr);
+var hoverCircle = r.circle(0,0,3).attr(hoverCircleAttr);
 
 
 
@@ -136,7 +156,6 @@ class Shape {
                 if (CURR_TOOL == "adjust") {
                     item.path.attr(shapeHoverAttr);
                     //item.path.attr("cursor", "move");
-
                     //var id = item.path.id;
                 }
             };
@@ -168,58 +187,10 @@ class Shape {
             var y = event.clientY - 43;
             var i = this.path.data("i");
             var popup = $("#shape-attr-popup-"+i);
-            
-           /* $("#details").empty();*/
-            
-            console.log(popup);
+                        
+            //console.log(popup);
             popup.css({left: x, top: y});
             popup.show();
-
-
-/*       case "AM":
-            synth = new Tone.AMSynth();
-            break;
-        case "FM":
-            synth = new Tone.FMSynth();
-            break;
-        case "Duo":
-            synth = new Tone.DuoSynth();
-            break;
-        case "Metal":
-            synth = new Tone.MetalSynth();
-            break;
-        case "Pluck":
-            synth = new Tone.PluckSynth();
-            break;
-        case "Poly":
-            synth = new Tone.PolySynth();
-            break;
-        case "Simple":
-            synth = new Tone.SimpleSynth();
-            break;
-        case "Membrane":
-            synth = new Tone.MembraneSynth();
-            break;
-        default:
-        */
-           /* var i = this.path.data("i");
-
-
-            var selectInstrument = '<select class="instrument-select" data="' + i + '">        \
-                <option value="AM">AM</option>                \
-                <option value="FM">FM</option>                \
-                <option value="Duo">Duo</option>                \
-                <option value="Poly">Poly</option>                \
-                <option value="Simple">Simple</option>                \
-                <option value="Membrane">Membrane</option>                \
-            </select>'*/
-
-
-          /*  var deleteButton = "<button class='delete-shape' data='" + i + "' onclick='delete_shape(" + i + ")' onmouseover='delete_hoverin(" + i + ")' onmouseout='delete_hoverout(" + i + ")'>DELETE</button>"
-            var input = "<input type='text' id='start-freq-input' data='" + i + "'> <button onclick='update_start_freq(" + i + ")'>GO</button>"
-
-            var startFreq = this.start_freq;
-            $("#details").append(hideButton, deleteButton, startFreq, input, selectInstrument);*/
 
             //this.path.attr({stroke: "#f00"});
         }
@@ -237,6 +208,13 @@ class Shape {
             this.included = false;
         }
         
+        this.reset_anim_circle_position = function() {
+            var origin = this.nodes[0];
+            var ox = origin.handle.attr("cx");
+            var oy = origin.handle.attr("cy");
+            this.animCircle.attr({"cx": ox, "cy": oy});
+            //this.animCircle.hide();
+        }
         /* ======================================= */
 
         // path
@@ -260,54 +238,56 @@ class Shape {
         this.animCircle.attr("progress", 0);
         this.anim;
 
-        //tone
+        // tone
         this.synth = synth_chooser(synth_name);
+        //this.synth = PRESETS.preset01;
         //var synth = this.synth;
-        this.part  = new Tone.Part(function(time, value){
+        this.part = new Tone.Part(function(time, value){
+            /* PART CALLBACK */
             var parentShape = value.parentShape;
             var thisSynth = get_this_synth(parentShape);
 
-            /*console.log("VALUE", value);*/
-
-            //console.log("part callback");
-            //console.log(value);
+            console.log("VALUE", value);
             
             thisSynth.volume.value = -5;
             parentShape.animCircle.show().toFront();
             
-            //var lengthToMiliseconds = (value.dur * 1000).toFixed(9);
-            //var duration = (lengthToMiliseconds / 1000).toFixed(12);
-            var note = value.note;
-            var duration = value.dur;
-            thisSynth.triggerAttackRelease(note, duration, time);
+            //var duration = value.dur;
+            var lengthToMiliseconds = (value.noteDur * 1000).toFixed(9);
+            var duration = (lengthToMiliseconds / 1000).toFixed(12);
+            var note = value.noteVal;
             
+            console.log("DUR:", duration)
+            console.log("TO MIL:", lengthToMiliseconds)
+
             if (value.first) {
-                parentShape.animCircle.attr("progress", 0);
+                parentShape.reset_anim_circle_position();
+              /*  parentShape.animCircle.attr("progress", 0);
                 var length = ((parentShape.path.getTotalLength() * TEMPO) / 1000) * 1000;
 
                 parentShape.animCircle.data("mypath", parentShape.path);
                 parentShape.anim = Raphael.animation({progress: 1}, length);
-                parentShape.animCircle.animate(parentShape.anim);
+                parentShape.animCircle.animate(parentShape.anim);*/
             }
-            /*var targetX = value.x;
-            var targetY = value.y;
-            */
-/*            parentShape.animCircle.animate({"cx": targetX, "cy": targetY}, lengthToMiliseconds, function() {
-                console.log("X,Y:", this.attr("cx"), this.attr("cy"));
-            });*/
-/*            console.log("DURATION", duration);
-            console.log("IN MILI", lengthToMiliseconds);
-            
-            console.log("targetx, y:", targetX, targetY)*/
-            
-            
-            
-            //thisSynth.triggerAttack(note, duration);
-            parentShape.animCircle.animate({"r": 7, "fill": "#fff"}, 0, "linear", function(){
-                this.animate({"r": 3, "fill": "#111"}, 800, "ease-out");
-            });
 
 
+            Tone.Draw.schedule(function(){
+                var startX = value.nodeFrom.handle.attr("cx");
+                var startY = value.nodeFrom.handle.attr("cy");
+                var endX = value.nodeTo.handle.attr("cx");
+                var endY = value.nodeTo.handle.attr("cy");
+
+                parentShape.animCircle.attr({cx : startX, cy : startY})
+                parentShape.animCircle.animate({"cx": endX, "cy": endY}, lengthToMiliseconds, function() {
+                    console.log("X,Y:", this.attr("cx"), this.attr("cy"));
+                });
+
+                parentShape.animCircle.animate(animCircleBangStartAttr, 0, "linear", function(){
+                    this.animate(animCircleBangEndAttr, 800, "ease-out");
+                });
+            }, time)
+
+            thisSynth.triggerAttackRelease(note, duration, time);
 
         }, []).start(0);
         this.part.loop = true;
@@ -318,37 +298,19 @@ class Shape {
         this.start_freq = freq;
     }
 
-    animate () {
-        
-        //console.log("total length:", length);
-       
-    }
-    
-    play2 () {
-        this.animCircle.show();
-/*        var length = ((this.path.getTotalLength() * TEMPO) / 1000) * 1000;
-
-        this.animCircle.data("mypath", this.path);
-        this.anim = Raphael.animation({progress: 1}, length).repeat(Infinity);
-        this.animCircle.animate(this.anim);   */ 
-    }
-
     stop () {
         // TODO
         this.animCircle.hide();
         this.synth.volume.value = -60;
         this.animCircle.stop(this.anim);
-        /*this.reset_anim_circle_position();*/
 
         this.anim = "";
         this.animCircle.attr("progress", 0);
     }
     
     init_shape_attr_popup(){
-        /*var synth = this.synth;
-        console.log(synth);*/
         var i = this.path.data("i");
-        console.log("====>", i);
+        //console.log("====>", i);
         var start_freq = this.start_freq;
         var test = this.delete;
         var popupHtml = '\
@@ -384,95 +346,40 @@ class Shape {
             </div>';
 
         $("body").append(popupHtml);
-
     }
 
 
-    reset_anim_circle_position () {
-        var origin = this.nodes[0];
-        var ox = origin.handle.attr("cx");
-        var oy = origin.handle.attr("cy");
-        //this.animCircle.attr({"cx": ox, "cy": oy});
-        this.animCircle.hide();
-    }
 
     set_note_values () {        
         console.log("SET NOTE VALUES");
         console.log(this.part);
         this.part.removeAll();
-        var parentShape = this;
-
-        var origin = this.nodes[0];
-        var ox = origin.handle.attr("cx");
-        var oy = origin.handle.attr("cy");
-
-        // node 1 is the first node
-        var val1 = this.start_freq;
-        var dur1 = (lineDistance(this.nodes[1], origin) * TEMPO) / 1000;
+        var delay = 0;
         
-        this.nodes[1].noteVal = this.start_freq;
-        this.nodes[1].duration = lineDistance(this.nodes[1], origin);
-        
-        var value = {
-            "note": val1,
-            "dur": dur1,
-            "parentShape": parentShape,
-            "x": this.nodes[1].handle.attr("cx"),
-            "y": this.nodes[1].handle.attr("cy"),
-            "first": true
-        }
-        this.part.add(0, value);
-
+        // add first note
+        var firstNoteInfo = this.get_note_info(this.nodes[1], this.nodes[0], 0);
+        this.part.add(delay, firstNoteInfo);
     
-        var delay = dur1;
+        delay += firstNoteInfo.noteDur;
 
+        // assign notes up until the end
         for (var i = 2; i < this.nodes.length; i++) {
             var curr = this.nodes[i];
             var prev = this.nodes[i - 1];
             var prevPrev = this.nodes[i - 2];
             
-            var theta = Raphael.angle(getNodeX(curr), getNodeY(curr), getNodeX(prevPrev), getNodeY(prevPrev), getNodeX(prev), getNodeY(prev));
-            
-            var val2 = NOTE_CHOOSER(prev.noteVal, theta);
-            var dur2 = (lineDistance(curr, prev) * TEMPO) / 1000;
+            var noteInfo = this.get_note_info(curr, prev, prevPrev);
 
-            this.nodes[i].noteVal = val2;
-            this.nodes[i].duration = dur2;
-
-            var value2 = {
-                "note": val2,
-                "dur": dur2,
-                "parentShape": parentShape,
-                "x": this.nodes[i].handle.attr('cx'),
-                "y": this.nodes[i].handle.attr("cy")
-            }
-
-            this.part.add(delay, value2);
-            delay += dur2;
-        }
-        
-        // node 0 is the last node
-        var last = this.nodes.length - 1;
-        // console.log(last);
-        var theta2 = Raphael.angle(getNodeX(origin), getNodeY(origin), getNodeX(this.nodes[last - 1]), getNodeY(this.nodes[last - 1]), getNodeX(this.nodes[last]), getNodeY(this.nodes[last]))
-        // console.log("THETA2:", theta2);
-        //console.log(l);
-        var val3 = NOTE_CHOOSER(this.nodes[last].noteVal, theta2);
-        var dur3 = (lineDistance(origin, this.nodes[last]) * TEMPO) / 1000;
-        
-        origin.noteVal = val3;
-        origin.duration = dur3;
-
-        var value3 = {
-            "note": val3,
-            "dur": dur3,
-            "parentShape": parentShape,
-            "x": ox,
-            "y": oy
+            this.part.add(delay, noteInfo);
+            delay += noteInfo.noteDur;
         }
 
-        this.part.add(delay, value3);
-        var totalLength = delay + dur3;
+        // add last note 
+        var iLast = this.nodes.length - 1;
+        var lastNoteInfo = this.get_note_info(this.nodes[0], this.nodes[iLast], this.nodes[iLast - 1]);
+        this.part.add(delay, lastNoteInfo);
+        
+        var totalLength = delay + lastNoteInfo.noteDur;
         this.part.loopEnd = totalLength;
 
 
@@ -484,11 +391,65 @@ class Shape {
             console.log("duration", this.nodes[i].duration);
         }*/
     }
+
+    /* returns an object containing note information - for the note from nodePrev to node
+    nodePrevPrev needed to calculate angle at node Prev
+    */
+    get_note_info(node, nodePrev, nodePrevPrev){
+        
+        var noteVal;
+        var duration = (lineDistance(node, nodePrev) * TEMPO) / 1000;
+        var parentShape = this;
+        var isFirst = false;
+        
+        if (!nodePrevPrev) {
+            isFirst = true;
+            noteVal = this.start_freq;
+        } else {
+            var theta = Raphael.angle(getNodeX(node), getNodeY(node), getNodeX(nodePrevPrev), getNodeY(nodePrevPrev), getNodeX(nodePrev), getNodeY(nodePrev));
+            noteVal = NOTE_CHOOSER(nodePrev.noteVal, theta);
+        }
+        //var theta = Raphael.angle(0,0,4,3,4,0);
+        //console.log("TEST THETA:", theta);
+        node.noteVal = noteVal;
+        node.noteDur = duration;
+        var result = {
+            noteVal : noteVal,
+            noteDur : duration,
+            parentShape : parentShape,
+            nodeTo : node,
+            nodeFrom : nodePrev,
+            isFirst : isFirst
+        }
+
+        return result;
+    }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 function getNodeX (node) {
     // TODO
-    var odx = + node.handle.attr("odx");
+    var odx = node.handle.attr("odx");
     if (odx) {
         return node.handle.attr("cx") + odx;
     } else return node.handle.attr("cx");
@@ -496,7 +457,7 @@ function getNodeX (node) {
 
 function getNodeY (node) {
     // TODO
-    var ody = + node.handle.attr("ody");
+    var ody = node.handle.attr("ody");
     if (ody) {
         return node.handle.attr("cy") + ody;
     } else return node.handle.attr("cy");
@@ -530,7 +491,6 @@ class Node {
             //console.log("X", this.attr("cx"), "Y", this.attr("cy"));
             //console.log("parent shape:", shapesList[shapeId]);
             shapesList[shapeId].set_note_values();
-            //shapesList[shapeId].reset_anim_circle_position();
         });
         
         this.handle.control_update = function (x, y) {
@@ -617,13 +577,7 @@ var ACTIVE_SHAPE = new Shape(ROOT_NOTE, DEFAULT_SYNTH);
 function play_handler() {
     // TODO
     PLAYING = true;
-    Tone.Transport.start();
-
-/*    for (var i = shapesList.length - 1; i >= 0; i--) {
-        if (shapesList[i].included) {
-            shapesList[i].play2();
-        }
-    }*/
+    Tone.Transport.start("+0.1");
 }
 
 function stop_handler(){
@@ -662,12 +616,12 @@ $(document).ready(function() {
     /* ----------------------- HANDLERS ----------------------- */
     window.onkeydown = function (e) {
 
-   /* $(window).keypress(function(e) {*/
-        if (e.which == 97) { // a
+    /* $(window).keypress(function(e) {*/
+        if (e.which === 97) { // a
             console.log("a");
             select_tool("draw");
         }
-        if (e.which == 115) { // s
+        if (e.which === 115) { // s
             console.log("s");
             select_tool("adjust");
         }
@@ -680,47 +634,37 @@ $(document).ready(function() {
         }
     };
 
-    // PLAY
+    // PLAY - toggles play / stop
     $("#play-stop-toggle").click(function(){
         togglePlayStop();
     });
 
+    // changes global tempo
     $("#tempo-slider").on("mouseup", function () {
         console.log(this.value);
         set_tempo(this.value * -1);
     })
 
+    // changes global musical key 
     $(document).on('change','#key-select',function(){
         console.log(this.value);
         set_key(this.value);
     });
 
+    // stops click propegation when clicking in the tool tip
+    $( ".shape-attr-popup" ).on( "mousedown", function( event ) {
+        event.stopPropagation();
+    });
+
+    // changes instrument to the one selected from the dropdown
     $(document).on('change','.shape-attr-inst-select',function(){
         console.log($(this).attr("data"));
         var i = $(this).attr("data");
         console.log("changing to", this.value);
         shapesList[i].synth = synth_chooser(this.value);
     });
-/*window.onkeydown = function (e) {
-    if (event.keyCode === 32) {
-        e.stopPropagation();
-        e.preventDefault();
-        togglePlayStop();
-    }
-};*/
 
-    
-
-    // NEW SHAPE
-    $("#new-shape").click(function(){
-        /*if (ACTIVE_SHAPE.length()) {
-            ACTIVE_SHAPE.completed = true;
-            SHAPES.push(ACTIVE_SHAPE);
-            new_shape();
-        };*/
-    });
-
-    // CLEAR
+    // CLEAR - hide tooltips, stop transport, remove all shapes
     $("#clear").click(function(){
         hide_details();
         Tone.Transport.stop(0);
@@ -737,17 +681,16 @@ $(document).ready(function() {
         }
         shapesList = [];
         ACTIVE_SHAPE = new Shape(ROOT_NOTE, DEFAULT_SYNTH);
-        lineToMouse = r.path().attr(lineToMouseAttr);
-        circleAtMouse = r.circle(0,0,3).attr(circleAtMouseAttr);
+        hoverLine = r.path().attr(hoverLineAttr);
+        hoverCircle = r.circle(0,0,3).attr(hoverCircleAttr);
         if (CURR_TOOL == "adjust") {
-            circleAtMouse.hide();
+            hoverCircle.hide();
         }
     });
     
     /* TOOLS */
     $("#draw-tool").click(function(){
         select_tool("draw");
-
     });
 
     $("#adjust-tool").click(function(){
@@ -789,17 +732,14 @@ $(document).ready(function() {
         }
 
         var endpoint = "L" + x + "," + y;
-        //console.log(circleAtMouse);
-        circleAtMouse.attr({cx: x, cy: y});
-        //circleAtMouse.remove();
-        //circleAtMouse = r.circle(x,y,3).attr(circleAtMouseAttr).toBack();
+        //console.log(hoverCircle);
+        hoverCircle.attr({cx: x, cy: y});
+        //hoverCircle.remove();
+        //hoverCircle = r.circle(x,y,3).attr(hoverCircleAttr).toBack();
 
-        if (lineToMouse.attr("path")) {
-            lineToMouse.attr("path", subpath_to_string(lineToMouse, 0) + endpoint);
+        if (hoverLine.attr("path")) {
+            hoverLine.attr("path", subpath_to_string(hoverLine, 0) + endpoint);
         }
-    });
-    $( ".shape-attr-popup" ).on( "mousedown", function( event ) {
-        event.stopPropagation();
     });
     $( "#holder" ).on( "mousedown", function( event ) {
         if ($(".shape-attr-popup").is(":visible")) {
@@ -833,7 +773,7 @@ $(document).ready(function() {
                 var moveTo = "M" + x + "," + y;
                 var lineTo = "L" + x + "," + y;
 
-                lineToMouse.attr("path", moveTo);                
+                hoverLine.attr("path", moveTo);                
 
                 if (ACTIVE_SHAPE.path.attr("path") === "") { // shape is empty
                     ACTIVE_SHAPE.path.attr("path", moveTo);
@@ -881,7 +821,7 @@ function complete_shape(){
 
     ACTIVE_SHAPE = new Shape(ROOT_NOTE, DEFAULT_SYNTH);
 
-    lineToMouse.attr("path", "");
+    hoverLine.attr("path", "");
     PREV_ENDPOINT = "";
     
     console.log(shapesList);
@@ -944,10 +884,10 @@ function show_handles () {
 /* -------- TOOLS -------- */
 function select_tool(tool) {
     if (tool === "draw") {
-        circleAtMouse.show();
+        hoverCircle.show();
         hide_handles();
     } else if (tool === "adjust"){
-        circleAtMouse.hide();
+        hoverCircle.hide();
         show_handles();
     } 
 
@@ -959,7 +899,7 @@ function select_tool(tool) {
     $( toolName ).addClass("active");
 }
 
-/* -------- DETAILS -------- */
+/* -------- TOOLTIP DETAILS -------- */
 function delete_shape (i) {
     shapesList[i].delete();
  //   shapesList.splice(i, 1);
@@ -997,9 +937,7 @@ function lineDistance( point1, point2 )
 {
     var xs = 0;
     var ys = 0;
-
-
-    console.log(point1);
+    //console.log(point1);
 
     xs = point2.handle.attr("cx") - point1.handle.attr("cx");
     xs = xs * xs;
@@ -1067,8 +1005,7 @@ function increase_by_scale_degree (note, deg, neg_mult) {
 
     var noteVal = Tone.Frequency(note, "midi").toNote();
     
-/*    console.log("PREV NOTE", noteVal, note);
-    console.log("DEG", deg);*/
+
     
     var noteLetter = noteVal.charAt(0);
     var iInScale = SCALE_LETTERS.indexOf(noteLetter);
@@ -1082,7 +1019,7 @@ function increase_by_scale_degree (note, deg, neg_mult) {
         sum = findSumUp(iInScale, deg);
     }
 
-/*    console.log("SUM", sum);*/
+    //console.log("SUM", sum);
     
     var newMidiNote = note + sum;
 
@@ -1147,12 +1084,10 @@ function increment_start_freq(dir, i){
     console.log(freq);
     var new_freq;
 
-    if (dir === 1) { //up
-        //console.log("up");
+    if (dir === 1) { //up;
         new_freq = increase_by_scale_degree (note, 1, 1)
     }  
     if (dir === 0) { //down
-        //console.log("down");
         new_freq = increase_by_scale_degree (note, 1, -1)
     }
 
@@ -1160,8 +1095,8 @@ function increment_start_freq(dir, i){
     shapesList[i].set_note_values();
 
     $("#start-freq-label-"+i).html(new_freq);
-    //console.log(new_freq);
 }
+
 function change_instrument (i){
     shapesList[i].synth = synth_chooser(this.value);
 }
