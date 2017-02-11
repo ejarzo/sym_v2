@@ -8,8 +8,9 @@
     Charlie Colony and Elias Jarzombek
     Code written by Elias Jarzombek
 
+    V2: 2017
+
 ============================================================================= */
-Tone.Transport.latencyHint = 'fastest'
 
 /* --------------------------------- RAPHAEL -------------------------------- */
 var r = Raphael("holder", "100%", "100%");
@@ -62,23 +63,25 @@ var gridDotAttr       = {"fill": "#777", "stroke-width": 1, "stroke": "#FFF"};
 /* --------------------------------- GLOBALS -------------------------------- */
 
 // AUDIO
+Tone.Transport.latencyHint = 'balanced'
+/*  "interactive" (default, prioritizes low latency)
+    "playback" (prioritizes sustained playback)
+    "balanced" (balances latency and performance)
+    "fastest" (lowest latency, might glitch more often)
+*/
 var TEMPO = 6;
 var ORIGIN_RADIUS = 15;
-var ROOT_NOTE = "C2";
 var PLAYING = false;
-var DEFAULT_SYNTH = "FM";
+var DEFAULT_SYNTH = "Simple";
 var PRESETS = new Presets();
+
 // SCALE
-var MAJOR_INTERVALS = [2,2,1,2,2,2,1];
-var MINOR_INTERVALS = [2,1,2,2,1,2,2];
-
-var ROOT_MIDI = Tone.Frequency(ROOT_NOTE).toMidi();
-var INTERVALS = MAJOR_INTERVALS;
-
-var SCALE_LETTERS = ["A", "B", "C", "D", "E", "F", "G"];
-
+var ROOT_NOTE = "A3";
 var NOTE_CHOOSER = note_chooser1;
-
+var SCALE = teoria.note("a").scale('major');
+var keysList = ["major", "minor", "dorian", "phrygian", "lydian", "mixolydian", "locrian",
+            "major pentatonic", "minor pentatonic", "chromatic", "blues", "double harmonic",
+            "flamenco", "harmonic minor", "melodic minor", "wholetone"];
 // GRID
 var GRID_SIZE = 50;
 var GLOBAL_MARGIN = 5;
@@ -123,8 +126,8 @@ class Shape {
                 var tempPath = currShape.path.attr("path");
 
                 for (var i = 0; i < tempPath.length - 1; i++) {
-                    tempPath[i][1] += (dx -this.odx);
-                    tempPath[i][2] += (dy -this.ody);
+                    tempPath[i][1] += (dx - this.odx);
+                    tempPath[i][2] += (dy - this.ody);
                 }
 
                 currShape.path.attr("path", tempPath);
@@ -155,8 +158,6 @@ class Shape {
             return function (event) {
                 if (CURR_TOOL == "adjust") {
                     item.path.attr(shapeHoverAttr);
-                    //item.path.attr("cursor", "move");
-                    //var id = item.path.id;
                 }
             };
         };
@@ -210,8 +211,8 @@ class Shape {
         
         this.reset_anim_circle_position = function() {
             var origin = this.nodes[0];
-            var ox = origin.handle.attr("cx");
-            var oy = origin.handle.attr("cy");
+            var ox = origin.getX();
+            var oy = origin.getY();
             this.animCircle.attr({"cx": ox, "cy": oy});
             //this.animCircle.hide();
         }
@@ -242,8 +243,13 @@ class Shape {
         this.synth = synth_chooser(synth_name);
         //this.synth = PRESETS.preset01;
         //var synth = this.synth;
+        
+
+        /* ============================================================= */
+        /* ======================= PART CALLBACK ======================= */
+        /* ============================================================= */
         this.part = new Tone.Part(function(time, value){
-            /* PART CALLBACK */
+            
             var parentShape = value.parentShape;
             var thisSynth = get_this_synth(parentShape);
 
@@ -252,30 +258,19 @@ class Shape {
             thisSynth.volume.value = -5;
             parentShape.animCircle.show().toFront();
             
-            //var duration = value.dur;
+            var duration = value.dur;
             var lengthToMiliseconds = (value.noteDur * 1000).toFixed(9);
-            var duration = (lengthToMiliseconds / 1000).toFixed(12);
+            //var duration = (lengthToMiliseconds / 1000).toFixed(12);
             var note = value.noteVal;
             
             console.log("DUR:", duration)
             console.log("TO MIL:", lengthToMiliseconds)
 
-            if (value.first) {
-                parentShape.reset_anim_circle_position();
-              /*  parentShape.animCircle.attr("progress", 0);
-                var length = ((parentShape.path.getTotalLength() * TEMPO) / 1000) * 1000;
-
-                parentShape.animCircle.data("mypath", parentShape.path);
-                parentShape.anim = Raphael.animation({progress: 1}, length);
-                parentShape.animCircle.animate(parentShape.anim);*/
-            }
-
-
             Tone.Draw.schedule(function(){
-                var startX = value.nodeFrom.handle.attr("cx");
-                var startY = value.nodeFrom.handle.attr("cy");
-                var endX = value.nodeTo.handle.attr("cx");
-                var endY = value.nodeTo.handle.attr("cy");
+                var startX = value.nodeFrom.getX();
+                var startY = value.nodeFrom.getY();
+                var endX = value.nodeTo.getX();
+                var endY = value.nodeTo.getY();
 
                 parentShape.animCircle.attr({cx : startX, cy : startY})
                 parentShape.animCircle.animate({"cx": endX, "cy": endY}, lengthToMiliseconds, function() {
@@ -283,6 +278,9 @@ class Shape {
                 });
 
                 parentShape.animCircle.animate(animCircleBangStartAttr, 0, "linear", function(){
+                    this.animate(animCircleBangEndAttr, 800, "ease-out");
+                });
+                parentShape.path.animate(animCircleBangStartAttr, 0, "linear", function(){
                     this.animate(animCircleBangEndAttr, 800, "ease-out");
                 });
             }, time)
@@ -293,7 +291,6 @@ class Shape {
         this.part.loop = true;
     }
     set_start_freq (freq) {
-        console.log(this.start_freq);
         console.log("setting start freq:", freq);
         this.start_freq = freq;
     }
@@ -352,7 +349,7 @@ class Shape {
 
     set_note_values () {        
         console.log("SET NOTE VALUES");
-        console.log(this.part);
+        //console.log(this.part);
         this.part.removeAll();
         var delay = 0;
         
@@ -381,15 +378,15 @@ class Shape {
         
         var totalLength = delay + lastNoteInfo.noteDur;
         this.part.loopEnd = totalLength;
-
-
-/*        console.log("=================================");
-
+    }
+    
+    print_shape_info(){
+        console.log("=== Printing shape info ===");
         for (var i = 0; i < this.nodes.length; i++) {
             console.log(i);
             console.log("noteval", this.nodes[i].noteVal);
             console.log("duration", this.nodes[i].duration);
-        }*/
+        }
     }
 
     /* returns an object containing note information - for the note from nodePrev to node
@@ -406,7 +403,9 @@ class Shape {
             isFirst = true;
             noteVal = this.start_freq;
         } else {
-            var theta = Raphael.angle(getNodeX(node), getNodeY(node), getNodeX(nodePrevPrev), getNodeY(nodePrevPrev), getNodeX(nodePrev), getNodeY(nodePrev));
+            var theta = Raphael.angle(node.getX(), node.getY(), 
+                                      nodePrevPrev.getX(), nodePrevPrev.getY(), 
+                                      nodePrev.getX(), nodePrev.getY());
             noteVal = NOTE_CHOOSER(nodePrev.noteVal, theta);
         }
         //var theta = Raphael.angle(0,0,4,3,4,0);
@@ -439,30 +438,6 @@ class Shape {
 
 
 
-
-
-
-
-
-
-
-
-function getNodeX (node) {
-    // TODO
-    var odx = node.handle.attr("odx");
-    if (odx) {
-        return node.handle.attr("cx") + odx;
-    } else return node.handle.attr("cx");
-}
-
-function getNodeY (node) {
-    // TODO
-    var ody = node.handle.attr("ody");
-    if (ody) {
-        return node.handle.attr("cy") + ody;
-    } else return node.handle.attr("cy");
-}
-
 /* --------------------------- Vertex Handle class -------------------------- */
 class Node {
     constructor(x, y, i, shapeId) {
@@ -493,7 +468,7 @@ class Node {
             shapesList[shapeId].set_note_values();
         });
         
-        this.handle.control_update = function (x, y) {
+        this.handle.update_shape_path = function (x, y) {
             var i = this.data("i");
             var currShapeId = this.data('shapeId');
 
@@ -521,7 +496,7 @@ class Node {
                 this.attr("cy", newy);
 
                 /*this.translate(dx - (this.odx || 0), dy - (this.ody || 0));*/
-                this.control_update(dx - (this.odx || 0), dy - (this.ody || 0));
+                this.update_shape_path(dx - (this.odx || 0), dy - (this.ody || 0));
                 
                 this.odx = dx;
                 this.ody = dy;
@@ -560,10 +535,28 @@ class Node {
             this.handle.attr("opacity", 1);
         }
 
+        this.getX = function () {
+            var transform = this.handle.matrix.split();
+            return this.handle.attr("cx") + transform.dx;
+        }
+        
+        this.getY = function () {
+            var transform = this.handle.matrix.split();
+            return this.handle.attr("cy") + transform.dy;
+        }
+
         this.handle.drag(this.move, this.up);
         this.handle.hover(this.hoverIn(this.handle), this.hoverOut(this.handle));
     }
 }
+
+
+
+
+
+
+
+
 
 /* SHAPES */
 var shapesList = [];
@@ -605,13 +598,14 @@ function togglePlayStop () {
     }
 }
 
+
 $(document).ready(function() {
 
     /* ---------------------- INITIALIZE ---------------------- */
 
     init_grid();
     hide_handles();
-    
+    init_key_select();
 
     /* ----------------------- HANDLERS ----------------------- */
     window.onkeydown = function (e) {
@@ -646,9 +640,9 @@ $(document).ready(function() {
     })
 
     // changes global musical key 
-    $(document).on('change','#key-select',function(){
+    $(document).on('change','#scale-select',function(){
         console.log(this.value);
-        set_key(this.value);
+        set_scale(this.value);
     });
 
     // stops click propegation when clicking in the tool tip
@@ -939,10 +933,10 @@ function lineDistance( point1, point2 )
     var ys = 0;
     //console.log(point1);
 
-    xs = point2.handle.attr("cx") - point1.handle.attr("cx");
+    xs = point2.getX() - point1.getX();
     xs = xs * xs;
 
-    ys = point2.handle.attr("cy") - point1.handle.attr("cy");
+    ys = point2.getY() - point1.getY();
     ys = ys * ys;
 
     return Math.sqrt( xs + ys );
@@ -952,83 +946,77 @@ function lineDistance( point1, point2 )
 
 
 
-// length = 7
-// 0 1 2 3 4 5 6
-// A B C D E F G    - scale leters
-//  2 2 1 2 2 2 1   - Intervals
 
-function findSumUp (i, deg){
-    //console.log("starting with:", SCALE_LETTERS[i]);
-    //console.log("INCREASING:", deg);
-    var sum = 0;
-    
-    while (deg > 0) {
-        //console.log("i, at i", i, INTERVALS[i]);
 
-        sum += INTERVALS[i];
-        i++;
-        if (i > INTERVALS.length - 1) {
-            i = 0;
-        }
-        deg--;
+
+
+
+
+function indexOfNote(letter, scale) {
+    console.log("finding", letter);
+    console.log("in", scale);
+    for (var i = scale.length - 1; i >= 0; i--) {
+        if (teoria.note(scale[i]).chroma() === teoria.note(letter).chroma()) {
+            console.log("FOUND:", letter, " at index:", i);
+            return i;
+        } 
+/*        else {
+            console.log("NOT FOUND");
+        }*/
     }
-
-    return sum;
-}
-
-function findSumDown (i, deg){
-    console.log("starting with:", SCALE_LETTERS[i]);
-    console.log("DECREASING:", deg);    
-    
-    var sum = 0;
-    
-    if (i === 0) {
-        i = INTERVALS.length;
-    }
-
-    i = i - 1;
-
-    while (deg > 0) {
-        console.log("i, at i", i, INTERVALS[i]);
-        sum += INTERVALS[i];
-        i--;
-        if (i < 0) {
-            i = INTERVALS.length - 1;
-        }
-        deg--;
-    }
-    return sum;
+    console.log("NOT FOUND");
 }
 
 function increase_by_scale_degree (note, deg, neg_mult) {
-    //console.log("================ INCREASE DEGREE ================")
-
+    
+    console.log("=========== CHANGE DEGREE ===========");
+    
+    deg = deg * neg_mult;
     var noteVal = Tone.Frequency(note, "midi").toNote();
+
+    var noteObj = teoria.note.fromMIDI(note);
+
+    var noteLetter = noteVal.slice(0, -1).toLowerCase();
+    var noteOctave = parseInt(noteVal.slice(-1));
     
-
+    console.log ("starting with:", noteLetter, noteOctave, ", moving:", deg);
+    //console.log("SCALE:", SCALE.simple());
     
-    var noteLetter = noteVal.charAt(0);
-    var iInScale = SCALE_LETTERS.indexOf(noteLetter);
+    var scaleSimple = SCALE.simple();
+    var length = scaleSimple.length;
 
-    var sum = 0;
-
-    if (neg_mult === -1) {
-        sum = findSumDown(iInScale, deg);
-        sum = sum * -1;
-    } else {
-        sum = findSumUp(iInScale, deg);
+    var noteIndex = indexOfNote(noteLetter, scaleSimple);
+    
+    var newNoteIndex = noteIndex + deg;
+    // going up
+    if (newNoteIndex >= length) {
+        newNoteIndex = newNoteIndex - length;
+    }
+    // going down
+    else if (newNoteIndex < 0) {
+        newNoteIndex += length;
     }
 
-    //console.log("SUM", sum);
-    
-    var newMidiNote = note + sum;
+    console.log("newIndex:",newNoteIndex);
+    //var cAbove = teoria.note("c"+(noteOctave+1));
+    //var cBelow = teoria.note("c"+noteOctave);
 
-    var newNote = Tone.Frequency(newMidiNote, "midi").toNote();
-    newNote = Tone.Frequency(newNote).toNote();
-    console.log("NEW NOTE", newNote);
-    //console.log("NEW MIDI NOTE", newMidiNote);
+    //console.log("C ABOVE:", cAbove.midi(), "C BELOW:", cBelow.midi());
 
-    return newNote;
+    var newNoteObj = teoria.note(scaleSimple[newNoteIndex] + noteOctave);
+
+    if (deg > 0 && newNoteObj.midi() < noteObj.midi()) {
+        console.log("up one octave");
+        newNoteObj = teoria.note(scaleSimple[newNoteIndex] + (noteOctave + 1));
+    }
+
+    if (deg < 0 && newNoteObj.midi() > noteObj.midi() && noteOctave > 0) {
+        newNoteObj = teoria.note(scaleSimple[newNoteIndex] + (noteOctave - 1));
+    }
+
+    var newNote = newNoteObj.toString();
+    console.log("NEW NOTE:", newNote);
+    return(newNote);
 }
 
 function note_chooser1(freq, theta) {
@@ -1050,9 +1038,8 @@ function note_chooser1(freq, theta) {
     }
     var absTheta = Math.abs(theta);
 
-
     // find sector
-    var notesInScale = SCALE_LETTERS.length;
+    var notesInScale = SCALE.simple().length - 1;
     var changeInScaleDegree = 0;
     var dTheta = 180 / notesInScale;
     var lowerBound = 0;
@@ -1139,12 +1126,18 @@ function set_tempo(val) {
     reset_all_notes();
 }
 
-function set_key(key) {
-    if (key === "major") {
-        INTERVALS = MAJOR_INTERVALS;
-    } else if (key === "minor"){
-        INTERVALS = MINOR_INTERVALS;
+/* Keys */
+function init_key_select(){
+    var keySelectHtml = ""
+    for (var i = 0; i < keysList.length; i++) {
+        keySelectHtml +=  "<option value='" + keysList[i].replace(/ /g,'') + "'>" + keysList[i] + "</option>" 
     }
+    $("#scale-select").html(keySelectHtml);
+}
+function set_scale(name) {
+    console.log("SETTING SCALE TO:", name);
+    SCALE = teoria.note(ROOT_NOTE).scale(name);
+    console.log(SCALE.simple());
     reset_all_notes();
 }
 

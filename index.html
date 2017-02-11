@@ -16,8 +16,7 @@
         <link rel="stylesheet" href="css/main.css">
         <script src="js/vendor/modernizr-2.8.3.min.js"></script>
       <!--   <script type="text/javascript" src="js/vendor/tone/build/Tone.js"></script> -->
-        <script type="text/javascript" src="js/vendor/Tone17.min.js"></script>
-
+       
     </head>
     <body>
         <!--[if lt IE 8]>
@@ -40,21 +39,22 @@
             <button class="ctrl-elem" id="clear">CLEAR</button>
             <button class="ctrl-elem tool active" id="draw-tool">DRAW</button>
             <button class="ctrl-elem tool" id="adjust-tool">ADJUST</button>
-            <span class="ctrl-elem">
-                <input class="checkbox" type="checkbox" name="grid" id="grid">
-                <label for="grid" class="noselect">Grid</label>
-            </span>
-            <span class="ctrl-elem">
-                <input class="checkbox" type="checkbox" name="snap" id="snap">
-                <label for="snap" class="noselect">Snap to Grid</label>
-            </span>
+            <div class="ctrl-elem">
+                <div>
+                    <input class="checkbox" type="checkbox" name="grid" id="grid">
+                    <label for="grid" class="noselect">Grid</label>    
+                </div>
+                <div>
+                    <input class="checkbox" type="checkbox" name="snap" id="snap">
+                    <label for="snap" class="noselect">Snap to Grid</label>
+                </div>
+            </div>
             <span class="ctrl-elem">
                 TEMPO:<input type="range" id="tempo-slider" value="-4" min="-6" max="-1">
             </span>
             <span class="ctrl-elem">
-                Key:
-
-                <select id="key-select">
+                Scale:
+                <select id="scale-select">
                     <option value="major">Major</option>
                     <option value="minor">Minor</option>
                 </select>
@@ -67,41 +67,14 @@
             </div>
         </div>
 
-<!-- =================================== -->
-<!-- <div class="shape-attr-popup" id="">
-   
-    <div class="section">
-        <label>Instrument:</label>
-        <select class="shape-attr-inst-select" data="">
-            <option value="AM">AM</option>
-            <option value="FM">FM</option>
-            <option value="Duo">Duo</option>
-            <option value="Poly">Poly</option>
-            <option value="Simple">Simple</option>
-            <option value="Membrane">Membrane</option>
-        </select>
-    </div>
-    <div class="section">
-        <label>Starting Note:</label>
-        <span class="shape-attr-start-freq">
-            <span>A2</span>
-            <button class="arrow arrow-up">&#9650;</button>
-            <button class="arrow arrow-down">&#9660;</button>
-        </span>
-    </div>
-    <div class="section">
-        <button class="shape-attr-delete-shape" data="" 
-                onclick="delete_shape(i)" 
-                onmouseover="" 
-                onmouseout="">Delete Shape</button>
-    </div>
-</div> -->
-
-
         <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
         <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.11.3.min.js"><\/script>')</script> -->
+        <!-- <script type="text/javascript" src="js/vendor/tonal.min.js"></script> -->
+        <script type="text/javascript" src="js/vendor/Tone17.min.js"></script>
+
         <script src="js/vendor/jquery-1.11.3.min.js"></script>
         <script src="js/vendor/raphael.min.js"></script>
+        <script src="js/vendor/teoria.js"></script>
         <script src="js/plugins.js"></script>
         <script src="js/presetXX.js"></script>
         <script src="js/main.js"></script>

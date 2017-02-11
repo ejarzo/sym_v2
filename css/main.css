@@ -150,6 +150,9 @@ body {
     box-shadow: -2px 2px 25px rgba(0,0,0,0.1);
 }
 
+#scale-select {
+    text-transform: capitalize;
+}
 
 /* ========================= Shape attributes popup ========================= */
 .shape-attr-popup {
@@ -279,6 +282,8 @@ button {
 
 .ctrl-elem {
     margin-right: 15px;
+    display: inline-block;
+    vertical-align: middle;
 }
 
 .ctrl-elem #tempo-slider {
@@ -286,7 +291,11 @@ button {
     position: relative;
     top: 3px;
 }
-
+.checkboxes {
+   /* width: 100px;*/
+    vertical-align: middle;
+    display: inline-block;
+}
 .active {
     background-color: #555;
     color: #eee;
