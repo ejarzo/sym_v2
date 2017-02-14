@@ -37,15 +37,16 @@ var white       = "rgba(255,255,255, .8)";
 
 /* ------------------------------- ATTRIBUTES ------------------------------- */
 /* shapes */
-var shapeDefaultAttr        = {stroke: black, "stroke-width": 2};
+var shapeDefaultAttr        = {stroke: black, opacity: 1};
 var shapeHoverAttr          = {"stroke-width": 3};
-var shapeFilledPreviewAttr  = {fill: "rgba(120,120,120,.1)", stroke: black, "stroke-width": 2};
-var shapeFilledAttr         = {fill: "rgba(100,100,100,.2)", stroke: black, "stroke-width": 2};
+var shapeFilledPreviewAttr  = {fill: "rgba(120,120,120,.1)"};
+var shapeFilledAttr         = {fill: "rgba(100,100,100,.2)"};
 var shapeWarningAttr        = {fill: warningRed, stroke: warningRed};
 var shapeSelectedAttr       = {fill: "rgba(0,0,0,.5)", stroke: black, "stroke-width": 3};
+var shapeMutedAttr          = {opacity: 0.2};
 
 /* animated circle */
-var animCircleAttr          = {"fill": "#111", "stroke": "#111", "stroke-width": 2};
+var animCircleAttr          = {"fill": "#111", "stroke": "#111", "stroke-width": 2, opacity: 1};
 var animCircleBangStartAttr = {"r": 7, "fill": "#fff"};
 var animCircleBangEndAttr   = {"r": 3, "fill": "#111"};
 
@@ -63,7 +64,7 @@ var gridDotAttr       = {"fill": "#777", "stroke-width": 1, "stroke": "#FFF"};
 /* --------------------------------- GLOBALS -------------------------------- */
 
 // AUDIO
-Tone.Transport.latencyHint = 'balanced'
+Tone.Transport.latencyHint = 'fastest'
 /*  "interactive" (default, prioritizes low latency)
     "playback" (prioritizes sustained playback)
     "balanced" (balances latency and performance)
@@ -82,6 +83,7 @@ var SCALE = teoria.note("a").scale('major');
 var keysList = ["major", "minor", "dorian", "phrygian", "lydian", "mixolydian", "locrian",
             "major pentatonic", "minor pentatonic", "chromatic", "blues", "double harmonic",
             "flamenco", "harmonic minor", "melodic minor", "wholetone"];
+var tonicsList = ["a", "a#", "b", "c", "c#", "d", "d#", "e", "f", "f#", "g", "g#"];
 // GRID
 var GRID_SIZE = 50;
 var GLOBAL_MARGIN = 5;
@@ -157,14 +159,15 @@ class Shape {
         this.hoverIn = function (item) {
             return function (event) {
                 if (CURR_TOOL == "adjust") {
-                    item.path.attr(shapeHoverAttr);
+                    var currStrokeWidth = item.path.attr("stroke-width") + 2;
+                    item.path.attr("stroke-width", currStrokeWidth);
                 }
             };
         };
 
         this.hoverOut = function (item) {
             return function (event) {
-                item.path.attr(shapeDefaultAttr);
+                item.path.attr("stroke-width", volume_to_stroke_width(item.volume));
             };
         };
 
@@ -209,17 +212,35 @@ class Shape {
             this.included = false;
         }
         
-        this.reset_anim_circle_position = function() {
-            var origin = this.nodes[0];
-            var ox = origin.getX();
-            var oy = origin.getY();
-            this.animCircle.attr({"cx": ox, "cy": oy});
-            //this.animCircle.hide();
+        this.mute = function () {
+            this.isMuted = true;
+            this.synth.volume.value = -60;
+            this.path.attr(shapeMutedAttr);
+            for (var i = this.nodes.length - 1; i >= 0; i--) {
+                this.nodes[i].handle.attr(shapeMutedAttr);
+            }
+            this.animCircle.attr(shapeMutedAttr);
+
+        }
+        this.unmute = function () {
+            this.isMuted = false;
+            console.log("unmute");
+            this.path.attr(shapeDefaultAttr);
+            for (var i = this.nodes.length - 1; i >= 0; i--) {
+                this.nodes[i].handle.attr(handlesDefaultAttr);
+            }
+            this.animCircle.attr(animCircleAttr);
+            this.synth.volume.value = this.volume;
         }
         /* ======================================= */
+        // tone
+        this.synth = synth_chooser(synth_name);
+        this.volume = -8;        
+        this.isMuted = false;
 
         // path
         this.path = r.path().attr(shapeDefaultAttr);
+        this.path.attr("stroke-width", volume_to_stroke_width(this.volume));
         this.path.hover(this.hoverIn(this), this.hoverOut(this));
         this.path.drag(this.move, this.start, this.up);
         this.dragging = false;
@@ -236,14 +257,7 @@ class Shape {
 
         // animation
         this.animCircle = r.circle(0, 0, 5).attr(animCircleAttr).toFront().hide();
-        this.animCircle.attr("progress", 0);
-        this.anim;
 
-        // tone
-        this.synth = synth_chooser(synth_name);
-        //this.synth = PRESETS.preset01;
-        //var synth = this.synth;
-        
 
         /* ============================================================= */
         /* ======================= PART CALLBACK ======================= */
@@ -255,7 +269,12 @@ class Shape {
 
             console.log("VALUE", value);
             
-            thisSynth.volume.value = -5;
+            if (parentShape.isMuted) {
+                thisSynth.volume.value = -60;
+            } else {
+                thisSynth.volume.value = parentShape.volume;
+            }
+
             parentShape.animCircle.show().toFront();
             
             var duration = value.dur;
@@ -298,11 +317,7 @@ class Shape {
     stop () {
         // TODO
         this.animCircle.hide();
-        this.synth.volume.value = -60;
-        this.animCircle.stop(this.anim);
-
-        this.anim = "";
-        this.animCircle.attr("progress", 0);
+        //this.synth.volume.value = -60;
     }
     
     init_shape_attr_popup(){
@@ -335,6 +350,21 @@ class Shape {
                     </span>\
                 </div>\
                 <div class="section">\
+                    Volume:\
+                    <input type="range" id="signal-meter"\
+                           value="-6" min="-12" max="0"\
+                           oninput="update_vol('+i+', this.value)"\
+                           onchange="update_vol('+i+', this.value)">\
+                </div>\
+                <div class="section mute-solo">\
+                    <div class="mute-button-cont">\
+                        <button class="shape-attr-mute" data=""\
+                                onclick="mute_shape('+i+')"\
+                                onmouseover="mute_hoverin('+i+')"\
+                                onmouseout="mute_hoverout('+i+')">Mute</button>\
+                    </div>\
+                </div>\
+                <div class="section">\
                     <button class="shape-attr-delete-shape" data=""\
                             onclick="delete_shape('+i+')"\
                             onmouseover="delete_hoverin('+i+')"\
@@ -345,7 +375,10 @@ class Shape {
         $("body").append(popupHtml);
     }
 
-
+    refresh_shape_attr_popup(){
+        var i = this.path.data("i");
+        $("#start-freq-label-"+i).html(this.start_freq);
+    }
 
     set_note_values () {        
         console.log("SET NOTE VALUES");
@@ -570,6 +603,7 @@ var ACTIVE_SHAPE = new Shape(ROOT_NOTE, DEFAULT_SYNTH);
 function play_handler() {
     // TODO
     PLAYING = true;
+    Tone.Master.mute = false;
     Tone.Transport.start("+0.1");
 }
 
@@ -577,6 +611,7 @@ function stop_handler(){
     // TODO
     PLAYING = false;
     Tone.Transport.stop();
+    Tone.Master.mute = true;
 
     for (var i = shapesList.length - 1; i >= 0; i--) {
         if (shapesList[i].included) {
@@ -598,6 +633,29 @@ function togglePlayStop () {
     }
 }
 
+function volume_to_stroke_width (vol) {
+    vol = parseInt(vol);
+    if (vol < -10) {
+        return 1;
+    } else if (vol < -5) {
+        return 2;
+    } else {
+        return 3;
+    }
+
+    //return (parseInt(vol)/2) + 6;
+}
+
+function update_vol(i, val){
+    //console.log(val);
+    shapesList[i].volume = val;
+    update_stroke_width(i, volume_to_stroke_width (val));
+}
+
+function update_stroke_width(i, val) {
+    console.log(val);
+    shapesList[i].path.attr("stroke-width", val);
+}
 
 $(document).ready(function() {
 
@@ -605,7 +663,8 @@ $(document).ready(function() {
 
     init_grid();
     hide_handles();
-    init_key_select();
+    init_scale_select();
+    init_tonic_select();
 
     /* ----------------------- HANDLERS ----------------------- */
     window.onkeydown = function (e) {
@@ -645,9 +704,18 @@ $(document).ready(function() {
         set_scale(this.value);
     });
 
+    $(document).on('change','#tonic-select',function(){
+        console.log(this.value);
+        set_tonic(this.value);
+    });
+
     // stops click propegation when clicking in the tool tip
     $( ".shape-attr-popup" ).on( "mousedown", function( event ) {
         event.stopPropagation();
+    });
+
+    $(document).on('change','#signal-meter',function(){
+        console.log(this.value);
     });
 
     // changes instrument to the one selected from the dropdown
@@ -786,12 +854,12 @@ $(document).ready(function() {
         }
     });
 
-    $( "#holder" ).on( "dblclick", function( event ) {
+    /*$( "#holder" ).on( "dblclick", function( event ) {
         console.log(event);
         if (CURR_TOOL == "draw") {
             complete_shape();
         }
-    });
+    });*/
 
 });
 
@@ -901,11 +969,30 @@ function delete_shape (i) {
     console.log(shapesList);
 }
 
-function update_start_freq(i){
-    var freq = $("#start-freq-input").val();
-    shapesList[i].set_start_freq(freq);
-    shapesList[i].set_note_values();
+/*
+<button class="shape-attr-mute-shape" data=""\
+                            onclick="mute_shape('+i+')"\
+                            onmouseover="mute_hoverin('+i+')"\
+                            onmouseout="mute_hoverout('+i+')">Mute</button>\
+                            */
+function mute_shape(i) {
+    shapesList[i].mute();
+    var unmuteHtml = '<button class="shape-attr-mute shape-attr-unmute" data=""\
+                            onclick="unmute_shape('+i+')"\
+                            onmouseover="unmute_hoverin('+i+')"\
+                            onmouseout="unmute_hoverout('+i+')">Unmute</button>';
+    $("#shape-attr-popup-"+i+" .mute-button-cont").html(unmuteHtml);
 }
+
+function unmute_shape(i) {
+    shapesList[i].unmute();
+    var muteHtml = '<button class="shape-attr-mute" data=""\
+                            onclick="mute_shape('+i+')"\
+                            onmouseover="mute_hoverin('+i+')"\
+                            onmouseout="mute_hoverout('+i+')">Mute</button>';
+    $("#shape-attr-popup-"+i+" .mute-button-cont").html(muteHtml);
+}
+
 function hide_details () {
     for (var i = shapesList.length - 1; i >= 0; i--) {
         shapesList[i].path.attr(shapeFilledAttr);
@@ -1126,14 +1213,15 @@ function set_tempo(val) {
     reset_all_notes();
 }
 
-/* Keys */
-function init_key_select(){
+/* =============== Set scale =============== */
+function init_scale_select(){
     var keySelectHtml = ""
     for (var i = 0; i < keysList.length; i++) {
         keySelectHtml +=  "<option value='" + keysList[i].replace(/ /g,'') + "'>" + keysList[i] + "</option>" 
     }
     $("#scale-select").html(keySelectHtml);
 }
+
 function set_scale(name) {
     console.log("SETTING SCALE TO:", name);
     SCALE = teoria.note(ROOT_NOTE).scale(name);
@@ -1141,6 +1229,29 @@ function set_scale(name) {
     reset_all_notes();
 }
 
+/* =============== Set tonic =============== */
+function set_tonic(name) {
+    var note = teoria.note(name);
+    for (var i = shapesList.length - 1; i >= 0; i--) {
+        shapesList[i].set_start_freq(note.toString());
+        shapesList[i].refresh_shape_attr_popup();
+    }
+    var currScaleName = SCALE.name;
+    ROOT_NOTE = note.toString();
+    ACTIVE_SHAPE.set_start_freq(note.toString());
+    SCALE = teoria.note(ROOT_NOTE).scale(currScaleName);
+    reset_all_notes();
+}
+
+function init_tonic_select(){
+    var tonicSelectHtml = ""
+    for (var i = 0; i < tonicsList.length; i++) {
+        tonicSelectHtml +=  "<option value='" + tonicsList[i] + "'>" + tonicsList[i] + "</option>" 
+    }
+    $("#tonic-select").html(tonicSelectHtml);
+}
+
+/* ============================= */
 function reset_all_notes() {
     for (var i = shapesList.length - 1; i >= 0; i--) {
         shapesList[i].set_note_values();
