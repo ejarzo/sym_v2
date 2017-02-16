@@ -9,74 +9,78 @@
 
         <link rel="apple-touch-icon" href="apple-touch-icon.png">
         <!-- Place favicon.ico in the root directory -->
-        <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
-      rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet">
+        <link rel="stylesheet" href="css/ionicons.min.css">
 
         <link rel="stylesheet" href="css/normalize.css">
-        <link rel="stylesheet" href="css/main.css">
+        <link rel="stylesheet" href="css/main2.css">
         <script src="js/vendor/modernizr-2.8.3.min.js"></script>
-      <!--   <script type="text/javascript" src="js/vendor/tone/build/Tone.js"></script> -->
-       
     </head>
     <body>
         <!--[if lt IE 8]>
             <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
         <![endif]-->
-        <div id="disable-overlay">
-            <div id="disable-controls-overlay">
-                
+
+<!--         <div id="disable-overlay">
+            <div id="disable-controls-overlay"></div>
+        </div> -->
+
+        <!-- The Controls -->
+        <div class="controls">
+            <div class="controls-section transport-controls">
+                <button class="transport-icon play-stop-toggle">
+                    <i class="ion-play"></i>
+                </button>
+                <button class="transport-icon record-toggle">
+                    <i class="ion-record"></i>
+                </button>
             </div>
-        </div>
-        <div id="controls">
-           <!--  <div class="play-stop-toggle-cont"> -->
-            <button id="play-stop-toggle">
-                <i class='material-icons play-stop-toggle-icon'>play_arrow</i>
-               <!--  <img src="img/ic_play_arrow_black_24px.svg"> -->
-            </button>
-         <!--    </div> -->
-<!--             <button id="stop">STOP</button> 
- -->           <!--  <button id="new-shape">NEW SHAPE</button> -->
-            <button class="ctrl-elem" id="clear">CLEAR</button>
-            <button class="ctrl-elem tool active" id="draw-tool">DRAW</button>
-            <button class="ctrl-elem tool" id="adjust-tool">ADJUST</button>
-            <div class="ctrl-elem">
-                <div>
-                    <input class="checkbox" type="checkbox" name="grid" id="grid">
-                    <label for="grid" class="noselect">Grid</label>    
-                </div>
-                <div>
-                    <input class="checkbox" type="checkbox" name="snap" id="snap">
-                    <label for="snap" class="noselect">Snap to Grid</label>
+
+            <div class="controls-section canvas-controls">
+                <button class="ctrl-elem" id="clear">CLEAR</button>
+            </div>
+            
+            <div class="controls-section tools-controls">
+                <button class="ctrl-elem tool active" id="draw-tool">DRAW</button>
+                <button class="ctrl-elem tool" id="adjust-tool">ADJUST</button>
+            </div>
+            
+            <div class="controls-section grid-controls">
+                <div class="ctrl-elem">
+                    <div>
+                        <input class="checkbox" type="checkbox" name="grid" id="grid">
+                        <label for="grid" class="noselect">Grid</label>    
+                    </div>
+                    <div>
+                        <input class="checkbox" type="checkbox" name="snap" id="snap">
+                        <label for="snap" class="noselect">Snap to Grid</label>
+                    </div>
                 </div>
             </div>
-            <span class="ctrl-elem">
-                TEMPO:<input type="range" id="tempo-slider" value="-4" min="-6" max="-1">
-            </span>
-            <span class="ctrl-elem">
-                Scale:
-                <select id="scale-select"></select>
-            </span>
-            <span class="ctrl-elem">
-                Key:
-                <select id="tonic-select"></select>
-            </span>
+            
+            <div class="controls-section music-controls">
+                <span class="ctrl-elem">
+                    TEMPO:<input type="range" class="tempo-slider" value="-4" min="-6" max="-1">
+                </span>
+                <span class="ctrl-elem">
+                    Scale:<select class="scale-select"></select>
+                </span>
+                <span class="ctrl-elem">
+                    Key:<select class="tonic-select"></select>
+                </span>
+            </div>
         </div>
 
-        <div id="holder">
-            <div id="details">
-                <button class="delete-shape"></button>
-            </div>
-        </div>
+        <!-- The Canvas -->
+        <div id="holder"></div>
 
-        <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-        <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.11.3.min.js"><\/script>')</script> -->
-        <!-- <script type="text/javascript" src="js/vendor/tonal.min.js"></script> -->
         <script type="text/javascript" src="js/vendor/Tone17.min.js"></script>
-
         <script src="js/vendor/jquery-1.11.3.min.js"></script>
         <script src="js/vendor/raphael.min.js"></script>
         <script src="js/vendor/teoria.js"></script>
+        <script src="js/vendor/recorder.js"></script>
         <script src="js/plugins.js"></script>
+
         <script src="js/presetXX.js"></script>
         <script src="js/main.js"></script>
 

@@ -1,0 +1,255 @@
+/* ========================================================================== */
+/*  Variables                                                                 */
+/* ========================================================================== */
+/* ========================================================================== */
+/* ================================ General ================================= */
+* {
+  box-sizing: border-box; }
+
+html {
+  color: #222;
+  font-size: 1em;
+  line-height: 1.4; }
+
+body {
+  margin: auto;
+  /*font-family: "Consolas", Helvetica */
+  font-family: "Source Code Pro", "Consolas", monospace;
+  font-size: 0.8em; }
+
+button {
+  outline: none !important;
+  background: none;
+  border: none; }
+
+::-moz-selection {
+  background: #b3d4fc;
+  text-shadow: none; }
+
+::selection {
+  background: #b3d4fc;
+  text-shadow: none; }
+
+.browserupgrade {
+  margin: 0.2em 0;
+  background: #ccc;
+  color: #000;
+  padding: 0.2em 0; }
+
+#holder {
+  background-color: #EEE;
+  height: 100vh;
+  width: 100%;
+  border: 5px solid #fff; }
+
+/* ========================================================================== */
+/* ============================= User Controls ============================== */
+.controls {
+  position: absolute;
+  padding-left: 10px;
+  padding-top: 10px;
+  /*height: 60px */
+  width: 100%;
+  z-index: 100;
+  padding-bottom: 10px;
+  background-color: #fff; }
+  .controls .controls-section {
+    display: inline; }
+  .controls button.ctrl-elem {
+    border: 2px solid #fff;
+    border-radius: 0px;
+    background-color: #fff;
+    color: #777;
+    height: 40px;
+    padding: 0 20px 0 20px; }
+    .controls button.ctrl-elem:hover {
+      background-color: #777;
+      color: #fff; }
+    .controls button.ctrl-elem:focus {
+      outline: none; }
+  .controls .transport-icon {
+    -webkit-transition: all 0.1s ease-in-out;
+    -moz-transition: all 0.1s ease-in-out;
+    -o-transition: all 0.1s ease-in-out;
+    transition: all 0.1s ease-in-out;
+    color: #777;
+    transform: scaleX(1) scaleY(1) scaleZ(1);
+    background: none;
+    border: none;
+    color: #777;
+    font-size: 1.5em;
+    vertical-align: middle;
+    width: 40px; }
+    .controls .transport-icon:hover {
+      transform: scaleX(1.4) scaleY(1.4) scaleZ(1);
+      color: #222;
+      background-color: transparent; }
+    .controls .transport-icon i {
+      margin-left: 15px;
+      display: block;
+      margin: 0 auto;
+      border: none;
+      background: transparent;
+      position: relative;
+      top: 1px;
+      vertical-align: middle;
+      padding: 0; }
+  .controls .ctrl-elem {
+    margin-right: 15px;
+    display: inline-block;
+    vertical-align: middle; }
+  .controls .tempo-slider {
+    display: inline-block;
+    position: relative;
+    top: 3px; }
+  .controls .checkboxes {
+    vertical-align: middle;
+    display: inline-block; }
+  .controls .scale-select, .controls .tonic-select {
+    text-transform: capitalize; }
+  .controls button.active {
+    background-color: #555;
+    color: #eee; }
+
+/* ========================================================================== */
+/* ========================= Shape attributes popup ========================= */
+.shape-attr-popup {
+  box-shadow: -2px 2px 25px rgba(0, 0, 0, 0.1);
+  display: none;
+  background-color: #fff;
+  z-index: 1000;
+  position: absolute;
+  left: 100px;
+  top: 100px;
+  padding: 5px 15px; }
+  .shape-attr-popup:after {
+    right: 100%;
+    top: 40px;
+    border: solid transparent;
+    content: " ";
+    height: 0;
+    width: 0;
+    position: absolute;
+    pointer-events: none;
+    border-color: rgba(255, 255, 255, 0);
+    border-right-color: #fff;
+    border-width: 10px;
+    margin-top: -10px; }
+  .shape-attr-popup .section {
+    padding: 10px 0 10px 0; }
+  .shape-attr-popup .close-popup {
+    display: inline-block;
+    width: 100%;
+    text-align: right;
+    color: #CCC;
+    padding-top: 5px; }
+  .shape-attr-popup .shape-attr-start-freq {
+    padding: 1px 5px; }
+  .shape-attr-popup .start-freq-label {
+    display: inline-block;
+    text-transform: capitalize;
+    width: 20px; }
+  .shape-attr-popup .signal-meter {
+    vertical-align: middle; }
+  .shape-attr-popup .arrow {
+    -webkit-transition: all 0.1s ease-in-out;
+    -moz-transition: all 0.1s ease-in-out;
+    -o-transition: all 0.1s ease-in-out;
+    transition: all 0.1s ease-in-out;
+    color: #777;
+    transform: scaleX(1) scaleY(1) scaleZ(1);
+    padding: 0;
+    height: auto;
+    width: auto;
+    background: transparent;
+    top: 1px;
+    font-size: 18px;
+    position: relative;
+    border: none; }
+    .shape-attr-popup .arrow:hover {
+      transform: scaleX(1.4) scaleY(1.4) scaleZ(1);
+      color: #222;
+      background-color: transparent; }
+    .shape-attr-popup .arrow:hover {
+      background-color: transparent;
+      color: #000; }
+    .shape-attr-popup .arrow.arrow-up {
+      margin-left: 8px; }
+    .shape-attr-popup .arrow.arrow-down {
+      margin-left: -3px; }
+  .shape-attr-popup button.shape-attr-delete-shape {
+    text-align: left;
+    display: block;
+    height: auto;
+    color: #ff6464;
+    padding: 0;
+    padding-top: 4px; }
+    .shape-attr-popup button.shape-attr-delete-shape:hover {
+      text-decoration: underline;
+      background-color: transparent;
+      color: #ff6464; }
+  .shape-attr-popup .mute-solo .mute-button-cont {
+    width: 50%;
+    height: 100%;
+    border: 1px solid #6464ff; }
+    .shape-attr-popup .mute-solo .mute-button-cont .shape-attr-mute {
+      height: 100%;
+      width: 100%;
+      text-align: center;
+      display: block;
+      /* background-color: #ddd */
+      color: #6464ff;
+      padding: 0;
+      border: none; }
+    .shape-attr-popup .mute-solo .mute-button-cont .shape-attr-unmute {
+      background-color: #6464ff;
+      color: #fff; }
+
+/* ==========================================================================
+ * Helper classes
+ * ========================================================================== */
+.noselect {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none; }
+
+/* Hide visually and from screen readers:
+ */
+.hidden {
+  display: none; }
+
+/* Hide only visually, but have it available for screen readers:
+ * http://snook.ca/archives/html_and_css/hiding-content-for-accessibility
+ */
+.visuallyhidden {
+  border: 0;
+  clip: rect(0 0 0 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  width: 1px; }
+
+/* Extends the .visuallyhidden class to allow the element
+ * to be focusable when navigated to via the keyboard:
+ * https://www.drupal.org/node/897638
+ */
+.visuallyhidden.focusable:active,
+.visuallyhidden.focusable:focus {
+  clip: auto;
+  height: auto;
+  margin: 0;
+  overflow: visible;
+  position: static;
+  width: auto; }
+
+/* Hide visually and from screen readers, but maintain layout
+ */
+.invisible {
+  visibility: hidden; }
+
+/*# sourceMappingURL=main2.css.map */

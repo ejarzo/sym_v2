@@ -1,28 +1,8 @@
-/*! HTML5 Boilerplate v5.2.0 | MIT License | https://html5boilerplate.com/ */
-
-/*
- * What follows is the result of much research on cross-browser styling.
- * Credit left inline and big thanks to Nicolas Gallagher, Jonathan Neal,
- * Kroc Camen, and the H5BP dev community and team.
- */
-
-/* ==========================================================================
-   Base styles: opinionated defaults
-   ========================================================================== */
-
 html {
     color: #222;
     font-size: 1em;
     line-height: 1.4;
 }
-
-/*
- * Remove text-shadow in selection highlight:
- * https://twitter.com/miketaylr/status/12228805301
- *
- * These selection rule sets have to be separate.
- * Customize the background color to match your design.
- */
 
 ::-moz-selection {
     background: #b3d4fc;
@@ -34,25 +14,6 @@ html {
     text-shadow: none;
 }
 
-/*
- * A better looking default horizontal rule
- */
-
-hr {
-    display: block;
-    height: 1px;
-    border: 0;
-    border-top: 1px solid #ccc;
-    margin: 1em 0;
-    padding: 0;
-}
-
-/*
- * Remove the gap between audio, canvas, iframes,
- * images, videos and the bottom of their containers:
- * https://github.com/h5bp/html5-boilerplate/issues/440
- */
-
 audio,
 canvas,
 iframe,
@@ -62,27 +23,11 @@ video {
     vertical-align: middle;
 }
 
-/*
- * Remove default fieldset styles.
- */
-
 fieldset {
     border: 0;
     margin: 0;
     padding: 0;
 }
-
-/*
- * Allow only vertical resizing of textareas.
- */
-
-textarea {
-    resize: vertical;
-}
-
-/* ==========================================================================
-   Browser Upgrade Prompt
-   ========================================================================== */
 
 .browserupgrade {
     margin: 0.2em 0;
@@ -91,10 +36,7 @@ textarea {
     padding: 0.2em 0;
 }
 
-/* ==========================================================================
-   Author's custom styles
-   ========================================================================== */
-
+/* ========================================================================== */
 
 *{
     box-sizing: border-box;
@@ -102,7 +44,8 @@ textarea {
 
 body {
     margin: auto;
-    font-family: "Consolas", Helvetica;
+    /*font-family: "Consolas", Helvetica;*/
+    font-family: 'Source Code Pro', "Consolas", monospace;
     font-size: .8em;
 }
 
@@ -198,21 +141,38 @@ body {
     width: 10px;
 }*/
 
+select {
+    border: 1px solid #777;
+    /*border-radius: 0;*/
+    /*-webkit-appearance: none;*/
+}
+#signal-meter {
+    vertical-align: middle;
+}
 .arrow {
+    -webkit-transition: all .1s ease-in-out;
+    -moz-transition: all .1s ease-in-out;
+    -o-transition: all .1s ease-in-out;
+    transition: all .1s ease-in-out;
+
     padding: 0;
     height: auto;
     width: auto;
     background: transparent;
     /*height: 30px;*/
+    font-size: 18px;
     position: relative;
     background-color: transparent;
     border: none;
 /*    font-size: 12px;*/
+    transform: scaleX(1) scaleY(1) scaleZ(1)
+
 }
 
 .arrow:hover {
     background-color: transparent;
     color: #000;
+    transform: scaleX(1.4) scaleY(1.4) scaleZ(1)
 }
 
 .arrow-up {
@@ -343,14 +303,37 @@ input[type="checkbox"] {
     width: 50px;
 }
 
-#play-stop-toggle {
-    vertical-align: middle;
+#play-stop-toggle i {
+    font-size: 2em;
+
 }
+
+#play-stop-toggle {
+    -webkit-transition: all .1s ease-in-out;
+    -moz-transition: all .1s ease-in-out;
+    -o-transition: all .1s ease-in-out;
+    transition: all .1s ease-in-out;
+
+    margin-left: 15px;
+    border: none;
+    background: transparent;
+    position: relative;
+    top: 1px;
+    vertical-align: middle;
+    padding: 0;
+    width: 40px;
+    transform: scaleX(1) scaleY(1) scaleZ(1)
+}
+#play-stop-toggle:hover {
+    transform: scaleX(1.3) scaleY(1.3) scaleZ(1);
+    background-color: transparent;
+    color: #222;
+}
+
 
 
 #play-stop-toggle i {
-    vertical-align: middle;
-}
+    vertical-align: middle;}
 
 
 .mute-solo {
@@ -361,13 +344,14 @@ input[type="checkbox"] {
 .mute-button-cont {
     width: 50%;
     height: 100%;
-    border: 1px solid #aaa;
+    border: 1px solid #bbb;
 }
 button.shape-attr-mute{
     height: 100%;
     width: 100%;
     text-align: center;
     display: block;
+   /* background-color: #ddd;*/
     color: rgba(100,100,255,1);
     padding: 0;
     border: none;
@@ -393,7 +377,7 @@ button.shape-attr-unmute:hover{
  */
 
 .hidden {
-    display: none !important;
+    display: none;
 }
 
 /*
@@ -436,18 +420,6 @@ button.shape-attr-unmute:hover{
     visibility: hidden;
 }
 
-/*
- * Clearfix: contain floats
- *
- * For modern browsers
- * 1. The space content is one way to avoid an Opera bug when the
- *    `contenteditable` attribute is included anywhere else in the document.
- *    Otherwise it causes space to appear at the top and bottom of elements
- *    that receive the `clearfix` class.
- * 2. The use of `table` rather than `block` is only necessary if using
- *    `:before` to contain the top-margins of child elements.
- */
-
 .clearfix:before,
 .clearfix:after {
     content: " "; /* 1 */
@@ -458,96 +430,3 @@ button.shape-attr-unmute:hover{
     clear: both;
 }
 
-/* ==========================================================================
-   EXAMPLE Media Queries for Responsive Design.
-   These examples override the primary ('mobile first') styles.
-   Modify as content requires.
-   ========================================================================== */
-
-@media only screen and (min-width: 35em) {
-    /* Style adjustments for viewports that meet the condition */
-}
-
-@media print,
-       (-webkit-min-device-pixel-ratio: 1.25),
-       (min-resolution: 1.25dppx),
-       (min-resolution: 120dpi) {
-    /* Style adjustments for high resolution devices */
-}
-
-/* ==========================================================================
-   Print styles.
-   Inlined to avoid the additional HTTP request:
-   http://www.phpied.com/delay-loading-your-print-css/
-   ========================================================================== */
-
-@media print {
-    *,
-    *:before,
-    *:after {
-        background: transparent !important;
-        color: #000 !important; /* Black prints faster:
-                                   http://www.sanbeiji.com/archives/953 */
-        box-shadow: none !important;
-        text-shadow: none !important;
-    }
-
-    a,
-    a:visited {
-        text-decoration: underline;
-    }
-
-    a[href]:after {
-        content: " (" attr(href) ")";
-    }
-
-    abbr[title]:after {
-        content: " (" attr(title) ")";
-    }
-
-    /*
-     * Don't show links that are fragment identifiers,
-     * or use the `javascript:` pseudo protocol
-     */
-
-    a[href^="#"]:after,
-    a[href^="javascript:"]:after {
-        content: "";
-    }
-
-    pre,
-    blockquote {
-        border: 1px solid #999;
-        page-break-inside: avoid;
-    }
-
-    /*
-     * Printing Tables:
-     * http://css-discuss.incutio.com/wiki/Printing_Tables
-     */
-
-    thead {
-        display: table-header-group;
-    }
-
-    tr,
-    img {
-        page-break-inside: avoid;
-    }
-
-    img {
-        max-width: 100% !important;
-    }
-
-    p,
-    h2,
-    h3 {
-        orphans: 3;
-        widows: 3;
-    }
-
-    h2,
-    h3 {
-        page-break-after: avoid;
-    }
-}
