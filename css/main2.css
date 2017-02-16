@@ -67,6 +67,11 @@ button {
       color: #fff; }
     .controls button.ctrl-elem:focus {
       outline: none; }
+    .controls button.ctrl-elem:disabled {
+      color: #bbb; }
+      .controls button.ctrl-elem:disabled:hover {
+        color: #bbb;
+        background: transparent; }
   .controls .transport-icon {
     -webkit-transition: all 0.1s ease-in-out;
     -moz-transition: all 0.1s ease-in-out;
@@ -84,6 +89,12 @@ button {
       transform: scaleX(1.4) scaleY(1.4) scaleZ(1);
       color: #222;
       background-color: transparent; }
+    .controls .transport-icon:disabled {
+      color: #bbb; }
+      .controls .transport-icon:disabled:hover {
+        color: #bbb;
+        background: transparent;
+        transform: scaleX(1) scaleY(1) scaleZ(1); }
     .controls .transport-icon i {
       margin-left: 15px;
       display: block;
@@ -98,6 +109,8 @@ button {
     margin-right: 15px;
     display: inline-block;
     vertical-align: middle; }
+    .controls .ctrl-elem label {
+      margin-right: 3px; }
   .controls .tempo-slider {
     display: inline-block;
     position: relative;
@@ -108,8 +121,8 @@ button {
   .controls .scale-select, .controls .tonic-select {
     text-transform: capitalize; }
   .controls button.active {
-    background-color: #555;
-    color: #eee; }
+    background-color: #555 !important;
+    color: #eee !important; }
 
 /* ========================================================================== */
 /* ========================= Shape attributes popup ========================= */
@@ -170,6 +183,12 @@ button {
       transform: scaleX(1.4) scaleY(1.4) scaleZ(1);
       color: #222;
       background-color: transparent; }
+    .shape-attr-popup .arrow:disabled {
+      color: #bbb; }
+      .shape-attr-popup .arrow:disabled:hover {
+        color: #bbb;
+        background: transparent;
+        transform: scaleX(1) scaleY(1) scaleZ(1); }
     .shape-attr-popup .arrow:hover {
       background-color: transparent;
       color: #000; }

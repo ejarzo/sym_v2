@@ -5,6 +5,7 @@
 /* ========================================================================== */
 
 $color-white: #fff
+$color-light-grey: #bbb
 $color-med-grey: #777
 $color-black: #222
 $color-mute-blue: rgba(100,100,255,1) 
@@ -21,6 +22,13 @@ $color-mute-blue: rgba(100,100,255,1)
         transform: scaleX(1.4) scaleY(1.4) scaleZ(1)
         color: $color-black
         background-color: transparent
+    &:disabled
+        color: $color-light-grey
+        &:hover
+            color: $color-light-grey
+            background: transparent
+            transform: scaleX(1) scaleY(1) scaleZ(1)
+
 
 @mixin drop_shadow
     box-shadow: -2px 2px 25px rgba(0,0,0,0.1)
@@ -96,6 +104,11 @@ button
             color: $color-white
         &:focus
             outline: none
+        &:disabled
+            color: $color-light-grey
+            &:hover
+                color: $color-light-grey
+                background: transparent
 
     .transport-icon
         @include button_expand_on_hover
@@ -121,6 +134,8 @@ button
         margin-right: 15px
         display: inline-block
         vertical-align: middle
+        label
+            margin-right: 3px
 
     .tempo-slider 
         display: inline-block
@@ -135,8 +150,8 @@ button
         text-transform: capitalize
     
     button.active 
-        background-color: #555
-        color: #eee
+        background-color: #555 !important
+        color: #eee !important
 
 
 /* ========================================================================== */

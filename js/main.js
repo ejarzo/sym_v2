@@ -91,6 +91,7 @@ var gridDots = r.set();
 
 // TOOLS: draw, adjust
 var CURR_TOOL = "draw";
+var CURR_DRAW_STATE = "ready";
 
 // LINE TO MOUSE
 var ORIGIN_RADIUS = 15;
@@ -341,7 +342,7 @@ class Shape {
                         <option value="AM">AM</option>\
                         <option value="FM">FM</option>\
                         <option value="Duo">Duo</option>\
-                        <option value="Poly">Poly</option>\
+                        <option value="Mono">Mono</option>\
                         <option value="Simple">Simple</option>\
                         <option value="Membrane">Membrane</option>\
                     </select>\
@@ -606,10 +607,13 @@ var ACTIVE_SHAPE = new Shape(ROOT_NOTE, DEFAULT_SYNTH);
 function play_handler() {
     // TODO
     //$("#disable-overlay").show();
-    $(".play-stop-toggle").html("<i class='ion-stop'></i>");
-    PLAYING = true;
-    Tone.Master.mute = false;
-    Tone.Transport.start("+0.1");
+    console.log(CURR_DRAW_STATE);
+    if (CURR_DRAW_STATE === "ready") {
+        $(".play-stop-toggle").html("<i class='ion-stop'></i>");
+        PLAYING = true;
+        Tone.Master.mute = false;
+        Tone.Transport.start("+0.1");
+    }
 }
 
 function stop_handler(){
@@ -636,31 +640,6 @@ function togglePlayStop () {
     } else { // we play
         play_handler();
     }
-}
-
-function volume_to_stroke_width (vol) {
-    vol = parseInt(vol);
-    if (vol < -10) {
-        return 1;
-    } else if (vol < -5) {
-        return 2;
-    } else {
-        return 3;
-    }
-
-    //return (parseInt(vol)/2) + 6;
-}
-
-function update_vol(i, val){
-    //console.log(val);
-    shapesList[i].volume = val;
-    shapesList[i].synth.volume.value = val;
-    update_stroke_width(i, volume_to_stroke_width (val));
-}
-
-function update_stroke_width(i, val) {
-    console.log(val);
-    shapesList[i].path.attr("stroke-width", val);
 }
 
 $(document).ready(function() {
@@ -729,6 +708,7 @@ $(document).ready(function() {
         console.log($(this).attr("data"));
         var i = $(this).attr("data");
         console.log("changing to", this.value);
+        shapesList[i].synth.triggerRelease();
         shapesList[i].synth = synth_chooser(this.value);
     });
 
@@ -833,6 +813,7 @@ $(document).ready(function() {
 
             if (x < (origin_x + ORIGIN_RADIUS) && x > (origin_x - ORIGIN_RADIUS) && 
                 y < (origin_y + ORIGIN_RADIUS) && y > (origin_y - ORIGIN_RADIUS)) {
+                set_draw_state("ready");
                 complete_shape();
             } else {        
                 PREV_ENDPOINT = "M" + x + "," + y;
@@ -842,29 +823,17 @@ $(document).ready(function() {
                 hoverLine.attr("path", moveTo);                
 
                 if (ACTIVE_SHAPE.path.attr("path") === "") { // shape is empty
+                    set_draw_state("drawing");
                     ACTIVE_SHAPE.path.attr("path", moveTo);
-                    //ACTIVE_SHAPE.animCircle.attr({"cx": x, "cy": y});
                     ACTIVE_SHAPE.animCircle.show();
                 } else {
-                //    if (x != prev_n[1] && y != prev_n[2]) { // double click check TODO
-                        ACTIVE_SHAPE.path.attr("path", path_to_string(ACTIVE_SHAPE.path) + lineTo);
-                //    }
+                    ACTIVE_SHAPE.path.attr("path", path_to_string(ACTIVE_SHAPE.path) + lineTo);
                 }
-                //if (x != prev_n[1] && y != prev_n[2]) { // TODO
-                    var newNode = new Node(x, y, ACTIVE_SHAPE.length(), shapesList.length);
-                    ACTIVE_SHAPE.nodes.push(newNode);
-                //}
+                var newNode = new Node(x, y, ACTIVE_SHAPE.length(), shapesList.length);
+                ACTIVE_SHAPE.nodes.push(newNode);
             }
         }
     });
-
-    /*$( "#holder" ).on( "dblclick", function( event ) {
-        console.log(event);
-        if (CURR_TOOL == "draw") {
-            complete_shape();
-        }
-    });*/
-
 });
 
 /* -------------------------------------------------------------------------- */
@@ -893,6 +862,18 @@ function complete_shape(){
     console.log(shapesList);
 }
 
+function set_draw_state(state){
+    if (state === "ready") {
+        $(".controls button").prop('disabled', false);
+        $(".controls input").prop('disabled', false);
+        $(".controls select").prop('disabled', false);
+    } else if (state === "drawing") {
+        $(".controls button").prop('disabled', true);
+        $(".controls input").prop('disabled', true);
+        $(".controls select").prop('disabled', true);
+    }
+    CURR_DRAW_STATE = state;
+}
 function path_to_string(path){
     return path.attr("path").join()
 }
@@ -1015,6 +996,32 @@ function delete_hoverout (i) {
         shapesList[i].nodes[j].handle.show();
     }
 }
+
+function volume_to_stroke_width (vol) {
+    vol = parseInt(vol);
+    if (vol < -10) {
+        return 1;
+    } else if (vol < -5) {
+        return 2;
+    } else {
+        return 3;
+    }
+
+    //return (parseInt(vol)/2) + 6;
+}
+
+function update_vol(i, val){
+    //console.log(val);
+    shapesList[i].volume = val;
+    shapesList[i].synth.volume.value = val;
+    update_stroke_width(i, volume_to_stroke_width (val));
+}
+
+function update_stroke_width(i, val) {
+    console.log(val);
+    shapesList[i].path.attr("stroke-width", val);
+}
+
 
 function lineDistance( point1, point2 )
 {
@@ -1170,6 +1177,7 @@ function increment_start_freq(dir, i){
 }
 
 function change_instrument (i){
+    shapesList[i].synth.triggerRelease();
     shapesList[i].synth = synth_chooser(this.value);
 }
     
@@ -1192,8 +1200,34 @@ function synth_chooser (name) {
         case "Pluck":
             synth = new Tone.PluckSynth();
             break;
-        case "Poly":
-            synth = new Tone.PolySynth();
+        case "Mono":
+            synth =  new Tone.MonoSynth(
+    {
+        "portamento": 0.08,
+        "oscillator": {
+            "partials": [2, 1, 3, 2, 0.4]
+        },
+        "filter": {
+            "Q": 4,
+            "type": "lowpass",
+            "rolloff": -48
+        },
+        "envelope": {
+            "attack": 0.04,
+            "decay": 0.06,
+            "sustain": 0.4,
+            "release": 1
+        },
+        "filterEnvelope": {
+            "attack": 0.01,
+            "decay": 0.1,
+            "sustain": 0.6,
+            "release": 1.5,
+            "baseFrequency": 50,
+            "octaves": 3.4
+        }
+    }
+);
             break;
         case "Simple":
             synth = new Tone.Synth();
