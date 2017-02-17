@@ -134,6 +134,7 @@ class Shape {
 
                 for (var j = currShape.nodes.length - 1; j >= 0; j--) {
                     (currShape.nodes[j]).handle.translate(dx - this.odx, dy - this.ody);
+                    //currShape.animCircle.translate(dx - this.odx, dy - this.ody);
                 }
               
                 var tempPath = currShape.path.attr("path");
@@ -147,7 +148,6 @@ class Shape {
 
                 this.odx = dx;
                 this.ody = dy;
-
                 this.drag = true;
             }
 
@@ -1372,7 +1372,41 @@ function get_this_synth (shape) {
 }
 
 
-/* ========================================================================== */
+/* ============================= Fullscreen ================================= */
+
+$(".enter-fullscreen").on("click", function(){
+    toggleFullScreen();
+});
+
+function toggleFullScreen() {
+  if (!document.fullscreenElement &&    // alternative standard method
+      !document.mozFullScreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement ) {  // current working methods
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen();
+    } else if (document.documentElement.msRequestFullscreen) {
+      document.documentElement.msRequestFullscreen();
+    } else if (document.documentElement.mozRequestFullScreen) {
+      document.documentElement.mozRequestFullScreen();
+    } else if (document.documentElement.webkitRequestFullscreen) {
+      document.documentElement.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
+    }
+    $(".enter-fullscreen").html('<i class="ion-arrow-shrink"></i>')
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if (document.msExitFullscreen) {
+      document.msExitFullscreen();
+    } else if (document.mozCancelFullScreen) {
+      document.mozCancelFullScreen();
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    }
+    $(".enter-fullscreen").html('<i class="ion-arrow-expand"></i>')
+  }
+}
+
+/* ================================ Project ================================= */
+
 var SAVED_PROJECT = [];
 function project_dump(){
     SAVED_PROJECT = [];
@@ -1391,7 +1425,7 @@ function project_dump(){
             var shapeData = {
                 pathList: coords,
                 start_freq: currShape.start_freq,
-                synth_name: currShape.synth,
+                //synth_name: currShape.synth,
                 volume: currShape.volume,
                 isMuted: currShape.ismuted
             }
