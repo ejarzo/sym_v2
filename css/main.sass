@@ -8,7 +8,9 @@ $color-white: #fff
 $color-light-grey: #bbb
 $color-med-grey: #777
 $color-black: #222
-$color-mute-blue: rgba(100,100,255,1) 
+$color-mute: rgba(110,110,250,1) 
+$color-solo: #eda128
+$color-warning-red: rgba(255,100,100,1)
 
 @mixin button_expand_on_hover
     -webkit-transition: all .1s ease-in-out
@@ -16,10 +18,9 @@ $color-mute-blue: rgba(100,100,255,1)
     -o-transition: all .1s ease-in-out
     transition: all .1s ease-in-out
     color: $color-med-grey
-
     transform: scaleX(1) scaleY(1) scaleZ(1)
     &:hover
-        transform: scaleX(1.4) scaleY(1.4) scaleZ(1)
+        transform: scaleX(1.2) scaleY(1.2) scaleZ(1)
         color: $color-black
         background-color: transparent
     &:disabled
@@ -29,6 +30,13 @@ $color-mute-blue: rgba(100,100,255,1)
             background: transparent
             transform: scaleX(1) scaleY(1) scaleZ(1)
 
+@mixin noselect 
+    -webkit-touch-callout: none 
+    -webkit-user-select: none   
+    -khtml-user-select: none    
+    -moz-user-select: none      
+    -ms-user-select: none       
+    user-select: none       
 
 @mixin drop_shadow
     box-shadow: -2px 2px 25px rgba(0,0,0,0.1)
@@ -38,6 +46,7 @@ $color-mute-blue: rgba(100,100,255,1)
 /* ========================================================================== */
 /* ================================ General ================================= */
 *
+    @include noselect
     box-sizing: border-box
 
 html 
@@ -56,6 +65,9 @@ button
     background: none
     border: none
 
+a
+    text-decoration: none
+    color: $color-black
 ::-moz-selection 
     background: #b3d4fc
     text-shadow: none
@@ -63,12 +75,6 @@ button
 ::selection 
     background: #b3d4fc
     text-shadow: none
-
-.browserupgrade 
-    margin: 0.2em 0
-    background: #ccc
-    color: #000
-    padding: 0.2em 0
 
 #holder 
     background-color: #EEE
@@ -78,13 +84,36 @@ button
 
 
 /* ========================================================================== */
+/* =============================== File Menu ================================ */
+
+.menu
+    width: 100%
+    z-index: 200
+    position: absolute
+    @include drop_shadow
+    //border-bottom: 2px solid $color-med-grey
+    background: #fff
+    height: 20px
+    ul
+        list-style: none
+        margin: 0
+        padding: 0
+        padding-left: 10px
+        li
+            padding: 0
+            padding-top: 1px
+            padding-left: 10px
+            display: inline-block
+
+
+/* ========================================================================== */
 /* ============================= User Controls ============================== */
 
 .controls 
     position: absolute
+    //top: 20px
     padding-left: 10px
     padding-top: 10px
-    /*height: 60px*/
     width: 100%
     z-index: 100
     padding-bottom: 10px
@@ -160,6 +189,7 @@ button
 .shape-attr-popup 
     @include drop_shadow
     display: none
+    width: 225px
     //border: 1px solid $color-black
     background-color: $color-white
     z-index: 1000
@@ -195,9 +225,7 @@ button
         padding-top: 5px
 
     .shape-attr-start-freq
-        //border-bottom: 1px solid #bbb
         padding: 1px 5px 
-        //width: 25px
     
     .start-freq-label
         display: inline-block
@@ -213,14 +241,13 @@ button
         height: auto
         width: auto
         background: transparent
-        top: 1px
-        font-size: 18px
+        top: 2px
+        font-size: 20px
         position: relative
         border: none
 
         &:hover 
             background-color: transparent
-            color: #000
 
         &.arrow-up 
             margin-left: 8px
@@ -233,49 +260,47 @@ button
         text-align: left
         display: block
         height: auto
-        color: rgba(255,100,100,1)
+        color: $color-warning-red
         padding: 0
         padding-top: 4px
-
         &:hover
             text-decoration: underline
             background-color: transparent
-            color: rgba(255,100,100,1)
-
-   
+            color: $color-warning-red
 
     .mute-solo 
-        .mute-button-cont 
+        .button-cont 
+            display: inline-block
             width: 50%
             height: 100%
-            border: 1px solid $color-mute-blue
-
-            .shape-attr-mute
+            button 
                 height: 100%
                 width: 100%
                 text-align: center
                 display: block
-                /* background-color: #ddd*/
-                color: $color-mute-blue
                 padding: 0
                 border: none
+            
+            .shape-attr-mute
+                border: 1px solid $color-mute
+                color: $color-mute
 
             .shape-attr-unmute
-                background-color: $color-mute-blue
+                background-color: $color-mute
                 color: $color-white
 
+            .shape-attr-solo
+                border: 1px solid $color-solo
+                color: $color-solo
+
+            .shape-attr-unsolo
+                background-color: $color-solo
+                color: $color-white
 
 /* ==========================================================================
    Helper classes
    ========================================================================== */
-
-.noselect 
-    -webkit-touch-callout: none 
-    -webkit-user-select: none   
-    -khtml-user-select: none    
-    -moz-user-select: none      
-    -ms-user-select: none       
-    user-select: none          
+   
 
 /*
  * Hide visually and from screen readers:
