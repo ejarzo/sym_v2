@@ -1,6 +1,7 @@
 /* ========================================================================== */
 /*  Variables                                                                 */
 /* ========================================================================== */
+@import url("https://fonts.googleapis.com/css?family=Source+Code+Pro:400,700");
 /* ========================================================================== */
 /* ================================ General ================================= */
 * {
@@ -52,38 +53,105 @@ a {
   width: 100%;
   z-index: 200;
   position: absolute;
-  box-shadow: -2px 2px 25px rgba(0, 0, 0, 0.1);
-  background: #fff;
-  height: 20px; }
+  border-bottom: 1px solid #777;
+  background: #eee;
+  height: 20px;
+  top: -19px; }
   .menu ul {
     list-style: none;
     margin: 0;
     padding: 0;
-    padding-left: 10px; }
+    height: 100%; }
     .menu ul li {
       padding: 0;
+      margin: 0;
+      height: 100%;
       padding-top: 1px;
-      padding-left: 10px;
-      display: inline-block; }
+      padding-left: 20px;
+      padding-right: 20px;
+      display: inline-block;
+      border-right: 1px solid #777; }
+      .menu ul li.logo {
+        background: #222; }
+        .menu ul li.logo a {
+          color: #fff !important; }
+      .menu ul li.account-link {
+        float: right;
+        border: none;
+        border-left: 1px solid #777; }
+  .menu button.show-hide-menu {
+    position: absolute;
+    background: #777;
+    color: #fff;
+    font-size: 15px;
+    height: 20px;
+    bottom: -20px;
+    right: 0px; }
+    .menu button.show-hide-menu i, .menu button.show-hide-menu span {
+      position: relative;
+      top: -3px; }
+
+.info-pane {
+  padding: 10px;
+  box-shadow: -2px 2px 25px rgba(0, 0, 0, 0.1);
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 300px;
+  height: 100px;
+  background: #fff;
+  z-index: 200; }
+  .info-pane button.show-hide-info-pane {
+    position: absolute;
+    background: #777;
+    color: #fff;
+    font-size: 15px;
+    height: 20px;
+    top: -20px;
+    left: 0px; }
+    .info-pane button.show-hide-info-pane i, .info-pane button.show-hide-info-pane span {
+      position: relative;
+      top: -3px; }
+  .info-pane p {
+    padding: 0;
+    margin: 0; }
 
 /* ========================================================================== */
 /* ============================= User Controls ============================== */
 .controls {
   position: absolute;
+  top: 0px;
   padding-left: 10px;
   padding-top: 10px;
   width: 100%;
   z-index: 100;
   padding-bottom: 10px;
   background-color: #fff; }
+  .controls .divider {
+    width: 1px;
+    height: 40px;
+    background: #eee;
+    margin-left: 10px;
+    margin-right: 10px;
+    display: inline-block; }
   .controls .controls-section {
-    display: inline; }
+    display: inline-block;
+    margin: 0;
+    vertical-align: top;
+    height: 40px; }
+    .controls .controls-section.tools-controls {
+      border: 1px solid #bbb; }
+      .controls .controls-section.tools-controls .ctrl-elem {
+        margin: 0; }
+    .controls .controls-section.grid-controls {
+      position: relative;
+      top: 2px; }
   .controls button.ctrl-elem {
     border: 2px solid #fff;
     border-radius: 0px;
     background-color: #fff;
     color: #777;
-    height: 40px;
+    height: 100%;
     padding: 0 20px 0 20px; }
     .controls button.ctrl-elem:hover {
       background-color: #777;
@@ -91,10 +159,17 @@ a {
     .controls button.ctrl-elem:focus {
       outline: none; }
     .controls button.ctrl-elem:disabled {
-      color: #bbb; }
+      color: #bbb !important; }
       .controls button.ctrl-elem:disabled:hover {
-        color: #bbb;
-        background: transparent; }
+        color: #bbb !important;
+        background: transparent !important;
+        text-decoration: none !important; }
+    .controls button.ctrl-elem.clear {
+      color: #ff6464; }
+      .controls button.ctrl-elem.clear:hover {
+        text-decoration: underline;
+        background-color: transparent;
+        color: #ff6464; }
   .controls .transport-icon {
     -webkit-transition: all 0.1s ease-in-out;
     -moz-transition: all 0.1s ease-in-out;
@@ -107,7 +182,8 @@ a {
     color: #777;
     font-size: 1.5em;
     vertical-align: middle;
-    width: 40px; }
+    width: 40px;
+    height: 100%; }
     .controls .transport-icon:hover {
       transform: scaleX(1.2) scaleY(1.2) scaleZ(1);
       color: #222;
@@ -129,8 +205,9 @@ a {
       vertical-align: middle;
       padding: 0; }
   .controls .ctrl-elem {
-    margin-right: 15px;
+    margin-right: 10px;
     display: inline-block;
+    height: 100%;
     vertical-align: middle; }
     .controls .ctrl-elem label {
       margin-right: 3px; }
@@ -146,6 +223,37 @@ a {
   .controls button.active {
     background-color: #555 !important;
     color: #eee !important; }
+  .controls .project-controls button {
+    padding: 0; }
+    .controls .project-controls button:hover {
+      background: transparent;
+      color: #777;
+      text-decoration: underline; }
+
+.trash-can-cont {
+  position: absolute;
+  padding: 50px;
+  bottom: 20px;
+  right: 35px;
+  font-size: 40px;
+  z-index: 1000;
+  color: #777;
+  -webkit-transition: all 0.1s ease-in-out;
+  -moz-transition: all 0.1s ease-in-out;
+  -o-transition: all 0.1s ease-in-out;
+  transition: all 0.1s ease-in-out;
+  color: #777;
+  transform: scaleX(1) scaleY(1) scaleZ(1); }
+  .trash-can-cont:hover {
+    transform: scaleX(1.2) scaleY(1.2) scaleZ(1);
+    color: #222;
+    background-color: transparent; }
+  .trash-can-cont:disabled {
+    color: #bbb; }
+    .trash-can-cont:disabled:hover {
+      color: #bbb;
+      background: transparent;
+      transform: scaleX(1) scaleY(1) scaleZ(1); }
 
 /* ========================================================================== */
 /* ========================= Shape attributes popup ========================= */

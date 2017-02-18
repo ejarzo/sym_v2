@@ -9,7 +9,7 @@
 
         <link rel="apple-touch-icon" href="apple-touch-icon.png">
         <!-- Place favicon.ico in the root directory -->
-        <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet">
+        <!-- <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet"> -->
         <link rel="stylesheet" href="css/ionicons.min.css">
 
         <link rel="stylesheet" href="css/normalize.css">
@@ -21,14 +21,20 @@
             <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
         <![endif]-->
 
-<!--         <div class="menu">
+        <div class="menu">
             <ul>
-                <li><a href="#">File</a></li>
-                <li><a href="#">Help</a></li>
-                <li><a href="#">Discover</a></li>
-                <li><a href="#">Account</a></li>
+                <li class="logo"><a href="#">SYM</a></li><!-- 
+                 --><!-- <li><a href="#">My Projects</a></li> --><!-- 
+                 --><li class="discover-link"><a href="#">Discover</a></li><!-- 
+                 --><li><a href="#">Info</a></li><!-- 
+                 --><li><a href="#">Help</a></li><!-- 
+                 --><!-- <li><a href="#">Keyboard Shortcuts</a></li> --><!-- 
+                 --><li class="account-link"><a href="#">Account: <strong>Elias</strong></a></li>
             </ul>
-        </div> -->
+            <button class="show-hide-menu">
+               <!--  <span>MENU</span>  --><i class="ion-chevron-down"></i>
+            </button>
+        </div>
 
         <!-- The Controls -->
         <div class="controls">
@@ -36,20 +42,19 @@
                 <button class="transport-icon play-stop-toggle">
                     <i class="ion-play"></i>
                 </button>
-                <button class="transport-icon record-toggle">
+<!--                 <button class="transport-icon record-toggle">
                     <i class="ion-record"></i>
-                </button>
+                </button> -->
             </div>
 
-            <div class="controls-section canvas-controls">
-                <button class="ctrl-elem" id="clear">CLEAR</button>
-            </div>
             
             <div class="controls-section tools-controls">
                 <button class="ctrl-elem tool active" id="draw-tool">DRAW</button>
                 <button class="ctrl-elem tool" id="adjust-tool">ADJUST</button>
             </div>
             
+            <div class="divider"></div>
+
             <div class="controls-section grid-controls">
                 <div class="ctrl-elem">
                     <div>
@@ -63,6 +68,8 @@
                 </div>
             </div>
             
+            <div class="divider"></div>
+
             <div class="controls-section music-controls">
                 <span class="ctrl-elem">
                     <label>Tempo:</label><br>
@@ -78,17 +85,34 @@
                 </span>
             </div>
 
+            <div class="divider"></div>
+
+
+            <div class="controls-section canvas-controls">
+                <button class="transport-icon enter-fullscreen">
+                    <i class="ion-arrow-expand"></i>
+                </button>
+                <button class="ctrl-elem clear">Clear</button>
+            </div>
+            
+            <div class="divider"></div>
+
             <div class="controls-section project-controls">
-            <button class="transport-icon enter-fullscreen">
-                <i class="ion-arrow-expand"></i>
-            </button>
-
-                <button onclick="project_dump()">Save Project</button>
-                <button onclick="project_load()">Load Project</button>
-
+                <button class="ctrl-elem" onclick="project_dump()">Save Project</button>
+                <button class="ctrl-elem" onclick="project_load()">Load Project</button>
             </div>
         </div>
-
+        <div class="info-pane">
+            <button class="show-hide-info-pane">
+                <i class="ion-chevron-down"></i>
+            </button>
+            <p>
+                Info Panel
+            </p>
+        </div>
+<!--         <div class="trash-can-cont">
+            <i class="ion-trash-b"></i>
+        </div> -->
         <!-- The Canvas -->
         <div id="holder"></div>
 

@@ -113,8 +113,11 @@ var rec = new Recorder(source.destination.context);*/
 
 /* ------------------------------- Shape class ------------------------------ */
 class Shape {
-    constructor(start_freq, synth_name, savedData, id) {
-        
+    constructor(start_freq, synth_name, id, savedData) {
+        var parent = this;
+        this.id = id;
+
+        /* ============== internal helpers ============== */
         /* ----- Drag ----- */
         this.start = function () {
             if (CURR_TOOL == "adjust") {
@@ -125,60 +128,49 @@ class Shape {
         },
         this.move = function (dx, dy) {
             if (CURR_TOOL == "adjust") {
-                $("#details").hide();
-                var i = this.data("i");
-                var currShape = shapesList[i];
-                
                 dx = snap_to_grid(dx);
                 dy = snap_to_grid(dy);
 
-                for (var j = currShape.nodes.length - 1; j >= 0; j--) {
-                    (currShape.nodes[j]).handle.translate(dx - this.odx, dy - this.ody);
-                    //currShape.animCircle.translate(dx - this.odx, dy - this.ody);
+                for (var j = parent.nodes.length - 1; j >= 0; j--) {
+                    (parent.nodes[j]).handle.translate(dx - this.odx, dy - this.ody);
+                    //parent.animCircle.translate(dx - this.odx, dy - this.ody);
                 }
               
-                var tempPath = currShape.path.attr("path");
+                var tempPath = parent.path.attr("path");
 
                 for (var i = 0; i < tempPath.length - 1; i++) {
                     tempPath[i][1] += (dx - this.odx);
                     tempPath[i][2] += (dy - this.ody);
                 }
 
-                currShape.path.attr("path", tempPath);
+                parent.path.attr("path", tempPath);
 
                 this.odx = dx;
                 this.ody = dy;
                 this.drag = true;
             }
-
         },
         this.up = function (e) {
             if (this.drag == false && CURR_TOOL == "adjust") {
                 e.stopPropagation();
-                //console.log(e);
-                var i = this.data("i");
-                var currShape = shapesList[i];
-                
-                currShape.show_details(e);
+                parent.show_details(e);
             }
             this.odx = this.ody = 0;
-            //hide_details();
-            //console.log("up")
         };
         
         /* ----- Hover ----- */
-        this.hoverIn = function (item) {
+        this.hoverIn = function () {
             return function (event) {
                 if (CURR_TOOL == "adjust") {
-                    var currStrokeWidth = item.path.attr("stroke-width") + 2;
-                    item.path.attr("stroke-width", currStrokeWidth);
+                    var currStrokeWidth = parent.path.attr("stroke-width") + 2;
+                    parent.path.attr("stroke-width", currStrokeWidth);
                 }
             };
         };
 
-        this.hoverOut = function (item) {
+        this.hoverOut = function () {
             return function (event) {
-                item.path.attr("stroke-width", volume_to_stroke_width(item.volume));
+                parent.path.attr("stroke-width", volume_to_stroke_width(parent.volume));
             };
         };
 
@@ -200,7 +192,7 @@ class Shape {
             this.path.attr(shapeSelectedAttr);
             var x = event.clientX + 23;
             var y = event.clientY - 43;
-            var i = this.path.data("i");
+            var i = parent.id;
             var popup = $("#shape-attr-popup-"+i);
             popup.css({left: x, top: y});
             popup.show();
@@ -228,7 +220,6 @@ class Shape {
                 this.nodes[i].handle.attr(shapeMutedAttr);
             }
             this.animCircle.attr(shapeMutedAttr);
-
         }
         
         this.unmute = function () {
@@ -243,7 +234,8 @@ class Shape {
             this.synth.volume.value = this.volume;
         }
 
-        /* ======================================= */
+        /* ============== variables and attributes ============== */
+        
         // tone
         this.synth = synth_chooser(synth_name);
         this.volume = -8;        
@@ -253,15 +245,15 @@ class Shape {
         // path
         this.path = r.path().attr(shapeDefaultAttr);
         this.path.attr("stroke-width", volume_to_stroke_width(this.volume));
-        this.path.hover(this.hoverIn(this), this.hoverOut(this));
+        this.path.hover(this.hoverIn(), this.hoverOut());
         this.path.drag(this.move, this.start, this.up);
-        this.dragging = false;
 
         // nodes
         this.nodes = [];
 
         // properties
         this.length = function () {return (this.path.attr("path")).length};
+        this.start_freq_index = 0;
         this.set_start_freq(start_freq);
         this.completed = false;
         this.loop = false;
@@ -270,17 +262,18 @@ class Shape {
         // animation
         this.animCircle = r.circle(0, 0, 5).attr(animCircleAttr).toFront().hide();
 
+        /* ============== load from saved shape ============== */
         if (savedData) {
+
             var pathList = savedData.pathList;
+
+            this.completed = true;
             this.start_freq = savedData.start_freq;
-            //update_vol(id, savedData.volume);
             this.volume = savedData.volume;
             this.path.attr("stroke-width", volume_to_stroke_width(this.volume));
-            //update_stroke_width(id, volume_to_stroke_width(this.volume));
-            console.log("building from path");
-            console.log(pathList)
-            //var shapeId = this.path.data("id");
-            this.completed = true;
+
+            //console.log("building from path");
+            //console.log(pathList)
             
             var pathString = "M" + pathList[0].x + "," + pathList[0].y
             var firstNode = new Node(pathList[0].x, pathList[0].y, 1, id);
@@ -291,12 +284,11 @@ class Shape {
                 var newNode = new Node(pathList[i].x, pathList[i].y, i+1, id);
                 this.nodes.push(newNode);
             }
+
             pathString += "Z";
             this.path.attr("path", pathString);
-            this.path.data("i", id);
-
+            this.id = id;
             this.path.attr(shapeFilledAttr);
-
         }
 
         /* ============================================================= */
@@ -353,17 +345,20 @@ class Shape {
         console.log("setting start freq:", freq);
         this.start_freq = freq;
     }
+    update_start_freq () {
+        var startFreq = Tone.Frequency(ROOT_NOTE).toMidi();
+        var newStartFreq = transpose_by_scale_degree(startFreq, this.start_freq_index);
+        this.start_freq = newStartFreq;
+        this.refresh_shape_attr_popup();
+    }
     stop () {
         this.synth.triggerRelease();
         this.animCircle.hide();
         //this.synth.volume.value = -60;
     }
 
-    render() {
-        this.path = r.path(this.path.toString());
-        console.log("rendering");
-        console.log(this.path);
-        this.path.show();
+    test () {
+        console.log("wooo");
     }
 /*<!--\
 --><div class="button-cont solo-button-cont">\
@@ -372,13 +367,14 @@ class Shape {
 </div>
 */
     init_shape_attr_popup(){
-        var i = this.path.data("i");
+        var i = this.id;
         var start_freq = this.start_freq;
         var popupHtml = '\
-            <div class="shape-attr-popup" id="shape-attr-popup-' + i + '">\
-                <!-- <div>\
-                    <span class="close-popup" onclick="">X</span>\
-                </div> -->\
+            <div class="shape-attr-popup" id="shape-attr-popup-'+i+'">\
+                <div>\
+                    <span>Shape: '+i+'</span>\
+                    <!--<span class="close-popup" onclick="this.test()">X</span>-->\
+                </div>\
                 <div class="section">\
                     <label>Instrument:</label>\
                     <select class="shape-attr-inst-select" data="'+i+'">\
@@ -393,7 +389,7 @@ class Shape {
                 <div class="section">\
                     <label>Starting Note:</label>\
                     <span class="shape-attr-start-freq">\
-                        <span class="start-freq-label" id="start-freq-label-'+i+'">'+start_freq+'</span>\
+                        <span class="start-freq-label" id="start-freq-label-'+i+'">'+this.start_freq+'</span>\
                         <button class="arrow arrow-up" onclick="increment_start_freq(1,'+i+')"><i class="ion-arrow-up-b"></i></button>\
                         <button class="arrow arrow-down" onclick="increment_start_freq(0,'+i+')"><i class="ion-arrow-down-b"></i></button>\
                     </span>\
@@ -422,7 +418,7 @@ class Shape {
     }
 
     refresh_shape_attr_popup(){
-        var i = this.path.data("i");
+        var i = this.id;
         $("#start-freq-label-"+i).html(this.start_freq);
     }
 
@@ -505,55 +501,35 @@ class Shape {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 /* --------------------------- Vertex Handle class -------------------------- */
 class Node {
     constructor(x, y, i, shapeId) {
-        console.log("constructing node:", i);
+
         // if first node
         if ((i-1) == 0) {
             this.discattr = {fill: "#000", stroke: "#000", "stroke-width": 1};
             this.isFirst = true;
         } else {
             this.discattr = {fill: "#eee", stroke: "#000", "stroke-width": 2};
+            this.isFirst = false;
         }
         
         // handle
         this.handle = r.circle(x,y,3).attr(this.discattr).hide();
-        if (this.isFirst) {
-            this.handle.show();
-        }
-        this.handle.data("i", i);
-        this.handle.data("shapeId", shapeId);
-
-        //this.parentShape = shapesList[shapeId];
-        //console.log(this.parentShape);
-        //this.noteVal = this.parentShape.start_freq;
-
+        if (this.isFirst) {this.handle.show();}
+        
+        this.id = shapeId;
+        var parent = this;
 
         this.handle.click(function(){
-            console.log("NODE CLICK");
-            //console.log("index:", this.data("i"));
+            //console.log("NODE CLICK");
             //console.log("X", this.attr("cx"), "Y", this.attr("cy"));
             //console.log("parent shape:", shapesList[shapeId]);
-            shapesList[shapeId].set_note_values();
+            //shapesList[shapeId].set_note_values();
         });
         
         this.handle.update_shape_path = function (x, y) {
-            var i = this.data("i");
-            var currShapeId = this.data('shapeId');
-
-            var currShape = shapesList[currShapeId];
+            var currShape = shapesList[parent.id];
             var tempPath = currShape.path.attr("path");
 
             tempPath[i-1][1] += x;
@@ -564,6 +540,7 @@ class Node {
 
         this.move = function (dx, dy) {
             if (CURR_TOOL == "adjust") {
+                console.log("NODE MOVE");
                 dx = snap_to_grid(dx);
                 dy = snap_to_grid(dy);
 
@@ -581,6 +558,8 @@ class Node {
                 
                 this.odx = dx;
                 this.ody = dy;
+                // TODO ?
+                shapesList[shapeId].set_note_values();
             }
         }
 
@@ -632,61 +611,22 @@ class Node {
 
 
 
-
-
-
-
-
-/* SHAPES */
-var shapesList = [];
-var ACTIVE_SHAPE = new Shape(ROOT_NOTE, DEFAULT_SYNTH);
-
-
-
-/* -------------------------------------------------------------------------- */
+/* ========================================================================== */
+/* ========================================================================== */
+/* ========================================================================== */
 /* ----------------------------- DOCUMENT READY ----------------------------- */
-/* -------------------------------------------------------------------------- */
-function play_handler() {
-    // TODO
-    //$("#disable-overlay").show();
-    console.log(CURR_DRAW_STATE);
-    if (CURR_DRAW_STATE === "ready") {
-        $(".play-stop-toggle").html("<i class='ion-stop'></i>");
-        PLAYING = true;
-        Tone.Master.mute = false;
-        Tone.Transport.start("+0.1");
-    }
-}
+/* ========================================================================== */
+/* ========================================================================== */
+/* ========================================================================== */
 
-function stop_handler(){
-    // TODO
-    //$("#disable-overlay").hide();
-    $(".play-stop-toggle").html("<i class='ion-play'></i>");
-    PLAYING = false;
-    for (var i = shapesList.length - 1; i >= 0; i--) {
-        if (shapesList[i].included) {
-            shapesList[i].stop();
-        }        
-    }
-    Tone.Transport.stop(0);
-    Tone.Master.mute = true;
-    //Tone.Master.dispose();
 
-}
-
-function togglePlayStop () {
-    console.log(PLAYING);
-    if (PLAYING) { // we stop
-        stop_handler();
-
-    } else { // we play
-        play_handler();
-    }
-}
+var shapesList = [];
+var ACTIVE_SHAPE = new Shape(ROOT_NOTE, DEFAULT_SYNTH, shapesList.length);
 
 $(document).ready(function() {
 
     /* ---------------------- INITIALIZE ---------------------- */
+
 
     init_grid();
     hide_handles();
@@ -697,14 +637,24 @@ $(document).ready(function() {
     window.onkeydown = function (e) {
 
     /* $(window).keypress(function(e) {*/
-        if (e.which === 97) { // a
+        if (e.which == 9) { // a
+            console.log("tab");
+            if (CURR_TOOL === "draw") {
+                select_tool("adjust");
+            } else if (CURR_TOOL === "adjust") {
+                select_tool("draw");
+            }
+            e.preventDefault();
+            //select_tool("draw");
+        }
+       /* if (e.which === 97) { // a
             console.log("a");
             select_tool("draw");
         }
         if (e.which === 115) { // s
             console.log("s");
             select_tool("adjust");
-        }
+        }*/
         if (e.which === 32) {
             if (e.stopPropagation) {
                 e.stopPropagation();
@@ -755,29 +705,8 @@ $(document).ready(function() {
     });
 
     // CLEAR - hide tooltips, stop transport, remove all shapes
-    $("#clear").click(function(){
-        hide_details();
-        stop_handler();
-        for (var i = shapesList.length - 1; i >= 0; i--) {
-            unmute_shape(i);
-            shapesList[i].delete();
-        }
-        r.clear();
-        init_grid();
-        if ($("#grid").is(":checked")) {
-            show_grid();
-        } 
-        else {
-            hide_grid();
-        }
-        shapesList = [];
-        ACTIVE_SHAPE = new Shape(ROOT_NOTE, DEFAULT_SYNTH);
-        hoverLine = r.path().attr(hoverLineAttr);
-        hoverCircle = r.circle(0,0,3).attr(hoverCircleAttr);
-        if (CURR_TOOL == "adjust") {
-            hoverCircle.hide();
-        }
-        select_tool("draw");
+    $(".clear").click(function(){
+        clear_canvas();
     });
     
     /* TOOLS */
@@ -879,53 +808,64 @@ $(document).ready(function() {
     });
 });
 
-/* -------------------------------------------------------------------------- */
+
+/* ========================================================================== */
+/* ========================================================================== */
+/* ========================================================================== */
 /* -------------------------------- FUNCTIONS ------------------------------- */
-/* -------------------------------------------------------------------------- */
+/* ========================================================================== */
+/* ========================================================================== */
+/* ========================================================================== */
 
-/* completes the ACTIVE SHAPE: finishes the path by connecting the latest point
-   to the origin. Adds the shape to shapesList. Initializes new shape 
-*/
-function complete_shape(){
 
-    ACTIVE_SHAPE.path.attr("path", path_to_string(ACTIVE_SHAPE.path) + "Z");
-    ACTIVE_SHAPE.path.attr(shapeFilledAttr);
-    ACTIVE_SHAPE.path.data("i", shapesList.length);
-    ACTIVE_SHAPE.init_shape_attr_popup();
 
-    ACTIVE_SHAPE.set_note_values();
 
-    shapesList.push(ACTIVE_SHAPE);
+/* ========================================================================== */
+/* ------------------------------- TRANSPORT -------------------------------- */
+/* ========================================================================== */
 
-    ACTIVE_SHAPE = new Shape(ROOT_NOTE, DEFAULT_SYNTH);
-
-    hoverLine.attr("path", "");
-    PREV_ENDPOINT = "";
-    
-    console.log(shapesList);
-}
-
-function set_draw_state(state){
-    if (state === "ready") {
-        $(".controls button").prop('disabled', false);
-        $(".controls input").prop('disabled', false);
-        $(".controls select").prop('disabled', false);
-    } else if (state === "drawing") {
-        $(".controls button").prop('disabled', true);
-        $(".controls input").prop('disabled', true);
-        $(".controls select").prop('disabled', true);
+function play_handler() {
+    // TODO
+    //$("#disable-overlay").show();
+    console.log(CURR_DRAW_STATE);
+    if (CURR_DRAW_STATE === "ready") {
+        $(".play-stop-toggle").html("<i class='ion-stop'></i>");
+        PLAYING = true;
+        Tone.Master.mute = false;
+        Tone.Transport.start("+0.1");
     }
-    CURR_DRAW_STATE = state;
-}
-function path_to_string(path){
-    return path.attr("path").join()
-}
-function subpath_to_string(path, i){
-    return path.attr("path")[i].join()
 }
 
+function stop_handler(){
+    // TODO
+    //$("#disable-overlay").hide();
+    $(".play-stop-toggle").html("<i class='ion-play'></i>");
+    PLAYING = false;
+    for (var i = shapesList.length - 1; i >= 0; i--) {
+        if (shapesList[i].included) {
+            shapesList[i].stop();
+        }        
+    }
+    Tone.Transport.stop(0);
+    Tone.Master.mute = true;
+    //Tone.Master.dispose();
 
+}
+
+function togglePlayStop () {
+    console.log(PLAYING);
+    if (PLAYING) { // we stop
+        stop_handler();
+
+    } else { // we play
+        play_handler();
+    }
+}
+
+/* ========================================================================== */
 /* ---------------------------------- GRID ---------------------------------- */
+/* ========================================================================== */
+
 /* Initializes the grid: The grid is an array of dots 
 */
 function init_grid () {
@@ -973,23 +913,63 @@ function show_handles () {
 
 /* -------- TOOLS -------- */
 function select_tool(tool) {
-    if (tool === "draw") {
-        hoverCircle.show();
-        hide_handles();
-    } else if (tool === "adjust"){
-        hoverCircle.hide();
-        show_handles();
-    } 
+    if (CURR_DRAW_STATE == "ready") {
+        if (tool === "draw") {
+            hoverCircle.show();
+            hide_handles();
+        } else if (tool === "adjust"){
+            hoverCircle.hide();
+            show_handles();
+        } 
 
-    CURR_TOOL = tool;
-    hide_details();
-    $( ".tool" ).removeClass("active");
-    
-    var toolName = "#" + tool + "-tool";
-    $( toolName ).addClass("active");
+        CURR_TOOL = tool;
+        hide_details();
+        $( ".tool" ).removeClass("active");
+        
+        var toolName = "#" + tool + "-tool";
+        $( toolName ).addClass("active");
+    }
 }
 
-/* -------- TOOLTIP DETAILS -------- */
+function set_draw_state(state){
+    if (state === "ready") {
+        $(".controls button").prop('disabled', false);
+        $(".controls input").prop('disabled', false);
+        $(".controls select").prop('disabled', false);
+    } else if (state === "drawing") {
+        $(".controls button").prop('disabled', true);
+        $(".controls input").prop('disabled', true);
+        $(".controls select").prop('disabled', true);
+    }
+    CURR_DRAW_STATE = state;
+}
+
+
+/* ========================================================================== */
+/* ------------------------------ SHAPE ACTIONS ----------------------------- */
+/* ========================================================================== */
+
+/* completes the ACTIVE SHAPE: finishes the path by connecting the latest point
+   to the origin. Adds the shape to shapesList. Initializes new shape 
+*/
+function complete_shape(){
+
+    ACTIVE_SHAPE.path.attr("path", path_to_string(ACTIVE_SHAPE.path) + "Z");
+    ACTIVE_SHAPE.path.attr(shapeFilledAttr);
+    ACTIVE_SHAPE.init_shape_attr_popup();
+
+    ACTIVE_SHAPE.set_note_values();
+
+    shapesList.push(ACTIVE_SHAPE);
+
+    ACTIVE_SHAPE = new Shape(ROOT_NOTE, DEFAULT_SYNTH, shapesList.length);
+
+    hoverLine.attr("path", "");
+    PREV_ENDPOINT = "";
+    
+    console.log(shapesList);
+}
+
 function delete_shape (i) {
     shapesList[i].delete();
  //   shapesList.splice(i, 1);
@@ -1099,68 +1079,73 @@ function update_stroke_width(i, val) {
     shapesList[i].path.attr("stroke-width", val);
 }
 
+function increment_start_freq(dir, i){
+    //console.log(this);
+    var freq = shapesList[i].start_freq;
+    var note = Tone.Frequency(freq).toMidi();
 
-function lineDistance( point1, point2 )
-{
-    var xs = 0;
-    var ys = 0;
-    //console.log(point1);
+    console.log(freq);
+    var new_freq;
 
-    xs = point2.getX() - point1.getX();
-    xs = xs * xs;
+    if (dir === 1) { //up;
+        new_freq = transpose_by_scale_degree(note, 1)
+        shapesList[i].start_freq_index++;
+    }  
+    if (dir === 0) { //down
+        new_freq = transpose_by_scale_degree(note, -1)
+        shapesList[i].start_freq_index--;
+    }
+    shapesList[i].update_start_freq();
+    shapesList[i].set_note_values();
+    shapesList[i].refresh_shape_attr_popup();
 
-    ys = point2.getY() - point1.getY();
-    ys = ys * ys;
+    //shapesList[i].set_start_freq(new_freq);
+    //console.log(shapesList[i].start_freq_index);
+    //$("#start-freq-label-"+i).html(new_freq);
+}
 
-    return Math.sqrt( xs + ys );
+function change_instrument (i){
+    shapesList[i].synth.triggerRelease();
+    shapesList[i].synth = synth_chooser(this.value);
+}
+
+function get_this_synth (shape) {
+    return shape.synth;
 }
 
 
 
-
-
-
-
-
-
-
+/* ========================================================================== */
+/* ------------------------------ NOTE CHOOSING ----------------------------- */
+/* ========================================================================== */
 
 function indexOfNote(letter, scale) {
-    //console.log("finding", letter);
-    //console.log("in", scale);
     for (var i = scale.length - 1; i >= 0; i--) {
         if (teoria.note(scale[i]).chroma() === teoria.note(letter).chroma()) {
             console.log("FOUND:", letter, " at index:", i);
             return i;
         } 
-/*        else {
-            console.log("NOT FOUND");
-        }*/
     }
-    //console.log("NOT FOUND");
 }
 
-function increase_by_scale_degree (note, deg, neg_mult) {
+function transpose_by_scale_degree (note, deg) {
     
     console.log("=========== CHANGE DEGREE ===========");
     
-    deg = deg * neg_mult;
     var noteVal = Tone.Frequency(note, "midi").toNote();
-
     var noteObj = teoria.note.fromMIDI(note);
 
     var noteLetter = noteVal.slice(0, -1).toLowerCase();
     var noteOctave = parseInt(noteVal.slice(-1));
     
-    //console.log ("starting with:", noteLetter, noteOctave, ", moving:", deg);
-    //console.log("SCALE:", SCALE.simple());
-    
     var scaleSimple = SCALE.simple();
     var length = scaleSimple.length;
 
+    var addOctaves = parseInt(deg / length);
+    console.log("ADD OCTAVES", addOctaves)
     var noteIndex = indexOfNote(noteLetter, scaleSimple);
-    
-    var newNoteIndex = noteIndex + deg;
+    var degMod = deg % length;
+    var newNoteIndex = noteIndex + degMod;
     // going up
     if (newNoteIndex >= length) {
         newNoteIndex = newNoteIndex - length;
@@ -1171,17 +1156,30 @@ function increase_by_scale_degree (note, deg, neg_mult) {
     }
 
     //console.log("newIndex:",newNoteIndex);
-
+    var newNoteLetter = scaleSimple[newNoteIndex];
+    var newOctave = noteOctave;
+    
     var newNoteObj = teoria.note(scaleSimple[newNoteIndex] + noteOctave);
 
     if (deg > 0 && newNoteObj.midi() < noteObj.midi()) {
         //console.log("up one octave");
-        newNoteObj = teoria.note(scaleSimple[newNoteIndex] + (noteOctave + 1));
+        newOctave++;
+        //newNoteObj = teoria.note(scaleSimple[newNoteIndex] + (noteOctave + 1));
     }
 
     if (deg < 0 && newNoteObj.midi() > noteObj.midi() && noteOctave > 0) {
-        newNoteObj = teoria.note(scaleSimple[newNoteIndex] + (noteOctave - 1));
+        newOctave--;
+        //newNoteObj = teoria.note(scaleSimple[newNoteIndex] + (noteOctave - 1));
     }
+    //console.log()
+    newOctave += addOctaves;
+    console.log("noteLetter", noteLetter);
+    console.log("NEW OCTAVE", newOctave);
+    var noteString = scaleSimple[newNoteIndex] + newOctave.toString();
+    
+    console.log("noteString", noteString);
+    
+    newNoteObj = teoria.note(scaleSimple[newNoteIndex] + newOctave.toString());
 
     var newNote = newNoteObj.toString();
     console.log("NEW NOTE:", newNote);
@@ -1219,7 +1217,7 @@ function note_chooser1(freq, theta) {
             /*console.log("THETA:", absTheta);
             console.log("IN THIS SECTOR:", i);
             console.log("IS NEGATIVE:", neg_mult);*/
-            var newNote = increase_by_scale_degree(note, i, neg_mult);
+            var newNote = transpose_by_scale_degree(note, i*neg_mult);
             break;
         }
         lowerBound = upperBound;
@@ -1227,37 +1225,7 @@ function note_chooser1(freq, theta) {
     }
     return newNote;
 }
-
-function isBetween (val, a, b) {
-    return (val > a && val <= b);
-}
-
-function increment_start_freq(dir, i){
-    //console.log(this);
-    var freq = shapesList[i].start_freq;
-    var note = Tone.Frequency(freq).toMidi();
-
-    console.log(freq);
-    var new_freq;
-
-    if (dir === 1) { //up;
-        new_freq = increase_by_scale_degree (note, 1, 1)
-    }  
-    if (dir === 0) { //down
-        new_freq = increase_by_scale_degree (note, 1, -1)
-    }
-
-    shapesList[i].set_start_freq(new_freq);
-    shapesList[i].set_note_values();
-
-    $("#start-freq-label-"+i).html(new_freq);
-}
-
-function change_instrument (i){
-    shapesList[i].synth.triggerRelease();
-    shapesList[i].synth = synth_chooser(this.value);
-}
-    
+   
 function synth_chooser (name) {
     var synth = new Tone.AMSynth();
 
@@ -1317,6 +1285,39 @@ function synth_chooser (name) {
     return synth.toMaster();
 }
 
+
+
+
+/* ========================================================================== */
+/* ---------------------------- PROJECT ACTIONS ----------------------------- */
+/* ========================================================================== */
+
+function clear_canvas(){
+    hide_details();
+    stop_handler();
+    for (var i = shapesList.length - 1; i >= 0; i--) {
+        unmute_shape(i);
+        shapesList[i].delete();
+    }
+    r.clear();
+    init_grid();
+    if ($("#grid").is(":checked")) {
+        show_grid();
+    } 
+    else {
+        hide_grid();
+    }
+    shapesList = [];
+    ACTIVE_SHAPE = new Shape(ROOT_NOTE, DEFAULT_SYNTH, 0);
+    hoverLine = r.path().attr(hoverLineAttr);
+    hoverCircle = r.circle(0,0,3).attr(hoverCircleAttr);
+    if (CURR_TOOL == "adjust") {
+        hoverCircle.hide();
+    }
+    select_tool("draw");
+}
+
+/* =============== Set Tempo =============== */
 function set_tempo(val) {
     TEMPO = val;
     reset_all_notes();
@@ -1335,10 +1336,21 @@ function set_scale(name) {
     console.log("SETTING SCALE TO:", name);
     SCALE = teoria.note(ROOT_NOTE).scale(name);
     console.log(SCALE.simple());
+    for (var i = shapesList.length - 1; i >= 0; i--) {
+        shapesList[i].update_start_freq();
+    }
     reset_all_notes();
 }
 
 /* =============== Set tonic =============== */
+function init_tonic_select(){
+    var tonicSelectHtml = ""
+    for (var i = 0; i < tonicsList.length; i++) {
+        tonicSelectHtml +=  "<option value='" + tonicsList[i] + "'>" + tonicsList[i] + "</option>" 
+    }
+    $(".tonic-select").html(tonicSelectHtml);
+}
+
 function set_tonic(name) {
     var note = teoria.note(name);
     for (var i = shapesList.length - 1; i >= 0; i--) {
@@ -1349,15 +1361,10 @@ function set_tonic(name) {
     ROOT_NOTE = note.toString();
     ACTIVE_SHAPE.set_start_freq(note.toString());
     SCALE = teoria.note(ROOT_NOTE).scale(currScaleName);
-    reset_all_notes();
-}
-
-function init_tonic_select(){
-    var tonicSelectHtml = ""
-    for (var i = 0; i < tonicsList.length; i++) {
-        tonicSelectHtml +=  "<option value='" + tonicsList[i] + "'>" + tonicsList[i] + "</option>" 
+    for (var i = shapesList.length - 1; i >= 0; i--) {
+        shapesList[i].update_start_freq();
     }
-    $(".tonic-select").html(tonicSelectHtml);
+    reset_all_notes();
 }
 
 /* ============================= */
@@ -1367,8 +1374,85 @@ function reset_all_notes() {
     }
 }
 
-function get_this_synth (shape) {
-    return shape.synth;
+
+
+
+/* ========================================================================== */
+/* -------------------------------- HELPER  --------------------------------- */
+/* ========================================================================== */
+
+
+function lineDistance( point1, point2 ) {
+    var xs = 0;
+    var ys = 0;
+    //console.log(point1);
+
+    xs = point2.getX() - point1.getX();
+    xs = xs * xs;
+
+    ys = point2.getY() - point1.getY();
+    ys = ys * ys;
+
+    return Math.sqrt( xs + ys );
+}
+
+function isBetween (val, a, b) {
+    return (val > a && val <= b);
+}
+
+function path_to_string(path){
+    return path.attr("path").join()
+}
+
+function subpath_to_string(path, i){
+    return path.attr("path")[i].join()
+}
+
+/* ========================================================================== */
+/* ---------------------------------- Menu ---------------------------------- */
+/* ========================================================================== */
+
+$(".show-hide-menu").on("click", function(){
+    console.log($(".menu").css("top"));
+    if ($(".menu").css("top") == "0px") {
+        hideMenu()
+    } else {
+        showMenu()
+    }
+});
+
+function showMenu() {
+    $(".menu").animate({"top":0}, 200);
+    $(".controls").animate({"top":"15px"}, 200);
+    $(".show-hide-menu").html('<i class="ion-chevron-up"></i>');
+}
+
+function hideMenu() {
+    $(".menu").animate({"top":"-19px"}, 200);
+    $(".controls").animate({"top":0}, 200);
+    $(".show-hide-menu").html('<i class="ion-chevron-down"></i>');
+}
+
+
+/* =========== */
+
+$(".show-hide-info-pane").on("click", function(){
+    //console.log($(".menu").css("top"));
+    if ($(".info-pane").css("bottom") == "0px") {
+        hideInfoPane()
+    } else {
+        showInfoPane()
+    }
+});
+
+function showInfoPane() {
+    $(".info-pane").animate({"bottom":0}, 200);
+    $(".show-hide-info-pane").html('<i class="ion-chevron-down"></i>');
+}
+
+function hideInfoPane() {
+    $(".info-pane").animate({"bottom":"-100px"}, 200);
+    $(".show-hide-info-pane").html('<i class="ion-chevron-up"></i>');
 }
 
 
@@ -1390,7 +1474,6 @@ function toggleFullScreen() {
     } else if (document.documentElement.webkitRequestFullscreen) {
       document.documentElement.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
     }
-    $(".enter-fullscreen").html('<i class="ion-arrow-shrink"></i>')
   } else {
     if (document.exitFullscreen) {
       document.exitFullscreen();
@@ -1401,11 +1484,26 @@ function toggleFullScreen() {
     } else if (document.webkitExitFullscreen) {
       document.webkitExitFullscreen();
     }
-    $(".enter-fullscreen").html('<i class="ion-arrow-expand"></i>')
   }
 }
 
+document.addEventListener("fullscreenchange", onFullScreenChange, false);
+document.addEventListener("webkitfullscreenchange", onFullScreenChange, false);
+document.addEventListener("mozfullscreenchange", onFullScreenChange, false);
+
+function onFullScreenChange() {
+    var fullscreenElement = document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement;
+    if (fullscreenElement) {
+        $(".enter-fullscreen").html('<i class="ion-arrow-shrink"></i>')
+    } else  {
+        $(".enter-fullscreen").html('<i class="ion-arrow-expand"></i>')
+    }
+}
+
+
+/* ========================================================================== */
 /* ================================ Project ================================= */
+/* ========================================================================== */
 
 var SAVED_PROJECT = [];
 function project_dump(){
@@ -1438,7 +1536,7 @@ function project_dump(){
 function project_load(){
     console.log("loading")
     for (var i = 0; i < SAVED_PROJECT.length; i++) {
-        var newShape = new Shape (ROOT_NOTE, DEFAULT_SYNTH, SAVED_PROJECT[i], i);
+        var newShape = new Shape (ROOT_NOTE, DEFAULT_SYNTH, i, SAVED_PROJECT[i]);
         newShape.set_note_values();
         shapesList.push(newShape);
     }
