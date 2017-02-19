@@ -3,8 +3,9 @@
 /* ========================================================================== */
 /*  Variables                                                                 */
 /* ========================================================================== */
-@import url('https://fonts.googleapis.com/css?family=Source+Code+Pro:400,700')//@import url('https://fonts.googleapis.com/css?family=Lekton:400,700')
-
+//@import url('https://fonts.googleapis.com/css?family=Source+Code+Pro:400,700')
+//@import url('https://fonts.googleapis.com/css?family=Lekton:400,700')
+$font-stack: 'Source Code Pro', "Consolas", monospace
 $color-white: #fff
 $color-light-grey: #bbb
 $color-med-grey: #777
@@ -43,7 +44,7 @@ $color-discover: #fde46b
 @mixin drop_shadow
     box-shadow: -2px 2px 25px rgba(0,0,0,0.1)
 
-@mixin warning_button
+@mixin button_warning
     color: $color-warning-red
     &:hover
         text-decoration: underline
@@ -60,6 +61,28 @@ $color-discover: #fde46b
         position: relative
         top: -3px
 
+@mixin dropdown
+    position: relative
+    display: inline-block
+    .dropdown-content
+        @include drop_shadow
+        min-width: calc(100% + 1px)
+        left: -1px
+        padding: 4px
+        display: none
+        position: absolute
+        z-index: 300
+        border: 1px solid $color-med-grey
+        //border-right: none
+        //border-top: none
+        background: #eee
+        a
+            margin-bottom: 3px
+            padding-top: 0
+    &:hover 
+        .dropdown-content
+            display: block
+
 /* ========================================================================== */
 /* ================================ General ================================= */
 *
@@ -73,8 +96,10 @@ html
 
 body 
     margin: auto
-    /*font-family: "Consolas", Helvetica*/
-    font-family: 'Source Code Pro', "Consolas", monospace
+    overflow: hidden
+    width: 100%
+    height: 100%
+    font-family: $font-stack
     font-size: .8em
 
 button
@@ -85,6 +110,7 @@ button
 a
     text-decoration: none
     color: $color-black
+
 ::-moz-selection 
     background: #b3d4fc
     text-shadow: none
@@ -105,7 +131,7 @@ a
 
 .menu
     width: 100%
-    z-index: 200
+    z-index: 400
     position: absolute
     border-bottom: 1px solid $color-med-grey
     background: #eee
@@ -122,17 +148,23 @@ a
             padding: 0
             margin: 0
             height: 100%
-            padding-top: 1px
-            padding-left: 20px
-            padding-right: 20px
             display: inline-block
             border-right: 1px solid $color-med-grey
+            a
+                display: block
+                height: 100%
+                padding-top: 1px
+                padding-left: 20px
+                padding-right: 20px
+                &:hover
+                    background: $color-white
+
             &.logo
                 background: $color-black
                 a
                     color: $color-white !important
             &.discover-link
-                //background: $color-discover
+                background: $color-discover
 
             &.account-link
                 float: right
@@ -163,6 +195,9 @@ a
     p
         padding: 0
         margin: 0
+
+.dropdown
+    @include dropdown
 
 
 /* ========================================================================== */
@@ -219,7 +254,7 @@ a
                 background: transparent !important
                 text-decoration: none !important
         &.clear
-            @include warning_button
+            @include button_warning
 
     .transport-icon
         @include button_expand_on_hover
@@ -358,16 +393,8 @@ a
 
 
     button.shape-attr-delete-shape
-        text-align: left
-        display: block
-        height: auto
-        color: $color-warning-red
-        padding: 0
+        @include button_warning
         padding-top: 4px
-        &:hover
-            text-decoration: underline
-            background-color: transparent
-            color: $color-warning-red
 
     .mute-solo 
         .button-cont 

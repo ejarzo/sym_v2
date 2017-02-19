@@ -1,7 +1,6 @@
 /* ========================================================================== */
 /*  Variables                                                                 */
 /* ========================================================================== */
-@import url("https://fonts.googleapis.com/css?family=Source+Code+Pro:400,700");
 /* ========================================================================== */
 /* ================================ General ================================= */
 * {
@@ -20,7 +19,9 @@ html {
 
 body {
   margin: auto;
-  /*font-family: "Consolas", Helvetica */
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
   font-family: "Source Code Pro", "Consolas", monospace;
   font-size: 0.8em; }
 
@@ -51,7 +52,7 @@ a {
 /* =============================== File Menu ================================ */
 .menu {
   width: 100%;
-  z-index: 200;
+  z-index: 400;
   position: absolute;
   border-bottom: 1px solid #777;
   background: #eee;
@@ -66,15 +67,22 @@ a {
       padding: 0;
       margin: 0;
       height: 100%;
-      padding-top: 1px;
-      padding-left: 20px;
-      padding-right: 20px;
       display: inline-block;
       border-right: 1px solid #777; }
+      .menu ul li a {
+        display: block;
+        height: 100%;
+        padding-top: 1px;
+        padding-left: 20px;
+        padding-right: 20px; }
+        .menu ul li a:hover {
+          background: #fff; }
       .menu ul li.logo {
         background: #222; }
         .menu ul li.logo a {
           color: #fff !important; }
+      .menu ul li.discover-link {
+        background: #fde46b; }
       .menu ul li.account-link {
         float: right;
         border: none;
@@ -115,6 +123,25 @@ a {
   .info-pane p {
     padding: 0;
     margin: 0; }
+
+.dropdown {
+  position: relative;
+  display: inline-block; }
+  .dropdown .dropdown-content {
+    box-shadow: -2px 2px 25px rgba(0, 0, 0, 0.1);
+    min-width: calc(100% + 1px);
+    left: -1px;
+    padding: 4px;
+    display: none;
+    position: absolute;
+    z-index: 300;
+    border: 1px solid #777;
+    background: #eee; }
+    .dropdown .dropdown-content a {
+      margin-bottom: 3px;
+      padding-top: 0; }
+  .dropdown:hover .dropdown-content {
+    display: block; }
 
 /* ========================================================================== */
 /* ============================= User Controls ============================== */
@@ -328,11 +355,7 @@ a {
     .shape-attr-popup .arrow.arrow-down {
       margin-left: -3px; }
   .shape-attr-popup button.shape-attr-delete-shape {
-    text-align: left;
-    display: block;
-    height: auto;
     color: #ff6464;
-    padding: 0;
     padding-top: 4px; }
     .shape-attr-popup button.shape-attr-delete-shape:hover {
       text-decoration: underline;
