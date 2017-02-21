@@ -75,6 +75,7 @@ Tone.Transport.latencyHint = 'interactive';
 var DEFAULT_TEMPO = 5;
 
 var PLAYING = false;
+var synthsList =  ["AM", "FM", "Marimba", "Duo", "Sub Bass", "Simple", "Super Saw", "Membrane", "Kalimba", "Cello", "Pizz"];
 var DEFAULT_SYNTH = "Simple";
 //var PRESETS = new Presets();
 
@@ -167,23 +168,16 @@ class Project {
     }
 
     init_scale_select(){
-        var keySelectHtml = ""
-        for (var i = 0; i < keysList.length; i++) {
-            keySelectHtml +=  "<option value='" + keysList[i].replace(/ /g,'') + "'>" + keysList[i] + "</option>" 
-        }
-        $(".scale-select").html(keySelectHtml);
+        populate_list(keysList, this.scaleObj.name, ".scale-select");
     }
 
     init_tonic_select(){
-        var tonicSelectHtml = ""
-        for (var i = 0; i < tonicsList.length; i++) {
-            tonicSelectHtml +=  "<option value='" + tonicsList[i] + "'>" + tonicsList[i] + "</option>" 
-        }
-        $(".tonic-select").html(tonicSelectHtml);
+        populate_list(tonicsList, this.scaleObj.tonic.toString(true), ".tonic-select");
     }
 
     clear_canvas(){
         hide_details();
+        $(".shape-attr-popup").remove();
         stop_handler();
         for (var i = this.shapesList.length - 1; i >= 0; i--) {
             unmute_shape(i);
@@ -196,7 +190,7 @@ class Project {
         else {hide_grid();}
         
         this.shapesList = [];
-        ACTIVE_SHAPE = new Shape(/*this.rootNote, */DEFAULT_SYNTH, 0);
+        ACTIVE_SHAPE = new Shape(0);
         
         hoverLine = r.path().attr(hoverLineAttr);
         hoverCircle = r.circle(0,0,3).attr(hoverCircleAttr);
@@ -230,6 +224,7 @@ class Project {
                 var shapeData = {
                     pathList: coords,
                     startFreqIndex: currShape.startFreqIndex,
+                    synthName: currShape.synthName,
                     volume: currShape.volume,
                     isMuted: currShape.isMuted
                 }
@@ -249,18 +244,21 @@ class Project {
         console.log("LOADING:", proj_obj);
         // TODO confirm lose progress
         this.clear_canvas();
+
         this.tempo = proj_obj.tempo;
         this.set_tempo(this.tempo);
         this.scaleObj = teoria.note(proj_obj.tonic).scale(proj_obj.scaleName);
         this.rootNote = this.scaleObj.tonic.toString();
-        console.log("ROOT NOTE:", this.rootNote);
+
         for (var i = 0; i < proj_obj.shapesList.length; i++) {
-            var newShape = new Shape (/*this.rootNote, */DEFAULT_SYNTH, i, proj_obj.shapesList[i]);
+            var newShape = new Shape (i, proj_obj.shapesList[i]);
+            //newShape.change_instrument(proj_obj.shapesList[i].synthName);
             newShape.set_note_values();
             this.shapesList.push(newShape);
         }
         this.reset_all_notes();
         ACTIVE_SHAPE.id = this.shapesList.length;
+
         this.init_tempo();
         this.init_tonic_select();
         this.init_scale_select();
@@ -271,7 +269,7 @@ class Project {
 
 /* ------------------------------- Shape class ------------------------------ */
 class Shape {
-    constructor(/*start_freq, */synth_name, id, savedData) {
+    constructor(/*start_freq, *//*synth_name, */id, savedData) {
         var parent = this;
         this.id = id;
 
@@ -309,7 +307,6 @@ class Shape {
                 parent.update_pan();
             }
         },
-
         this.up = function (e) {
             if (this.drag == false && CURR_TOOL == "adjust") {
                 e.stopPropagation();
@@ -327,7 +324,6 @@ class Shape {
                 }
             };
         };
-
         this.hoverOut = function () {
             return function (event) {
                 parent.path.attr("stroke-width", volume_to_stroke_width(parent.volume));
@@ -340,7 +336,6 @@ class Shape {
                 this.nodes[i].hide();
             }
         }
-
         this.show_handles = function () {
             for (var i = this.nodes.length - 1; i >= 0; i--) {
                 this.nodes[i].show();
@@ -381,7 +376,6 @@ class Shape {
             }
             this.animCircle.attr(shapeMutedAttr);
         }
-        
         this.unmute = function () {
             this.isMuted = false;
             console.log("unmute");
@@ -397,7 +391,8 @@ class Shape {
         /* ============== variables and attributes ============== */
         
         // tone
-        this.synth = synth_chooser(synth_name);
+        this.synthName = DEFAULT_SYNTH;
+        
         this.pan = 0;        
         this.volume = -8;        
         this.panner = new Tone.Panner(this.pan).toMaster();
@@ -429,8 +424,10 @@ class Shape {
             var pathList = savedData.pathList;
 
             this.completed = true;
-            //this.start_freq = savedData.start_freq;
             this.startFreqIndex = savedData.startFreqIndex;
+            
+            console.log("LOADING SYNTH:", savedData.synthName);
+            this.synthName = savedData.synthName;
 
             this.volume = savedData.volume;
             this.path.attr("stroke-width", volume_to_stroke_width(this.volume));
@@ -450,6 +447,8 @@ class Shape {
             this.id = id;
             this.path.attr(shapeFilledAttr);
         }
+        this.synth = synth_chooser(this.synthName);
+        this.init_shape_attr_popup();
         this.update_start_freq();
         this.update_pan();
         /* ============================================================= */
@@ -526,6 +525,11 @@ class Shape {
         console.log(xMean);
         this.panner.pan.value = xMean * 0.7;
     }
+    change_instrument (name) {
+        this.synth.triggerRelease();
+        this.synthName = name;
+        this.synth = synth_chooser(name);
+    }
     stop () {
         this.synth.triggerRelease();
         this.animCircle.hide();
@@ -537,8 +541,22 @@ class Shape {
     }
 
     init_shape_attr_popup(){
+        //$("#shape-attr-popup-"+i).empty();
         var i = this.id;
         var start_freq = this.start_freq;
+
+        var synthSelectHtml = '';
+        var selectHtml = '';
+
+        for (var j = 0; j < synthsList.length; j++) {
+            console.log(synthsList[j]);
+            if (synthsList[j] == this.synthName) {
+                selectHtml = 'selected';
+            }
+            synthSelectHtml += '<option value="'+synthsList[j]+'"'+selectHtml+'>'+synthsList[j]+'</option>';
+            selectHtml = '';
+        }
+
         var popupHtml = '\
             <div class="shape-attr-popup" id="shape-attr-popup-'+i+'">\
                 <div>\
@@ -547,16 +565,7 @@ class Shape {
                 </div>\
                 <div class="section">\
                     <label>Instrument:</label>\
-                    <select class="shape-attr-inst-select" data="'+i+'">\
-                        <option value="AM">AM</option>\
-                        <option value="FM">FM</option>\
-                        <option value="Marimba">Marimba</option>\
-                        <option value="Duo">Duo</option>\
-                        <option value="Mono">Mono</option>\
-                        <option value="Super Saw">Super Saw</option>\
-                        <option value="Simple" selected>Simple</option>\
-                        <option value="Membrane">Membrane</option>\
-                    </select>\
+                    <select class="shape-attr-inst-select" data="'+i+'">'+synthSelectHtml+'</select>\
                 </div>\
                 <div class="section">\
                     <label>Starting Note:</label>\
@@ -596,7 +605,6 @@ class Shape {
         var i = this.id;
         $("#start-freq-label-"+i).html(this.start_freq);
     }
-
     set_note_values () {        
         console.log("SET NOTE VALUES");
         //console.log(this.part);
@@ -785,7 +793,7 @@ class Node {
 /* ========================================================================== */
 
 var PROJECT = new Project;
-var ACTIVE_SHAPE = new Shape(/*PROJECT.rootNote, */DEFAULT_SYNTH, PROJECT.shapesList.length );
+var ACTIVE_SHAPE = new Shape(PROJECT.shapesList.length);
 
 $(document).ready(function() {
 
@@ -853,11 +861,9 @@ $(document).ready(function() {
 
     // changes instrument to the one selected from the dropdown
     $(document).on('change','.shape-attr-inst-select',function(){
-        console.log($(this).attr("data"));
         var i = $(this).attr("data");
         console.log("changing to", this.value);
-        PROJECT.shapesList[i].synth.triggerRelease();
-        PROJECT.shapesList[i].synth = synth_chooser(this.value);
+        PROJECT.shapesList[i].change_instrument(this.value);
     });
 
     // CLEAR - hide tooltips, stop transport, remove all shapes
@@ -1020,7 +1026,7 @@ function togglePlayStop () {
 }
 
 /* ========================================================================== */
-/* ---------------------------------- GRID ---------------------------------- */
+/* --------------------------------- CANVAS --------------------------------- */
 /* ========================================================================== */
 
 /* Initializes the grid: The grid is an array of dots 
@@ -1110,6 +1116,20 @@ function set_draw_state(state){
     CURR_DRAW_STATE = state;
 }
 
+function populate_list(values, selectedItem, className) {
+        console.log("SELECTED ITEM", selectedItem);
+        var optionsHtml = '';
+        var selectedHtml = '';
+        for (var i = 0; i < values.length; i++) {
+            console.log(values[i]);
+            if (values[i].replace(/ /g,'') == selectedItem) {
+                selectedHtml = "selected";
+            }
+            optionsHtml +=  '<option value="' + values[i].replace(/ /g,'') + '" '+selectedHtml+'>' + values[i] + '</option>'; 
+            selectedHtml = '';
+        }
+        $(className).html(optionsHtml);
+    }
 
 /* ========================================================================== */
 /* ------------------------------ SHAPE ACTIONS ----------------------------- */
@@ -1129,7 +1149,7 @@ function complete_active_shape(){
 
     PROJECT.shapesList.push(ACTIVE_SHAPE);
 
-    ACTIVE_SHAPE = new Shape(/*PROJECT.rootNote, */DEFAULT_SYNTH, PROJECT.shapesList.length);
+    ACTIVE_SHAPE = new Shape(PROJECT.shapesList.length);
 
     hoverLine.attr("path", "");
     PREV_ENDPOINT = "";
@@ -1253,8 +1273,7 @@ function increment_start_freq(dir, i){
 /* ------ Instrument ------- */
 
 function change_instrument (i){
-    PROJECT.shapesList[i].synth.triggerRelease();
-    PROJECT.shapesList[i].synth = synth_chooser(this.value);
+    PROJECT.shapesList[i].change_instrumen(this.value)
 }
 
 
@@ -1400,7 +1419,7 @@ function synth_chooser (name) {
                     }
                 });
             break;
-        case "Mono":
+        case "Sub Bass":
             synth =  new Tone.MonoSynth(
                     {
                         "portamento": 0.08,
@@ -1451,6 +1470,86 @@ function synth_chooser (name) {
             break;
         case "Membrane":
             synth = new Tone.MembraneSynth();
+            break;
+        case "Kalimba":
+            synth = new Tone.FMSynth(
+            {
+                "harmonicity":8,
+                "modulationIndex": 2,
+                "oscillator" : {
+                    "type": "sine"
+                },
+                "envelope": {
+                    "attack": 0.001,
+                    "decay": 2,
+                    "sustain": 0.1,
+                    "release": 2
+                },
+                "modulation" : {
+                    "type" : "square"
+                },
+                "modulationEnvelope" : {
+                    "attack": 0.002,
+                    "decay": 0.2,
+                    "sustain": 0,
+                    "release": 0.2
+                }
+            }
+                );
+            break;
+        case "Cello":
+            synth = new Tone.FMSynth(
+            {
+                "harmonicity": 3.01,
+                "modulationIndex": 14,
+                "oscillator": {
+                    "type": "triangle"
+                },
+                "envelope": {
+                    "attack": 0.2,
+                    "decay": 0.3,
+                    "sustain": 0.1,
+                    "release": 1.2
+                },
+                "modulation" : {
+                    "type": "square"
+                },
+                "modulationEnvelope" : {
+                    "attack": 0.01,
+                    "decay": 0.5,
+                    "sustain": 0.2,
+                    "release": 0.1
+                }
+            }
+                );
+            break;
+            case "Pizz":
+            synth = new Tone.MonoSynth(
+            {
+                 "oscillator": {
+                    "type": "sawtooth"
+                },
+                "filter": {
+                    "Q": 3,
+                    "type": "highpass",
+                    "rolloff": -12
+                },
+                "envelope": {
+                    "attack": 0.01,
+                    "decay": 0.3,
+                    "sustain": 0,
+                    "release": 0.9
+                },
+                "filterEnvelope": {
+                    "attack": 0.01,
+                    "decay": 0.1,
+                    "sustain": 0,
+                    "release": 0.1,
+                    "baseFrequency": 800,
+                    "octaves": -1.2
+                }
+            }
+                );
             break;
         default:
     }
