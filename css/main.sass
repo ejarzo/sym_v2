@@ -83,6 +83,24 @@ $color-discover: #fde46b
         .dropdown-content
             display: block
 
+@mixin tooltip_arrow
+    top: 40px
+    border: solid transparent
+    content: " "
+    height: 0
+    width: 0
+    position: absolute
+    pointer-events: none
+    border-color: rgba(255,255,255,0)
+    border-width: 10px
+    margin-top: -10px
+    &.arrow-left
+        right: 100%
+        border-right-color: $color-white
+    &.arrow-right
+        left: 100%
+        border-left-color: $color-white
+
 /* ========================================================================== */
 /* ================================ General ================================= */
 *
@@ -111,6 +129,11 @@ a
     text-decoration: none
     color: $color-black
 
+ul
+    list-style: none
+    margin: 0   
+    padding: 0
+
 ::-moz-selection 
     background: #b3d4fc
     text-shadow: none
@@ -128,21 +151,19 @@ a
 
 /* ========================================================================== */
 /* =============================== File Menu ================================ */
+.top-bar
+    position: absolute
+    width: 100%
+    z-index: 400
 
 .menu
     width: 100%
-    z-index: 400
-    position: absolute
+    position: relative
     border-bottom: 1px solid $color-med-grey
     background: #eee
     height: 20px
-    top: -19px
-
-
+    top: 0
     ul
-        list-style: none
-        margin: 0
-        padding: 0
         height: 100%
         li
             padding: 0
@@ -172,6 +193,8 @@ a
                 border-left: 1px solid $color-med-grey
 
     button
+        &.show-hide
+            z-index: 400
         &.show-hide-menu
             @include show_hide_button
             bottom: -20px
@@ -180,11 +203,12 @@ a
 .info-pane
     padding: 10px
     @include drop_shadow
+    font-size: 1em
     position: absolute
     bottom: 0
     left: 0
     width: 300px
-    height: 100px
+    height: 50px
     background: $color-white
     z-index: 200
     button
@@ -204,12 +228,11 @@ a
 /* ============================= User Controls ============================== */
 
 .controls 
-    position: absolute
+    position: relative
     top: 0px
     padding-left: 10px
     padding-top: 10px
     width: 100%
-    z-index: 100
     padding-bottom: 10px
     background-color: $color-white
     .divider
@@ -231,6 +254,8 @@ a
             border: 1px solid $color-light-grey
             .ctrl-elem 
                 margin: 0
+        &.transport-controls
+            border: 1px solid $color-light-grey
         &.grid-controls
             position: relative
             top: 2px
@@ -309,6 +334,18 @@ a
                 color: $color-med-grey
                 text-decoration: underline
 
+.recorder-blink
+    color: #f00
+    padding-left: 10px
+    padding-top: 5px
+    animation: blink 500ms infinite alternate
+
+@keyframes blink
+    0% 
+        opacity: 1
+    100% 
+        opacity: 0
+
 .trash-can-cont
     position: absolute
     padding: 50px
@@ -319,6 +356,30 @@ a
     color: $color-med-grey
     @include button_expand_on_hover
 
+
+/* ========================================================================== */
+/* =========================== Instrument panel ============================= */
+
+.inst-selectors
+    position: relative
+    height: 2px
+    width: 100%
+    background: $color-white
+    ul
+        height: 100%
+        .inst-options
+            height: 100%
+            //border: 1px solid #000
+            float: left
+            width: 25%
+        .inst-1
+            background: #5B5978
+        .inst-2
+            background: #E6E8BF
+        .inst-3
+            background: #F27900
+        .inst-4
+            background: #DD1D00
 /* ========================================================================== */
 /* ========================= Shape attributes popup ========================= */
 
@@ -335,20 +396,8 @@ a
     left: 100px
     top: 100px
     padding: 5px 15px
-
-    &:after 
-        right: 100%
-        top: 40px
-        border: solid transparent
-        content: " "
-        height: 0
-        width: 0
-        position: absolute
-        pointer-events: none
-        border-color: rgba(255,255,255,0)
-        border-right-color: $color-white
-        border-width: 10px
-        margin-top: -10px
+    .tooltip-arrow
+        @include tooltip_arrow
 
     .section
         padding: 10px 0 10px 0

@@ -64,7 +64,7 @@ var gridDotAttr       = {"fill": "#777", "stroke-width": 1, "stroke": "#FFF"};
 
 /* --------------------------------- GLOBALS -------------------------------- */
 
-// AUDIO ===============
+// AUDIO ==============================================
 Tone.Transport.latencyHint = 'interactive';
 /*  "interactive" (default, prioritizes low latency)
     "playback" (prioritizes sustained playback)
@@ -79,7 +79,7 @@ var synthsList =  ["AM", "FM", "Marimba", "Duo", "Sub Bass", "Simple", "Super Sa
 var DEFAULT_SYNTH = "Simple";
 //var PRESETS = new Presets();
 
-// SCALE ===============
+// SCALE ==============================================
 var DEFAULT_KEY = "A3";
 var DEFAULT_SCALE = "major";
 var NOTE_CHOOSER = note_chooser1;
@@ -90,25 +90,27 @@ var keysList = ["major", "minor", "dorian", "phrygian", "lydian", "mixolydian",
 var tonicsList = ["a", "a#", "b", "c", "c#", "d", "d#", "e", "f", "f#", "g", "g#"];
 //var tonicsList = teoria.note("a").scale("chromatic").simple();
 
-// GRID ===============
+// GRID ==============================================
 var GRID_SIZE = 50;
 var GLOBAL_MARGIN = 5;
 var gridDots = r.set();
 
-// TOOLS ===============
+// TOOLS ==============================================
 // draw, adjust
 var CURR_TOOL = "draw";
 var CURR_DRAW_STATE = "ready";
 
-// LINE TO MOUSE ===============
+// LINE TO MOUSE ==============================================
 var ORIGIN_RADIUS = 15;
 var PREV_ENDPOINT;
 var hoverLine = r.path().attr(hoverLineAttr);
 var hoverCircle = r.circle(0,0,3).attr(hoverCircleAttr);
 
-/*var source = Tone.context;
+var source = Tone.Master;
 console.log (source);
-var rec = new Recorder(source.destination.context);*/
+var rec = new Recorder(source);
+var RECORD_ARMED = false;
+var RECORDING = false;
 
 /* ========================================================================== */
 /* ========================================================================== */
@@ -122,7 +124,7 @@ var rec = new Recorder(source.destination.context);*/
 /* ------------------------------ Project class ----------------------------- */
 class Project {
     constructor(/*proj_obj*/){
-        this.title = "New Project";
+        this.name = "New Project";
         this.tempo = DEFAULT_TEMPO;
         this.scaleObj = teoria.note(DEFAULT_KEY).scale(DEFAULT_SCALE);
         this.rootNote = this.scaleObj.tonic.toString();
@@ -180,7 +182,7 @@ class Project {
         $(".shape-attr-popup").remove();
         stop_handler();
         for (var i = this.shapesList.length - 1; i >= 0; i--) {
-            unmute_shape(i);
+            this.shapesList[i].unmute();
             this.shapesList[i].delete();
         }
         r.clear();
@@ -252,7 +254,6 @@ class Project {
 
         for (var i = 0; i < proj_obj.shapesList.length; i++) {
             var newShape = new Shape (i, proj_obj.shapesList[i]);
-            //newShape.change_instrument(proj_obj.shapesList[i].synthName);
             newShape.set_note_values();
             this.shapesList.push(newShape);
         }
@@ -264,8 +265,6 @@ class Project {
         this.init_scale_select();
     }
 }
-
-
 
 /* ------------------------------- Shape class ------------------------------ */
 class Shape {
@@ -310,7 +309,7 @@ class Shape {
         this.up = function (e) {
             if (this.drag == false && CURR_TOOL == "adjust") {
                 e.stopPropagation();
-                parent.show_details(e);
+                parent.show_attr_popup(e);
             }
             this.odx = this.ody = 0;
         };
@@ -343,13 +342,38 @@ class Shape {
         }
 
         /* ----- Details ----- */
-        this.show_details = function (event) {
+        this.show_attr_popup = function (event) {
             this.path.attr(shapeSelectedAttr);
-            var x = event.clientX + 23;
-            var y = event.clientY - 43;
+            var xPad = 23;
+            var yPad = 43;
+            var x = event.clientX;
+            var y = event.clientY;
             var i = parent.id;
+
             var popup = $("#shape-attr-popup-"+i);
-            popup.css({left: x, top: y});
+            var holderWidth = $("#holder").width();
+            var holderHeight = $("#holder").height();
+            var toolTipArrow = $("#shape-attr-popup-"+i+" .tooltip-arrow");
+            popup.css({left: x+xPad, top: y-yPad});
+
+            if (x + popup.width() + xPad > holderWidth) {
+                console.log("show on left");
+                toolTipArrow.removeClass("arrow-left");
+                toolTipArrow.addClass("arrow-right");
+                popup.css({left: x-(popup.width() + 2*xPad)});
+            } else {
+                toolTipArrow.removeClass("arrow-right");
+                toolTipArrow.addClass("arrow-left");
+            }
+            if (y + popup.height() > holderHeight + 40) {
+                popup.css({top: holderHeight-popup.height()});
+                var distFromBottom = holderHeight-y + 10;
+                console.log(distFromBottom);
+                toolTipArrow.css("top", "calc(100% - "+distFromBottom+"px)");
+            } else {
+                toolTipArrow.css("top", "40px");
+            }
+            
             popup.show();
         }
 
@@ -368,6 +392,7 @@ class Shape {
         
         /* ----- Mute ----- */
         this.mute = function () {
+            console.log("mute");
             this.isMuted = true;
             this.synth.volume.value = -60;
             this.path.attr(shapeMutedAttr);
@@ -375,10 +400,13 @@ class Shape {
                 this.nodes[i].handle.attr(shapeMutedAttr);
             }
             this.animCircle.attr(shapeMutedAttr);
+        
+            var unmuteHtml = '<button class="shape-attr-mute shape-attr-unmute">Unmute</button>';
+            $popup.find(".mute-button-cont").html(unmuteHtml);
         }
         this.unmute = function () {
-            this.isMuted = false;
             console.log("unmute");
+            this.isMuted = false;
             this.path.attr(shapeDefaultAttr);
             for (var i = this.nodes.length - 1; i >= 0; i--) {
                 this.nodes[i].handle.attr(handlesDefaultAttr);
@@ -386,6 +414,37 @@ class Shape {
             }
             this.animCircle.attr(animCircleAttr);
             this.synth.volume.value = this.volume;
+            
+            var muteHtml = '<button class="shape-attr-mute">Mute</button>';
+            $popup.find(".mute-button-cont").html(muteHtml);
+        }
+
+        /* ----- Solo ----- */
+        this.solo = function () {
+            this.isSoloed = true;
+            for (var i = PROJECT.shapesList.length - 1; i >= 0; i--) {
+                if (i != this.id) {
+                    if (PROJECT.shapesList[i].isMuted == false) {
+                        PROJECT.shapesList[i].isMutedFromSolo = true;
+                        PROJECT.shapesList[i].mute();
+                    }
+                }
+            }
+            var unsoloHtml = '<button class="shape-attr-solo shape-attr-unsolo">Unsolo</button>';
+            $popup.find(".solo-button-cont").html(unsoloHtml);
+        }
+        this.unsolo = function() {
+            this.isSoloed = false;
+            for (var i = PROJECT.shapesList.length - 1; i >= 0; i--) {
+                if (i != this.id) {
+                    if (PROJECT.shapesList[i].isMutedFromSolo) {
+                        PROJECT.shapesList[i].isMutedFromSolo = false;
+                        PROJECT.shapesList[i].unmute();
+                    }
+                }
+            }
+            var soloHtml = '<button class="shape-attr-solo">Solo</button>';
+            $popup.find(".solo-button-cont").html(soloHtml);
         }
 
         /* ============== variables and attributes ============== */
@@ -398,6 +457,7 @@ class Shape {
         this.panner = new Tone.Panner(this.pan).toMaster();
         this.isMuted = false;
         this.isMutedFromSolo = false;
+        this.isSoloed = false;
 
         // path
         this.path = r.path().attr(shapeDefaultAttr);
@@ -451,6 +511,8 @@ class Shape {
         this.init_shape_attr_popup();
         this.update_start_freq();
         this.update_pan();
+        var $popup = $("#shape-attr-popup-"+this.id);
+
         /* ============================================================= */
         /* ======================= PART CALLBACK ======================= */
         /* ============================================================= */
@@ -497,10 +559,114 @@ class Shape {
             }, time)
 
             thisSynth.triggerAttackRelease(note, duration, time);
-
         }, []).start(0);
         this.part.loop = true;
+        
+
+
+
+        /* ============== Popup Handlers ============== */
+
+        //this.popupId = "#shape-attr-popup-"+this.id;
+        
+        // TEST
+        $popup.find(".close-popup").on("click", function(){
+            console.log((parent.id), "CLOSE");
+        })
+
+        /* ------ Instrument Select ------ */
+        $popup.find(".shape-attr-inst-select").on('change' ,function(){
+            parent.change_instrument(this.value);
+        });
+        
+        /* ------ Starting Frequency ------ */
+        $popup.find(".arrow-up").on("click", function(){
+            parent.increment_start_freq(1);
+        })
+
+        $popup.find(".arrow-down").on("click", function(){
+            parent.increment_start_freq(0);
+        })
+        
+        /* ------ Volume ------ */
+        $popup.find(".signal-meter").on('change mousemove', function(){
+            parent.update_volume(this.value);
+        });
+        
+        /* ------ Toggle Mute  ------ */
+        $popup.find(".mute-button-cont").on('click', function(){
+            console.log('asdf');
+            if (parent.isMuted) {
+                parent.unmute();
+            } else {
+                parent.mute();
+            }
+        });
+
+        /* ------ Toggle Solo ------ */
+        $popup.find(".solo-button-cont").on('click', function(){
+            if (parent.isSoloed) {
+                parent.unsolo();
+            } else {
+                parent.solo();
+            }
+        });
+        
+        /* ------ Delete ------ */
+        $popup.find(".shape-attr-delete-shape").on("click", function(){
+            parent.delete();
+            $popup.hide();
+        });
+
+        $popup.find(".shape-attr-delete-shape").hover(function(){
+            parent.path.attr(shapeWarningAttr);
+            for (var i = parent.nodes.length - 1; i >= 0; i--) {
+                parent.nodes[i].handle.hide();
+            }
+        }, function(){
+            parent.path.attr(shapeSelectedAttr);
+            for (var i = parent.nodes.length - 1; i >= 0; i--) {
+                parent.nodes[i].handle.show();
+            }
+        });
+        
+        /* ------ Set Perimeter ------ */
+        $popup.find(".shape-attr-set-perim").on("click", function(){
+            var len = 500;
+            parent.set_perim_length(len);
+        });
     }
+
+
+    increment_start_freq(dir) {
+        var freq = this.start_freq;
+        var note = Tone.Frequency(freq).toMidi();
+
+        console.log(freq);
+        var new_freq;
+
+        if (dir === 1) { //up;
+            new_freq = transpose_by_scale_degree(note, 1)
+            this.startFreqIndex++;
+        }  
+        if (dir === 0) { //down
+            new_freq = transpose_by_scale_degree(note, -1)
+            this.startFreqIndex--;
+        }
+        this.update_start_freq();
+        this.set_note_values();
+    }
+    
+    update_volume(val){
+        this.volume = val;
+        this.synth.volume.value = val;
+        this.update_stroke_width(volume_to_stroke_width(val));
+    }
+
+    update_stroke_width(val) {
+        this.path.attr("stroke-width", val);
+    }
+
     update_start_freq () {
         console.log("update start freq");
         var startFreq = Tone.Frequency(PROJECT.rootNote).toMidi();
@@ -510,6 +676,7 @@ class Shape {
         console.log(this.start_freq);
         this.refresh_shape_attr_popup();
     }
+    
     update_pan () {
         var bBox = this.path.getBBox();
         var xMean = (bBox.x + (bBox.width + bBox.x)) / 2;
@@ -522,22 +689,20 @@ class Shape {
         if (xMean < -1) {
             xMean = -1;
         }
-        console.log(xMean);
+        //console.log(xMean);
         this.panner.pan.value = xMean * 0.7;
     }
+    
     change_instrument (name) {
         this.synth.triggerRelease();
         this.synthName = name;
         this.synth = synth_chooser(name);
     }
+    
     stop () {
         this.synth.triggerRelease();
         this.animCircle.hide();
         //this.synth.volume.value = -60;
-    }
-
-    test () {
-        console.log("wooo");
     }
 
     init_shape_attr_popup(){
@@ -559,43 +724,41 @@ class Shape {
 
         var popupHtml = '\
             <div class="shape-attr-popup" id="shape-attr-popup-'+i+'">\
+                <div class="tooltip-arrow arrow-left"></div>\
                 <div>\
                     <span>Shape: '+i+'</span>\
-                    <!--<span class="close-popup" onclick="this.test()">X</span>-->\
+                    <span class="close-popup">X</span>\
                 </div>\
                 <div class="section">\
                     <label>Instrument:</label>\
-                    <select class="shape-attr-inst-select" data="'+i+'">'+synthSelectHtml+'</select>\
+                    <select class="shape-attr-inst-select">'+synthSelectHtml+'</select>\
                 </div>\
                 <div class="section">\
                     <label>Starting Note:</label>\
                     <span class="shape-attr-start-freq">\
                         <span class="start-freq-label" id="start-freq-label-'+i+'">'+this.start_freq+'</span>\
-                        <button class="arrow arrow-up" onclick="increment_start_freq(1,'+i+')"><i class="ion-arrow-up-b"></i></button>\
-                        <button class="arrow arrow-down" onclick="increment_start_freq(0,'+i+')"><i class="ion-arrow-down-b"></i></button>\
+                        <button class="arrow arrow-up"><i class="ion-arrow-up-b"></i></button>\
+                        <button class="arrow arrow-down"><i class="ion-arrow-down-b"></i></button>\
                     </span>\
                 </div>\
                 <div class="section">\
                     Volume:\
                     <input type="range" class="signal-meter"\
-                           value="'+this.volume+'" min="-18" max="0"\
-                           oninput="update_vol('+i+', this.value)"\
-                           onchange="update_vol('+i+', this.value)">\
+                           value="'+this.volume+'" min="-18" max="0">\
                 </div>\
                 <div class="section mute-solo">\
                     <div class="button-cont mute-button-cont">\
-                        <button class="shape-attr-mute" data=""\
-                                onclick="mute_shape('+i+')">Mute</button>\
+                        <button class="shape-attr-mute">Mute</button>\
                     </div><div class="button-cont solo-button-cont">\
-                        <button class="shape-attr-solo" data=""\
-                                onclick="solo_shape('+i+')">Solo</button>\
+                        <button class="shape-attr-solo">Solo</button>\
                     </div>\
                 </div>\
                 <div class="section">\
-                    <button class="shape-attr-delete-shape" data=""\
-                            onclick="delete_shape('+i+')"\
-                            onmouseover="delete_hoverin('+i+')"\
-                            onmouseout="delete_hoverout('+i+')">Delete Shape</button>\
+                    <button class="shape-attr-delete-shape">Delete Shape</button>\
+                </div>\
+                <div class="section">\
+                    <button class="shape-attr-set-perim"\
+                            onclick="set_shape_perim('+i+')">DANKIFY</button>\
                 </div>\
             </div>';
         $("body").append(popupHtml);
@@ -603,9 +766,11 @@ class Shape {
 
     refresh_shape_attr_popup(){
         var i = this.id;
+        //$popup.find("#start-freq-label").html(this.start_freq);
         $("#start-freq-label-"+i).html(this.start_freq);
     }
-    set_note_values () {        
+    
+    set_note_values(){
         console.log("SET NOTE VALUES");
         //console.log(this.part);
         this.part.removeAll();
@@ -647,7 +812,7 @@ class Shape {
         }
     }
 
-    /* returns an object containing note information - for the note from nodePrev to node
+    /* returns an object containing note information - for the note from nodePrev to node.
     nodePrevPrev needed to calculate angle at node Prev
     */
     get_note_info(node, nodePrev, nodePrevPrev){
@@ -678,8 +843,48 @@ class Shape {
         }
         return result;
     }
-}
 
+    set_perim_length(len){
+        var currLen = this.path.getTotalLength();
+        //var targetSize = Math.round(currLen / len) * len;
+        var ratio = len / currLen;
+        var transform = this.path.matrix.split();
+        console.log("transform:", transform);
+
+        var newPath = (Raphael.transformPath(this.path.attr("path"), "s"+ratio+","+ratio));
+        var pathNoCurves = [];
+        for (var i = 0; i < newPath.length - 1; i++) {
+            if (newPath[i][0] == "C"){
+                var x = newPath[i][3];
+                var y = newPath[i][4];
+                var lineTo = ["L", x, y];
+                pathNoCurves.push(lineTo);
+                this.nodes[i].handle.attr("cx", x);
+                this.nodes[i].handle.attr("cy", y);
+
+            } else {
+                var x = newPath[i][1];
+                var y = newPath[i][2];
+                this.nodes[i].handle.attr("cx", x);
+                this.nodes[i].handle.attr("cy", y);
+                pathNoCurves.push(newPath[i]);
+            }
+        }
+        pathNoCurves.push(["Z"])
+        //console.log(this.path);
+        //console.log("---", pathNoCurves);
+        //console.log(newPath);
+        this.path.attr("path", pathNoCurves);
+        //console.log(this.path);
+
+        //var test = r.path(Raphael.transformPath(this.path.attr("path"), "s"+ratio+","+ratio));
+        
+        console.log("current perim:", currLen, "setting to:", len, "ratio:", ratio);
+        //console.log("transform:", transform);
+        console.log("new perim:", this.path.getTotalLength());
+        this.set_note_values();
+    }
+}
 
 /* --------------------------- Vertex Handle class -------------------------- */
 class Node {
@@ -781,9 +986,6 @@ class Node {
     }
 }
 
-
-
-
 /* ========================================================================== */
 /* ========================================================================== */
 /* ========================================================================== */
@@ -803,7 +1005,7 @@ $(document).ready(function() {
     hide_handles();
 
     hide_menu();
-    hide_info_pane();
+    //hide_info_pane();
 
     /* ----------------------- HANDLERS ----------------------- */
     window.onkeydown = function (e) {
@@ -824,13 +1026,28 @@ $(document).ready(function() {
                 e.stopPropagation();
                 e.preventDefault();
             }
-            togglePlayStop();
+            toggle_play_stop();
         }
     };
 
     // PLAY - toggles play / stop
     $(".play-stop-toggle").click(function(){
-        togglePlayStop();
+        toggle_play_stop();
+    });
+
+    $(".record-toggle").click(function(){
+        if (PLAYING && !RECORDING) {
+            record_start();
+        } else if (PLAYING && RECORDING){
+            record_stop();
+        } else{ 
+            if (RECORD_ARMED) {
+                disarm_record();
+            }
+            else {
+                arm_record();
+            }
+        }
     });
 
     // changes global tempo
@@ -855,22 +1072,20 @@ $(document).ready(function() {
         event.stopPropagation();
     });
 
-    $(document).on('change','.signal-meter',function(){
-        console.log(this.value);
-    });
-
-    // changes instrument to the one selected from the dropdown
-    $(document).on('change','.shape-attr-inst-select',function(){
-        var i = $(this).attr("data");
-        console.log("changing to", this.value);
-        PROJECT.shapesList[i].change_instrument(this.value);
-    });
-
     // CLEAR - hide tooltips, stop transport, remove all shapes
     $(".clear").click(function(){
         PROJECT.clear_canvas();
     });
-    
+    $(".clear").hover(function(){
+    //console.log($(".menu").css("top"));
+        for (var i = PROJECT.shapesList.length - 1; i >= 0; i--) {
+            //delete_hoverin(i);
+        }
+    }, function(){
+        for (var i = PROJECT.shapesList.length - 1; i >= 0; i--) {
+            //delete_hoverout(i);
+        } 
+    });
     /* TOOLS */
     $("#draw-tool").click(function(){
         select_tool("draw");
@@ -880,6 +1095,12 @@ $(document).ready(function() {
         select_tool("adjust");
     });
     
+    $(".info-text").hover(function(){
+        if ($(this).is(".play-stop-toggle")) {
+            set_info_text("Play the project. <strong>Shortcut:</strong> SPACE")
+        }
+    });
+
     // TOGGLE GRID
     $("#grid").click(function(){
         if ($("#grid").is(":checked")) {
@@ -987,11 +1208,24 @@ $(document).ready(function() {
 /* ------------------------------- TRANSPORT -------------------------------- */
 /* ========================================================================== */
 
+/* -------- Play / Stop --------- */
+
+function toggle_play_stop () {
+    console.log(PLAYING);
+    if (PLAYING) { // we stop
+        stop_handler();
+
+    } else { // we play
+        play_handler();
+    }
+}
+
 function play_handler() {
-    // TODO
-    //$("#disable-overlay").show();
     console.log(CURR_DRAW_STATE);
     if (CURR_DRAW_STATE === "ready") {
+        if (RECORD_ARMED) {
+            record_start();
+        }
         $(".play-stop-toggle").html("<i class='ion-stop'></i>");
         PLAYING = true;
         Tone.Master.mute = false;
@@ -1000,8 +1234,6 @@ function play_handler() {
 }
 
 function stop_handler(){
-    // TODO
-    //$("#disable-overlay").hide();
     $(".play-stop-toggle").html("<i class='ion-play'></i>");
     PLAYING = false;
     for (var i = PROJECT.shapesList.length - 1; i >= 0; i--) {
@@ -1011,19 +1243,63 @@ function stop_handler(){
     }
     Tone.Transport.stop(0);
     Tone.Master.mute = true;
-    //Tone.Master.dispose();
-
-}
-
-function togglePlayStop () {
-    console.log(PLAYING);
-    if (PLAYING) { // we stop
-        stop_handler();
-
-    } else { // we play
-        play_handler();
+    if (RECORDING) {
+        record_stop();
     }
 }
+
+/* -------- Record --------- */
+
+function record_start(){
+    $(".record-toggle").css({"color": "#F00"})
+    console.log("RECORDING");
+    $(".recorder-blink").show();
+    RECORDING = true;
+    rec.record();
+}
+
+function record_stop(){
+    console.log("STOP RECORDING");
+    $(".recorder-blink").hide();
+    $(".record-toggle").css({"color": "#777"})
+    rec.stop();
+    rec.exportWAV(function(blob){
+        var url = URL.createObjectURL(blob);
+        var li = document.createElement('li');
+        var au = document.createElement('audio');
+        var hf = document.createElement('a');
+
+        au.controls = true;
+        au.src = url;
+        hf.href = url;
+        //hf.download = "Download:" + new Date().toISOString() + '.wav';
+        
+        hf.download = PROJECT.name + '.wav';
+        hf.innerHTML = hf.download;
+        li.appendChild(au);
+        li.appendChild(hf);
+        $(".controls").append(li);
+    });
+    RECORDING = false;
+    rec.clear();
+    disarm_record();
+}
+
+function arm_record(){
+    $(".transport-controls").css({"border-color": "#F00", "border-width": "1px"})
+    $(".record-toggle").css({"color": "#F00"})
+    RECORD_ARMED = true;
+    console.log("record armed");
+}
+
+function disarm_record(){
+    $(".record-toggle").css({"color": "#777"})
+    $(".transport-controls").css({"border-color": "#DDD", "border-width": "1px"})
+
+    RECORD_ARMED = false;
+    console.log("record DISarmed");
+}
+
 
 /* ========================================================================== */
 /* --------------------------------- CANVAS --------------------------------- */
@@ -1159,7 +1435,7 @@ function complete_active_shape(){
 
 /* ------ Delete ------- */
 
-function delete_shape (i) {
+/*function delete_shape (i) {
     PROJECT.shapesList[i].delete();
     $(".shape-attr-popup").hide();
     //console.log(PROJECT.shapesList);
@@ -1179,10 +1455,10 @@ function delete_hoverout (i) {
         //PROJECT.shapesList[i].nodes[j].handle.attr(handlesDefaultAttr)
         PROJECT.shapesList[i].nodes[j].handle.show();
     }
-}
+}*/
 
 /* ------ Mute ------- */
-
+/*
 function mute_shape(i) {
     PROJECT.shapesList[i].mute();
     //unsolo_shape(i);
@@ -1196,11 +1472,11 @@ function unmute_shape(i) {
     var muteHtml = '<button class="shape-attr-mute" data=""\
                             onclick="mute_shape('+i+')">Mute</button>';
     $("#shape-attr-popup-"+i+" .mute-button-cont").html(muteHtml);
-}
+}*/
 
 /* ------ Solo ------- */
 
-function solo_shape(id) {
+/*function solo_shape(id) {
     unmute_shape(id);
     for (var i = PROJECT.shapesList.length - 1; i >= 0; i--) {
         if (i != id) {
@@ -1231,11 +1507,11 @@ function unsolo_shape(id) {
     var soloHtml = '<button class="shape-attr-solo" data=""\
                             onclick="solo_shape('+id+')">Solo</button>';
     $("#shape-attr-popup-"+id+" .solo-button-cont").html(soloHtml);
-}
+}*/
 
 /* ------ Volume ------- */
 
-function update_vol(i, val){
+/*function update_vol(i, val){
     //console.log(val);
     PROJECT.shapesList[i].volume = val;
     PROJECT.shapesList[i].synth.volume.value = val;
@@ -1245,11 +1521,11 @@ function update_vol(i, val){
 function update_stroke_width(i, val) {
     console.log(val);
     PROJECT.shapesList[i].path.attr("stroke-width", val);
-}
+}*/
 
 /* ------ Start Freq ------- */
 
-function increment_start_freq(dir, i){
+/*function increment_start_freq(dir, i){
     //console.log(this);
     var freq = PROJECT.shapesList[i].start_freq;
     var note = Tone.Frequency(freq).toMidi();
@@ -1268,15 +1544,13 @@ function increment_start_freq(dir, i){
     PROJECT.shapesList[i].update_start_freq();
     PROJECT.shapesList[i].set_note_values();
     //PROJECT.shapesList[i].refresh_shape_attr_popup();
-}
+}*/
 
-/* ------ Instrument ------- */
-
-function change_instrument (i){
-    PROJECT.shapesList[i].change_instrumen(this.value)
-}
-
-
+/* ------ Permiter ------- */
+/*function set_shape_perim(i){
+    var len = 500;
+    PROJECT.shapesList[i].set_perim_length(len);
+}*/
 
 /* ========================================================================== */
 /* ------------------------------ NOTE CHOOSING ----------------------------- */
@@ -1602,7 +1876,7 @@ function volume_to_stroke_width (vol) {
 
 $(".show-hide-menu").on("click", function(){
     console.log($(".menu").css("top"));
-    if ($(".menu").css("top") == "0px") {
+    if ($(".top-bar").css("top") == "0px") {
         hide_menu()
     } else {
         show_menu()
@@ -1610,14 +1884,14 @@ $(".show-hide-menu").on("click", function(){
 });
 
 function show_menu() {
-    $(".menu").animate({"top":0}, 200);
-    $(".controls").animate({"top":"15px"}, 200);
+    $(".top-bar").animate({"top":'0px'}, 200);
+    //$(".controls").animate({"top":"15px"}, 200);
     $(".show-hide-menu").html('<i class="ion-chevron-up"></i>');
 }
 
 function hide_menu() {
-    $(".menu").animate({"top":"-19px"}, 200);
-    $(".controls").animate({"top":0}, 200);
+    $(".top-bar").animate({"top":"-19px"}, 200);
+    //$(".controls").animate({"top":0}, 200);
     $(".show-hide-menu").html('<i class="ion-chevron-down"></i>');
 }
 
@@ -1643,6 +1917,13 @@ function hide_info_pane() {
     $(".show-hide-info-pane").html('<i class="ion-chevron-up"></i>');
 }
 
+/* ========================================================================== */
+/* ---------------------------------- Info ---------------------------------- */
+/* ========================================================================== */
+
+function set_info_text(text){
+    $(".info-pane .info-pane-text").html(text);
+}
 
 /* ============================= Fullscreen ================================= */
 
@@ -1699,37 +1980,8 @@ function onFullScreenChange() {
 var projectData;
 function project_dump(){
     projectData = PROJECT.dump()
-   /* var proj_obj = [];
-    for (var i = 0; i < shapesList.length ; i++) {
-        var currShape = shapesList[i];
-        if (currShape.included) {
-            var coords = []
-            for (var j = 0; j < currShape.nodes.length; j++) {
-                var p = {
-                    x: currShape.nodes[j].getX(),
-                    y: currShape.nodes[j].getY(),
-                }
-                coords.push(p);
-            }
-            var shapeData = {
-                pathList: coords,
-                start_freq: currShape.start_freq,
-                volume: currShape.volume,
-                isMuted: currShape.isMuted
-            }
-            proj_obj.push(shapeData);
-        }
-    }
-    return proj_obj;*/
 }
 
-function project_load(/*proj_obj*/){
-    //PROJECT = null;
+function project_load(){
     PROJECT.load(projectData);
-
-/*    for (var i = 0; i < proj_obj.length; i++) {
-        var newShape = new Shape (ROOT_NOTE, DEFAULT_SYNTH, i, proj_obj[i]);
-        newShape.set_note_values();
-        shapesList.push(newShape);
-    }*/
 }
