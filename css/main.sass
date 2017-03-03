@@ -1,36 +1,54 @@
-
-
 /* ========================================================================== */
-/*  Variables                                                                 */
-/* ========================================================================== */
+/* =============================== VARIABLES ================================ */
+
 //@import url('https://fonts.googleapis.com/css?family=Source+Code+Pro:400,700')
 //@import url('https://fonts.googleapis.com/css?family=Lekton:400,700')
+
 $font-stack: 'Source Code Pro', "Consolas", monospace
+
 $color-white: #fff
-$color-light-grey: #bbb
-$color-med-grey: #777
+$color-grey-light: #bbb
+$color-grey-med: #777
+$color-grey-dark: #444
+
 $color-black: #222
+
 $color-mute: rgba(110,110,250,1) 
 $color-solo: #eda128
+
 $color-warning-red: rgba(255,100,100,1)
 $color-discover: #fde46b
+
+$inst-color-0: #c9563c
+$inst-color-1: #f4b549
+$inst-color-2: #2a548e
+$inst-color-3: #705498
+$inst-color-4: #F5A923
+$inst-color-5: #023FA5
+$inst-color-6: #05804D
+
+/* ========================================================================== */
+/* ================================ MIXINS ================================== */
 
 @mixin button_expand_on_hover
     -webkit-transition: all .1s ease-in-out
     -moz-transition: all .1s ease-in-out
     -o-transition: all .1s ease-in-out
     transition: all .1s ease-in-out
-    color: $color-med-grey
+    color: $color-grey-med
     transform: scaleX(1) scaleY(1) scaleZ(1)
     &:hover
         transform: scaleX(1.2) scaleY(1.2) scaleZ(1)
         color: $color-black
-        background-color: transparent
+    &:active
+        transform: scaleX(1.2) scaleY(1.2) scaleZ(1)
+        color: $color-black
+        //background-color: transparent
     &:disabled
-        color: $color-light-grey
+        color: $color-grey-light
         &:hover
-            color: $color-light-grey
-            background: transparent
+            color: $color-grey-light
+            //background: transparent
             transform: scaleX(1) scaleY(1) scaleZ(1)
 
 @mixin noselect 
@@ -53,7 +71,7 @@ $color-discover: #fde46b
 
 @mixin show_hide_button
     position: absolute
-    background: $color-med-grey
+    background: $color-grey-med
     color: $color-white
     font-size: 15px
     height: 20px
@@ -72,7 +90,7 @@ $color-discover: #fde46b
         display: none
         position: absolute
         z-index: 300
-        border: 1px solid $color-med-grey
+        border: 1px solid $color-grey-med
         //border-right: none
         //border-top: none
         background: #eee
@@ -102,7 +120,8 @@ $color-discover: #fde46b
         border-left-color: $color-white
 
 /* ========================================================================== */
-/* ================================ General ================================= */
+/* ================================ GENERAL ================================= */
+
 *
     @include noselect
     box-sizing: border-box
@@ -148,18 +167,27 @@ ul
     width: 100%
     border: 5px solid $color-white
 
+.show-hide
+    @include show_hide_button
+
+.dropdown
+    @include dropdown
 
 /* ========================================================================== */
-/* =============================== File Menu ================================ */
+/* ================================ TOP BAR ================================= */
+
 .top-bar
     position: absolute
     width: 100%
     z-index: 400
 
+/* ========================================================================== */
+/* =============================== FILE MENU ================================ */
+
 .menu
     width: 100%
     position: relative
-    border-bottom: 1px solid $color-med-grey
+    border-bottom: 1px solid $color-grey-med
     background: #eee
     height: 20px
     top: 0
@@ -170,7 +198,7 @@ ul
             margin: 0
             height: 100%
             display: inline-block
-            border-right: 1px solid $color-med-grey
+            border-right: 1px solid $color-grey-med
             a
                 display: block
                 height: 100%
@@ -190,7 +218,7 @@ ul
             &.account-link
                 float: right
                 border: none
-                border-left: 1px solid $color-med-grey
+                border-left: 1px solid $color-grey-med
 
     button
         &.show-hide
@@ -199,30 +227,6 @@ ul
             @include show_hide_button
             bottom: -20px
             right: 0px
-
-.info-pane
-    padding: 10px
-    @include drop_shadow
-    font-size: 1em
-    position: absolute
-    bottom: 0
-    left: 0
-    width: 300px
-    height: 50px
-    background: $color-white
-    z-index: 200
-    button
-        &.show-hide-info-pane
-            @include show_hide_button
-            top: -20px
-            left: 0px
-    p
-        padding: 0
-        margin: 0
-
-.dropdown
-    @include dropdown
-
 
 /* ========================================================================== */
 /* ============================= User Controls ============================== */
@@ -235,6 +239,7 @@ ul
     width: 100%
     padding-bottom: 10px
     background-color: $color-white
+    
     .divider
         width: 1px
         height: 40px
@@ -249,13 +254,13 @@ ul
         //padding: 0 12px
         vertical-align: top
         height: 40px
-        //border-right: 1px solid $color-light-grey
+        //border-right: 1px solid $color-grey-light
         &.tools-controls
-            border: 1px solid $color-light-grey
+            border: 1px solid $color-grey-light
             .ctrl-elem 
                 margin: 0
         &.transport-controls
-            border: 1px solid $color-light-grey
+            border: 1px solid $color-grey-light
         &.grid-controls
             position: relative
             top: 2px
@@ -264,18 +269,18 @@ ul
         border: 2px solid $color-white
         border-radius: 0px
         background-color: $color-white
-        color: $color-med-grey
+        color: $color-grey-med
         height: 100%
         padding: 0 20px 0 20px
         &:hover 
-            background-color: $color-med-grey
+            background-color: $color-grey-med
             color: $color-white
         &:focus
             outline: none
         &:disabled
-            color: $color-light-grey !important
+            color: $color-grey-light !important
             &:hover
-                color: $color-light-grey !important
+                color: $color-grey-light !important
                 background: transparent !important
                 text-decoration: none !important
         &.clear
@@ -285,12 +290,11 @@ ul
         @include button_expand_on_hover
         background: none
         border: none
-        color: $color-med-grey
+        color: $color-grey-med
         font-size: 1.5em
         vertical-align: middle
         width: 40px
         height: 100%
-
         i
             margin-left: 15px
             display: block
@@ -331,8 +335,11 @@ ul
             padding: 0
             &:hover
                 background: transparent
-                color: $color-med-grey
+                color: $color-grey-med
                 text-decoration: underline
+
+/* ========================================================================== */
+/* =============================== RECORDING ================================ */
 
 .recorder-blink
     color: #f00
@@ -346,6 +353,146 @@ ul
     100% 
         opacity: 0
 
+
+/* ========================================================================== */
+/* ============================= INSTRUEMNTS ================================ */
+
+.inst-selectors
+    position: relative
+    height: 20px
+    //height: 92px
+    //width: 100%
+    background: $color-white
+    ul.inst-list
+        overflow-x: scroll
+        overflow-y: hidden
+        white-space: nowrap
+        height: 100%
+        font-size: 0
+        &::-webkit-scrollbar
+            display: none
+        li.inst-option
+            font-size: 12px
+            display: inline-block
+            height: 100%
+            vertical-align: middle
+            color: $color-grey-dark
+            //border-bottom: 5px solid transparen
+            width: 25%
+            
+            .inst-title
+                cursor: pointer
+                &:hover
+                    .selected-inst-icon
+                        display: inline-block
+                select
+                    background: transparent
+                    border-color: transparent
+                    //width: 50%
+                .selected-inst-icon
+                    display: inline-block
+                    float: right
+                    padding-right: 5px
+                    padding-top: 3px
+                    height: 100%
+                    display: none
+                    opacity: 0.6
+                    img
+                        height: 15px
+                i
+                    @include button_expand_on_hover
+                    color: $color-white !important
+                    float: right
+                    padding-right: 5px
+                    font-size: 18px
+                    position: relative
+                    top: -2px
+            &.selected-inst
+                .selected-inst-icon
+                    opacity: 1
+                    display: inline-block !important
+
+
+            .inst-params
+                height: 100%
+                li
+                    display: inline-block
+                    //border-right: 2px solid #777
+                    height: 67px
+                    min-width: 65px
+                    width: 25%
+                    //border: 1px solid $inst-color-1
+                    overflow: hidden
+                    //background: $inst-color-1
+                    padding-right: 10px
+                    padding-left: 10px
+                .inst-param-title
+                    text-align: center
+                    padding: 5px
+                    //background: #ddd
+                    width: 100%
+                    float: left
+                    font-size: .9em
+
+.show-hide-inst
+    position: absolute
+    right: 0px
+    bottom: -20px
+
+/* ========================================================================== */
+/* ================================= KNOBS ================================== */
+
+.kk-skeleton
+    height: 10px
+    text-align: left
+    margin-left: calc(50% - 15px) 
+    .kk-hand
+        width: 2px
+        left: 12px
+        background-color: $color-grey-dark
+        border-color: $color-grey-dark
+
+    .kk-face
+        border: 2px solid $color-grey-dark
+        @include button_expand_on_hover
+        //@include drop_shadow
+        width: 30px
+        height: 30px
+        background: transparent
+    .kk-value
+        height: 1px
+        position: relative
+        top: -25px
+        right: -35px
+        text-align: left
+        display: none
+
+/* ========================================================================== */
+/* ============================== INFO PANEL ================================ */
+
+.info-pane
+    padding: 10px
+    @include drop_shadow
+    font-size: 1em
+    position: absolute
+    bottom: 0
+    left: 0
+    width: 300px
+    height: 50px
+    background: $color-white
+    z-index: 200
+    button
+        &.show-hide-info-pane
+            @include show_hide_button
+            top: -20px
+            left: 0px
+    p
+        padding: 0
+        margin: 0
+
+/* ========================================================================== */
+/* ================================= TRASH ================================== */
+
 .trash-can-cont
     position: absolute
     padding: 50px
@@ -353,33 +500,10 @@ ul
     right: 35px
     font-size: 40px
     z-index: 1000
-    color: $color-med-grey
+    color: $color-grey-med
     @include button_expand_on_hover
 
 
-/* ========================================================================== */
-/* =========================== Instrument panel ============================= */
-
-.inst-selectors
-    position: relative
-    height: 2px
-    width: 100%
-    background: $color-white
-    ul
-        height: 100%
-        .inst-options
-            height: 100%
-            //border: 1px solid #000
-            float: left
-            width: 25%
-        .inst-1
-            background: #5B5978
-        .inst-2
-            background: #E6E8BF
-        .inst-3
-            background: #F27900
-        .inst-4
-            background: #DD1D00
 /* ========================================================================== */
 /* ========================= Shape attributes popup ========================= */
 
@@ -474,22 +598,11 @@ ul
                 background-color: $color-solo
                 color: $color-white
 
-/* ==========================================================================
-   Helper classes
-   ========================================================================== */
-   
-
-/*
- * Hide visually and from screen readers:
- */
+/* ========================================================================== */
+/* ================================= Helper ================================= */
 
 .hidden 
     display: none
-
-/*
- * Hide only visually, but have it available for screen readers:
- * http://snook.ca/archives/html_and_css/hiding-content-for-accessibility
- */
 
 .visuallyhidden 
     border: 0
@@ -501,12 +614,6 @@ ul
     position: absolute
     width: 1px
 
-/*
- * Extends the .visuallyhidden class to allow the element
- * to be focusable when navigated to via the keyboard:
- * https://www.drupal.org/node/897638
- */
-
 .visuallyhidden.focusable:active,
 .visuallyhidden.focusable:focus 
     clip: auto
@@ -515,10 +622,6 @@ ul
     overflow: visible
     position: static
     width: auto
-
-/*
- * Hide visually and from screen readers, but maintain layout
- */
 
 .invisible 
     visibility: hidden
