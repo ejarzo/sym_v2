@@ -46,10 +46,7 @@ var inst1Color  = colors[0];
 var shapeDefaultAttr        = {stroke: black, opacity: 1};
 var shapeHoverAttr          = {"stroke-width": 3};
 var shapeFilledPreviewAttr  = {fill: "rgba(120,120,120,.1)"};
-
-//var shapeFilledAttr         = {fill: "rgba(100,100,100,.2)"};
 var shapeFilledAttr         = {opacity: 1};
-
 var shapeWarningAttr        = {fill: warningRed, stroke: warningRed};
 var shapeSelectedAttr       = {fill: "rgba(0,0,0,.5)", stroke: black, "stroke-width": 3};
 var shapeMutedAttr          = {opacity: 0.2};
@@ -128,13 +125,14 @@ var RECORDING = false;
 /* ========================================================================== */
 /* ------------------------------ Project class ----------------------------- */
 class Project {
-    constructor(/*proj_obj*/){
+    constructor (/*proj_obj*/) {
         this.name = "New Project";
         this.tempo = DEFAULT_TEMPO;
         this.scaleObj = teoria.note(DEFAULT_KEY).scale(DEFAULT_SCALE);
         this.rootNote = this.scaleObj.tonic.toString();
         this.shapesList = [];
         this.instColors = [];
+        
         /* Init */
         this.init_tempo();
         this.init_scale_select();
@@ -142,11 +140,11 @@ class Project {
         this.init_inst_colors();
     }
     /* ---------- SETTERS ---------- */
-    set_tempo(tempo){
+    set_tempo (tempo) {
         this.tempo = tempo;
         this.reset_all_notes();
     }
-    set_scale(name) {
+    set_scale (name) {
         //console.log("SETTING SCALE TO:", name);
         this.scaleObj = teoria.note(this.rootNote).scale(name);
         //console.log(this.scaleObj.simple());
@@ -156,7 +154,7 @@ class Project {
         }
         this.reset_all_notes();
     }
-    set_tonic(name) {
+    set_tonic (name) {
         //console.log("set tonic:", name);
         var note = teoria.note(name);
         var currScaleName = this.scaleObj.name;
@@ -171,19 +169,19 @@ class Project {
 
     /* ---------- ACTIONS ---------- */
 
-    init_tempo(){
+    init_tempo () {
         $(".tempo-slider").val(this.tempo * -1);
     }
 
-    init_scale_select(){
+    init_scale_select () {
         populate_list(keysList, this.scaleObj.name, ".scale-select");
     }
 
-    init_tonic_select(){
+    init_tonic_select () {
         populate_list(tonicsList, this.scaleObj.tonic.toString(true), ".tonic-select");
     }
 
-    init_inst_colors(){
+    init_inst_colors () {
         for (var i = 0; i < NUM_COLORS; i++) {
             var instColor = new InstColor(i, synthsList[i], colors[i]);
             this.instColors.push(instColor);
@@ -191,7 +189,7 @@ class Project {
         console.log(this.instColors);
     }
 
-    clear_canvas(){
+    clear_canvas () {
         hide_details();
         $(".shape-attr-popup").remove();
         stop_handler();
@@ -216,15 +214,15 @@ class Project {
         select_tool("draw");
     }
 
-    reset_all_notes() {
+    reset_all_notes () {
         for (var i = this.shapesList.length - 1; i >= 0; i--) {
-            this.shapesList[i].set_note_values();
+            this.shapesList[i].update_note_values();
         }
     }
 
     /* ---------- I/O ---------- */
 
-    dump(){
+    dump () {
         var savedShapesList = []; 
         for (var i = 0; i < this.shapesList.length ; i++) {
             var currShape = this.shapesList[i];
@@ -256,7 +254,7 @@ class Project {
         return proj_obj;
     }
 
-    load(proj_obj){
+    load (proj_obj) {
         console.log("LOADING:", proj_obj);
         // TODO confirm lose progress
         this.clear_canvas();
@@ -268,7 +266,7 @@ class Project {
 
         for (var i = 0; i < proj_obj.shapesList.length; i++) {
             var newShape = new Shape (i, proj_obj.shapesList[i]);
-            newShape.set_note_values();
+            newShape.update_note_values();
             this.shapesList.push(newShape);
         }
         this.reset_all_notes();
@@ -283,7 +281,7 @@ class Project {
 /* ========================================================================== */
 /* ------------------------------- Shape class ------------------------------ */
 class Shape {
-    constructor(/*start_freq, *//*synth_name, */id, savedData) {
+    constructor (id, savedData) {
         var parent = this;
         this.id = id;
 
@@ -423,9 +421,11 @@ class Shape {
         /* ----- Mute ----- */
         this.mute = function () {
             console.log("mute");
+            this.synth.triggerRelease();
             this.isMuted = true;
-            this.synth.volume.value = -60;
-            this.path.attr(shapeMutedAttr);
+            //this.synth.volume.value = "-inf";
+            this.part.mute = true;
+            this.path.attr({"opacity": 0.3});
             for (var i = this.nodes.length - 1; i >= 0; i--) {
                 this.nodes[i].handle.attr(shapeMutedAttr);
             }
@@ -437,7 +437,8 @@ class Shape {
         this.unmute = function () {
             console.log("unmute");
             this.isMuted = false;
-            this.path.attr(shapeDefaultAttr);
+            this.part.mute = false;
+            this.path.attr({"opacity": 1});
             for (var i = this.nodes.length - 1; i >= 0; i--) {
                 this.nodes[i].handle.attr(handlesDefaultAttr);
                 this.nodes[i].handle.attr("opacity", 1);
@@ -463,7 +464,7 @@ class Shape {
             var unsoloHtml = '<button class="shape-attr-solo shape-attr-unsolo">Unsolo</button>';
             $popup.find(".solo-button-cont").html(unsoloHtml);
         }
-        this.unsolo = function() {
+        this.unsolo = function () {
             this.isSoloed = false;
             for (var i = PROJECT.shapesList.length - 1; i >= 0; i--) {
                 if (i != this.id) {
@@ -481,6 +482,7 @@ class Shape {
         
         // inst-color
         this.instColorId = SELECTED_INSTCOLOR_ID;
+        this.instColorObj = function () {return PROJECT.instColors[this.instColorId]};
 
         // tone
         this.synthName = DEFAULT_SYNTH;
@@ -552,7 +554,7 @@ class Shape {
         /* ============================================================= */
         /* ======================= PART CALLBACK ======================= */
         /* ============================================================= */
-        this.part = new Tone.Part(function(time, value){
+        this.part = new Tone.Part(function (time, value) {
             
             //var parent = value.parent;
             //var thisSynth = get_this_synth(parent);
@@ -576,22 +578,23 @@ class Shape {
             //console.log("DUR:", duration)
             //console.log("TO MIL:", lengthToMiliseconds)
 
-            Tone.Draw.schedule(function(){
+            Tone.Draw.schedule(function () {
                 var startX = value.nodeFrom.getX();
                 var startY = value.nodeFrom.getY();
                 var endX = value.nodeTo.getX();
                 var endY = value.nodeTo.getY();
 
                 parent.animCircle.attr({cx : startX, cy : startY})
-                parent.animCircle.animate({"cx": endX, "cy": endY}, lengthToMiliseconds, function() {
+                parent.animCircle.animate({"cx": endX, "cy": endY}, lengthToMiliseconds, function () {
                     //console.log("X,Y:", this.attr("cx"), this.attr("cy"));
                 });
-                var parentColor = PROJECT.instColors[parent.instColorId].color;
+                //var parentColor = PROJECT.instColors[parent.instColorId].color;
+                var parentColor = parent.instColorObj().color;
 
-                parent.animCircle.animate(animCircleBangStartAttr, 0, "linear", function(){
+                parent.animCircle.animate(animCircleBangStartAttr, 0, "linear", function () {
                     this.animate({"fill": parentColor, r: 3, stroke: parentColor}, 800, "ease-out");
                 });
-                parent.path.animate(animCircleBangStartAttr, 0, "linear", function(){
+                parent.path.animate(animCircleBangStartAttr, 0, "linear", function () {
                     this.animate({"fill": parentColor}, 800, "ease-out");
                 });
             }, time)
@@ -603,26 +606,26 @@ class Shape {
         /* ============== Popup Handlers ============== */
 
         /* ------ Instrument Select ------ */
-        $popup.find(".shape-attr-inst-select").on('change' ,function(){
-            parent.change_instrument(this.value);
+        $popup.find(".shape-attr-inst-select").on('change' ,function () {
+            parent.set_instrument(this.value);
         });
         
         /* ------ Starting Frequency ------ */
-        $popup.find(".arrow-up").on("click", function(){
+        $popup.find(".arrow-up").on("click", function () {
             parent.increment_start_freq(1);
         })
 
-        $popup.find(".arrow-down").on("click", function(){
+        $popup.find(".arrow-down").on("click", function () {
             parent.increment_start_freq(0);
         })
         
         /* ------ Volume ------ */
-        $popup.find(".signal-meter").on('change mousemove', function(){
-            parent.update_volume(this.value);
+        $popup.find(".signal-meter").on('change mousemove', function () {
+            parent.set_volume(this.value);
         });
         
         /* ------ Toggle Mute  ------ */
-        $popup.find(".mute-button-cont").on('click', function(){
+        $popup.find(".mute-button-cont").on('click', function () {
             console.log('asdf');
             if (parent.isMuted) {
                 parent.unmute();
@@ -632,7 +635,7 @@ class Shape {
         });
 
         /* ------ Toggle Solo ------ */
-        $popup.find(".solo-button-cont").on('click', function(){
+        $popup.find(".solo-button-cont").on('click', function () {
             if (parent.isSoloed) {
                 parent.unsolo();
             } else {
@@ -641,7 +644,7 @@ class Shape {
         });
         
         /* ------ Delete ------ */
-        $popup.find(".shape-attr-delete-shape").on("click", function(){
+        $popup.find(".shape-attr-delete-shape").on("click", function () {
             parent.delete();
             $popup.hide();
         });
@@ -650,8 +653,8 @@ class Shape {
             parent.path.attr(shapeWarningAttr);
             for (var i = parent.nodes.length - 1; i >= 0; i--) {
                 parent.nodes[i].handle.hide();
-            }
-        }, function(){
+            }function(
+        }, ){
             parent.path.attr(shapeSelectedAttr);
             for (var i = parent.nodes.length - 1; i >= 0; i--) {
                 parent.nodes[i].handle.show();
@@ -659,14 +662,26 @@ class Shape {
         });*/
         
         /* ------ Set Perimeter ------ */
-        $popup.find(".shape-attr-set-perim").on("click", function(){
+        $popup.find(".shape-attr-set-perim").on("click", function () {
             var len = 500;
             parent.set_perim_length(len);
         });
     }
 
+    /* ---- SETTERS ---- */
+    complete () {
+        this.path.attr("path", path_to_string(this.path) + "Z");
+        this.path.attr(shapeFilledAttr);
+        this.init_shape_attr_popup();
+        this.set_inst_color_id(SELECTED_INSTCOLOR_ID);
 
-    increment_start_freq(dir) {
+        this.update_note_values();
+        this.update_pan();
+
+        
+        //console.log(PROJECT.shapesList);
+    }
+    increment_start_freq (dir) {
         var freq = this.start_freq;
         var note = Tone.Frequency(freq).toMidi();
 
@@ -682,18 +697,77 @@ class Shape {
             this.startFreqIndex--;
         }
         this.update_start_freq();
-        this.set_note_values();
+        this.update_note_values();
     }
     
-    update_volume(val){
+    set_volume (val) {
         this.volume = val;
         this.synth.volume.value = val;
-        this.update_stroke_width(volume_to_stroke_width(val));
+        this.set_stroke_width(volume_to_stroke_width(val));
     }
 
-    update_stroke_width(val) {
+    set_stroke_width (val) {
         this.path.attr("stroke-width", val);
     }
+
+    set_inst_color_id (id) {
+        console.log("setting to id:", id)
+        //console.log(PROJECT.instColors[id].name);
+        var instColor = PROJECT.instColors[id];
+        this.instColorId = id;
+        this.set_instrument(instColor.name);
+        this.path.attr({fill: hexToRgbA(instColor.color, 0.4), stroke: instColor.color})
+        populate_list(synthsList, this.synthName, "#shape-attr-popup-"+this.id+" .shape-attr-inst-select");
+    }
+
+    set_instrument (name) {
+        this.synth.triggerRelease();
+        this.synthName = name;
+        this.synth = synth_chooser(name);
+    }
+    
+    set_perim_length (len) {
+        var currLen = this.path.getTotalLength();
+        //var targetSize = Math.round(currLen / len) * len;
+        var ratio = len / currLen;
+        var transform = this.path.matrix.split();
+        console.log("transform:", transform);
+
+        var newPath = (Raphael.transformPath(this.path.attr("path"), "s"+ratio+","+ratio));
+        var pathNoCurves = [];
+        for (var i = 0; i < newPath.length - 1; i++) {
+            if (newPath[i][0] == "C"){
+                var x = newPath[i][3];
+                var y = newPath[i][4];
+                var lineTo = ["L", x, y];
+                pathNoCurves.push(lineTo);
+                this.nodes[i].handle.attr("cx", x);
+                this.nodes[i].handle.attr("cy", y);
+
+            } else {
+                var x = newPath[i][1];
+                var y = newPath[i][2];
+                this.nodes[i].handle.attr("cx", x);
+                this.nodes[i].handle.attr("cy", y);
+                pathNoCurves.push(newPath[i]);
+            }
+        }
+        pathNoCurves.push(["Z"])
+        //console.log(this.path);
+        //console.log("---", pathNoCurves);
+        //console.log(newPath);
+        this.path.attr("path", pathNoCurves);
+        //console.log(this.path);
+
+        //var test = r.path(Raphael.transformPath(this.path.attr("path"), "s"+ratio+","+ratio));
+        
+        console.log("current perim:", currLen, "setting to:", len, "ratio:", ratio);
+        //console.log("transform:", transform);
+        console.log("new perim:", this.path.getTotalLength());
+        this.update_note_values();
+    }
+
+    /* --- Updaters --- */
 
     update_start_freq () {
         console.log("update start freq");
@@ -721,29 +795,49 @@ class Shape {
         this.panner.pan.value = xMean * 0.7;
     }
     
-    set_inst_color_id(id) {
-        console.log("setting to id:", id)
-        //console.log(PROJECT.instColors[id].name);
-        var instColor = PROJECT.instColors[id];
-        this.instColorId = id;
-        this.change_instrument(instColor.name);
-        this.path.attr({fill: hexToRgbA(instColor.color, 0.4), stroke: instColor.color})
-        populate_list(synthsList, this.synthName, "#shape-attr-popup-"+this.id+" .shape-attr-inst-select");
+    update_note_values() {
+        console.log("SET NOTE VALUES");
+        //console.log(this.part);
+        this.part.removeAll();
+        var delay = 0;
+        
+        // add first note
+        var firstNoteInfo = this.get_note_info(this.nodes[1], this.nodes[0], 0);
+        this.part.add(delay, firstNoteInfo);
+    
+        delay += firstNoteInfo.noteDur;
+
+        // assign notes up until the end
+        for (var i = 2; i < this.nodes.length; i++) {
+            var curr = this.nodes[i];
+            var prev = this.nodes[i - 1];
+            var prevPrev = this.nodes[i - 2];
+            
+            var noteInfo = this.get_note_info(curr, prev, prevPrev);
+
+            this.part.add(delay, noteInfo);
+            delay += noteInfo.noteDur;
+        }
+
+        // add last note 
+        var iLast = this.nodes.length - 1;
+        var lastNoteInfo = this.get_note_info(this.nodes[0], this.nodes[iLast], this.nodes[iLast - 1]);
+        this.part.add(delay, lastNoteInfo);
+        
+        var totalLength = delay + lastNoteInfo.noteDur;
+        this.part.loopEnd = totalLength;
     }
 
-    change_instrument (name) {
-        this.synth.triggerRelease();
-        this.synthName = name;
-        this.synth = synth_chooser(name);
-    }
-    
+    /* --- Transport --- */
+
     stop () {
         this.synth.triggerRelease();
         this.animCircle.hide();
         //this.synth.volume.value = -60;
     }
 
-    init_shape_attr_popup(){
+    /* --- Shape Attr Popup --- */
+    init_shape_attr_popup () {
         var i = this.id;
         var start_freq = this.start_freq;
 
@@ -793,59 +887,19 @@ class Shape {
         populate_list(synthsList, this.synthName, "#shape-attr-popup-"+i+" .shape-attr-inst-select")
     }
 
-    refresh_shape_attr_popup(){
+    refresh_shape_attr_popup () {
         var i = this.id;
         //$popup.find("#start-freq-label").html(this.start_freq);
         $("#start-freq-label-"+i).html(this.start_freq);
     }
     
-    set_note_values(){
-        console.log("SET NOTE VALUES");
-        //console.log(this.part);
-        this.part.removeAll();
-        var delay = 0;
-        
-        // add first note
-        var firstNoteInfo = this.get_note_info(this.nodes[1], this.nodes[0], 0);
-        this.part.add(delay, firstNoteInfo);
-    
-        delay += firstNoteInfo.noteDur;
 
-        // assign notes up until the end
-        for (var i = 2; i < this.nodes.length; i++) {
-            var curr = this.nodes[i];
-            var prev = this.nodes[i - 1];
-            var prevPrev = this.nodes[i - 2];
-            
-            var noteInfo = this.get_note_info(curr, prev, prevPrev);
-
-            this.part.add(delay, noteInfo);
-            delay += noteInfo.noteDur;
-        }
-
-        // add last note 
-        var iLast = this.nodes.length - 1;
-        var lastNoteInfo = this.get_note_info(this.nodes[0], this.nodes[iLast], this.nodes[iLast - 1]);
-        this.part.add(delay, lastNoteInfo);
-        
-        var totalLength = delay + lastNoteInfo.noteDur;
-        this.part.loopEnd = totalLength;
-    }
-    
-    print_shape_info(){
-        console.log("=== Printing shape info ===");
-        for (var i = 0; i < this.nodes.length; i++) {
-            console.log(i);
-            console.log("noteval", this.nodes[i].noteVal);
-            console.log("duration", this.nodes[i].duration);
-        }
-    }
+    /* --- Helper ---*/
 
     /* returns an object containing note information - for the note from nodePrev to node.
     nodePrevPrev needed to calculate angle at node Prev
     */
-    get_note_info(node, nodePrev, nodePrevPrev){
-        
+    get_note_info (node, nodePrev, nodePrevPrev) {
         var noteVal;
         var duration = (lineDistance(node, nodePrev) * PROJECT.tempo) / 1000;
         var isFirst = false;
@@ -872,56 +926,24 @@ class Shape {
         }
         return result;
     }
-
-    set_perim_length(len){
-        var currLen = this.path.getTotalLength();
-        //var targetSize = Math.round(currLen / len) * len;
-        var ratio = len / currLen;
-        var transform = this.path.matrix.split();
-        console.log("transform:", transform);
-
-        var newPath = (Raphael.transformPath(this.path.attr("path"), "s"+ratio+","+ratio));
-        var pathNoCurves = [];
-        for (var i = 0; i < newPath.length - 1; i++) {
-            if (newPath[i][0] == "C"){
-                var x = newPath[i][3];
-                var y = newPath[i][4];
-                var lineTo = ["L", x, y];
-                pathNoCurves.push(lineTo);
-                this.nodes[i].handle.attr("cx", x);
-                this.nodes[i].handle.attr("cy", y);
-
-            } else {
-                var x = newPath[i][1];
-                var y = newPath[i][2];
-                this.nodes[i].handle.attr("cx", x);
-                this.nodes[i].handle.attr("cy", y);
-                pathNoCurves.push(newPath[i]);
-            }
+    
+    print_shape_info () {
+        console.log("=== Printing shape info ===");
+        for (var i = 0; i < this.nodes.length; i++) {
+            console.log(i);
+            console.log("noteval", this.nodes[i].noteVal);
+            console.log("duration", this.nodes[i].duration);
         }
-        pathNoCurves.push(["Z"])
-        //console.log(this.path);
-        //console.log("---", pathNoCurves);
-        //console.log(newPath);
-        this.path.attr("path", pathNoCurves);
-        //console.log(this.path);
-
-        //var test = r.path(Raphael.transformPath(this.path.attr("path"), "s"+ratio+","+ratio));
-        
-        console.log("current perim:", currLen, "setting to:", len, "ratio:", ratio);
-        //console.log("transform:", transform);
-        console.log("new perim:", this.path.getTotalLength());
-        this.set_note_values();
-    }
+    }  
 }
 
 /* ========================================================================== */
 /* --------------------------- Vertex Handle class -------------------------- */
 class Node {
-    constructor(x, y, i, shapeId) {
+    constructor (x, y, i, shapeId) {
         var parent = this;
         this.id = shapeId;
-        var shapeColor = PROJECT.instColors[ACTIVE_SHAPE.instColorId].color;
+        var shapeColor = ACTIVE_SHAPE.instColorObj().color;
         
         // if first node
         if ((i-1) == 0) {
@@ -969,11 +991,11 @@ class Node {
                 this.odx = dx;
                 this.ody = dy;
                 // TODO ?
-                PROJECT.shapesList[shapeId].set_note_values();
+                PROJECT.shapesList[shapeId].update_note_values();
             }
         }
 
-        this.up = function (){
+        this.up = function () {
             if (CURR_TOOL == "adjust") {
                 this.odx = this.ody = 0;
             }
@@ -1024,7 +1046,7 @@ class Node {
 /* ========================================================================== */
 /* ------------------------- Instrument-Color class ------------------------- */
 class InstColor {
-    constructor(i, instName, color){
+    constructor (i, instName, color) {
         var parent = this;
         this.id = i;
         this.name = synthsList[i];
@@ -1044,6 +1066,24 @@ class InstColor {
                     </select>\
                     <i class="ion-arrow-left-b"></i>\
                     <span class="selected-inst-icon"><img src="img/sin_white.png"></span>\
+                    <ul class="inst-params">\
+                <li>\
+                    <span class="inst-param-title">Glide</span><br>\
+                    <input type="text" class="kk-knob kk-param-1"/>\
+                </li><!--\
+                --><li>\
+                    <span class="inst-param-title">Attack</span><br>\
+                    <input type="text" class="kk-knob kk-param-2"/>\
+                </li><!--\
+                --><li>\
+                    <span class="inst-param-title">Decay</span><br>\
+                    <input type="text" class="kk-knob kk-param-3"/>\
+                </li><!--\
+                --><li>\
+                    <span class="inst-param-title">Sustain</span><br>\
+                    <input type="text" class="kk-knob kk-param-4"/>\
+                </li>\
+            </ul>\
                 </div>\
             </li>';
 
@@ -1054,7 +1094,7 @@ class InstColor {
         this.li.find(".inst-title").css({"background-color": this.color, "color": "#fff"});
         this.li.css({"background-color": hexToRgbA(this.color, 0.7), "border-color": this.color});
         
-        this.li.on("click", function(){
+        this.li.on("click", function () {
             //console.log(this);
             $(".inst-option").removeClass("selected-inst");
             $(this).addClass("selected-inst");
@@ -1077,7 +1117,7 @@ class InstColor {
 var PROJECT = new Project;
 var ACTIVE_SHAPE = new Shape(PROJECT.shapesList.length);
 
-$(document).ready(function() {
+$(document).ready(function () {
 
     init_grid();
     hide_handles();
@@ -1091,7 +1131,7 @@ $(document).ready(function() {
         css: "skeleton",
     })
 
-    $(".kk-param-1").change(function(){
+    $(".kk-param-1").change(function () {
         var val = $(this).val()/300;
         console.log(val);
         for (var i = PROJECT.shapesList.length - 1; i >= 0; i--) {
@@ -1101,7 +1141,7 @@ $(document).ready(function() {
             }
         }
     });
-    $(".kk-param-2").change(function(){
+    $(".kk-param-2").change(function () {
         var val = $(this).val()/100;
         for (var i = PROJECT.shapesList.length - 1; i >= 0; i--) {
             if (PROJECT.shapesList[i].synthName == "Simple"){
@@ -1109,7 +1149,7 @@ $(document).ready(function() {
             }
         }
     });
-    $(".kk-param-3").change(function(){
+    $(".kk-param-3").change(function () {
         var val = $(this).val()/100;
         console.log(val);
         for (var i = PROJECT.shapesList.length - 1; i >= 0; i--) {
@@ -1119,7 +1159,7 @@ $(document).ready(function() {
             }
         }
     });
-    $(".kk-param-4").change(function(){
+    $(".kk-param-4").change(function () {
         var val = $(this).val()/100;
         console.log(val);
         for (var i = PROJECT.shapesList.length - 1; i >= 0; i--) {
@@ -1161,12 +1201,12 @@ window.onkeydown = function (e) {
 };
 
 /* ---------- Toggle play / stop ---------- */
-$(".play-stop-toggle").click(function(){
+$(".play-stop-toggle").click(function () {
     toggle_play_stop();
 });
 
 /* ---------- Toggle record ---------- */
-$(".record-toggle").click(function(){
+$(".record-toggle").click(function () {
     if (PLAYING && !RECORDING) {
         record_start();
     } else if (PLAYING && RECORDING){
@@ -1187,36 +1227,36 @@ $(".tempo-slider").on("mouseup", function () {
 })
 
 /* ---------- Change scale ---------- */
-$(document).on('change','.scale-select',function(){
+$(document).on('change','.scale-select',function () {
     PROJECT.set_scale(this.value);
 });
 
 /* ---------- Change key ---------- */
-$(document).on('change','.tonic-select',function(){
+$(document).on('change','.tonic-select',function () {
     PROJECT.set_tonic(this.value);
 });
 
 /* ---------- Stop click propegation when clicking in shape popup ---------- */
-$( ".shape-attr-popup" ).on( "mousedown", function( event ) {
+$(".shape-attr-popup").on( "mousedown", function (event) {
     event.stopPropagation();
 });
 
 /* ---------- Clear canvas ---------- */
-$(".clear").click(function(){
+$(".clear").click(function () {
     PROJECT.clear_canvas();
 });
 
 /* ---------- Change tool ---------- */
-$("#draw-tool").click(function(){
+$("#draw-tool").click(function () {
     select_tool("draw");
 });
 
-$("#adjust-tool").click(function(){
+$("#adjust-tool").click(function () {
     select_tool("adjust");
 });
 
 /* ---------- Toggle grid ---------- */
-$("#grid").click(function(){
+$("#grid").click(function () {
     if ($("#grid").is(":checked")) {
         show_grid();
     } 
@@ -1228,9 +1268,9 @@ $("#grid").click(function(){
 /* ========================================================================== */
 /* --------------------------- HOLDER MOUSEMOVE ----------------------------- */
 /* ========================================================================== */
-$( "#holder" ).on( "mousemove", function( event ) {
-    var x = event.pageX - GLOBAL_MARGIN;
-    var y = event.pageY - GLOBAL_MARGIN;
+$("#holder").on("mousemove", function (e) {
+    var x = e.pageX - GLOBAL_MARGIN;
+    var y = e.pageY - GLOBAL_MARGIN;
     
     x = snap_to_grid(x);
     y = snap_to_grid(y);
@@ -1261,40 +1301,51 @@ $( "#holder" ).on( "mousemove", function( event ) {
 /* ========================================================================== */
 /* --------------------------- HOLDER MOUSEDOWN ----------------------------- */
 /* ========================================================================== */
-$( "#holder" ).on( "mousedown", function( event ) {
+$("#holder").on( "mousedown", function (e) {
     if ($(".shape-attr-popup").is(":visible")) {
         hide_details();
     }
     
     if (CURR_TOOL == "draw") {
 
-        var x = event.pageX - GLOBAL_MARGIN;
-        var y = event.pageY - GLOBAL_MARGIN;
+        var x = e.pageX - GLOBAL_MARGIN;
+        var y = e.pageY - GLOBAL_MARGIN;
         
         x = snap_to_grid(x);
         y = snap_to_grid(y);
 
         var prev_n = [];
 
+        /* Update previous node if the path already exists */
         if ((ACTIVE_SHAPE.path.attr("path")).length) {
             var origin_x = ACTIVE_SHAPE.path.attr("path")[0][1];
             var origin_y = ACTIVE_SHAPE.path.attr("path")[0][2];
             prev_n = ACTIVE_SHAPE.path.attr("path")[ACTIVE_SHAPE.length() - 1];
         }
 
+        /* Snaps to origin => complete shape if within the radius */
         if (x < (origin_x + ORIGIN_RADIUS) && x > (origin_x - ORIGIN_RADIUS) && 
             y < (origin_y + ORIGIN_RADIUS) && y > (origin_y - ORIGIN_RADIUS)) {
             set_draw_state("ready");
             ACTIVE_SHAPE.path.attr({"fill-opacity": 0.3});
-            complete_active_shape();
-        } else {        
+            ACTIVE_SHAPE.complete();
+            PROJECT.shapesList.push(ACTIVE_SHAPE);
+
+            ACTIVE_SHAPE = new Shape(PROJECT.shapesList.length);
+
+            hoverLine.attr("path", "");
+            PREV_ENDPOINT = "";
+        }
+        /* If not, add to current path */ 
+        else {        
             PREV_ENDPOINT = "M" + x + "," + y;
             var moveTo = "M" + x + "," + y;
             var lineTo = "L" + x + "," + y;
 
             hoverLine.attr("path", moveTo);                
 
-            if (ACTIVE_SHAPE.path.attr("path") === "") { // shape is empty
+            /* shape is empty */
+            if (ACTIVE_SHAPE.path.attr("path") === "") {
                 set_draw_state("drawing");
                 ACTIVE_SHAPE.path.attr("path", moveTo);
                 ACTIVE_SHAPE.animCircle.show();
@@ -1334,7 +1385,7 @@ function toggle_play_stop () {
     }
 }
 
-function play_handler() {
+function play_handler () {
     console.log(CURR_DRAW_STATE);
     if (CURR_DRAW_STATE === "ready") {
         if (RECORD_ARMED) {
@@ -1347,7 +1398,7 @@ function play_handler() {
     }
 }
 
-function stop_handler(){
+function stop_handler () {
     $(".play-stop-toggle").html("<i class='ion-play'></i>");
     PLAYING = false;
     for (var i = PROJECT.shapesList.length - 1; i >= 0; i--) {
@@ -1364,7 +1415,7 @@ function stop_handler(){
 
 /* -------- Record --------- */
 
-function record_start(){
+function record_start () {
     $(".record-toggle").css({"color": "#F00"})
     console.log("RECORDING");
     $(".recorder-blink").show();
@@ -1372,12 +1423,12 @@ function record_start(){
     rec.record();
 }
 
-function record_stop(){
+function record_stop () {
     console.log("STOP RECORDING");
     $(".recorder-blink").hide();
     $(".record-toggle").css({"color": "#777"})
     rec.stop();
-    rec.exportWAV(function(blob){
+    rec.exportWAV(function (blob) {
         var url = URL.createObjectURL(blob);
         var li = document.createElement('li');
         var au = document.createElement('audio');
@@ -1399,14 +1450,14 @@ function record_stop(){
     disarm_record();
 }
 
-function arm_record(){
+function arm_record () {
     $(".transport-controls").css({"border-color": "#F00", "border-width": "1px"})
     $(".record-toggle").css({"color": "#F00"})
     RECORD_ARMED = true;
     console.log("record armed");
 }
 
-function disarm_record(){
+function disarm_record () {
     $(".record-toggle").css({"color": "#777"})
     $(".transport-controls").css({"border-color": "#DDD", "border-width": "1px"})
 
@@ -1472,7 +1523,7 @@ function hide_details () {
 }
 
 /* -------- TOOLS -------- */
-function select_tool(tool) {
+function select_tool (tool) {
     if (CURR_DRAW_STATE == "ready") {
         if (tool === "draw") {
             hoverCircle.show();
@@ -1491,7 +1542,7 @@ function select_tool(tool) {
     }
 }
 
-function set_draw_state(state){
+function set_draw_state (state) {
     if (state === "ready") {
         //$(".menu ul li a").prop('disabled', false);
         $(".controls button").prop('disabled', false);
@@ -1506,7 +1557,7 @@ function set_draw_state(state){
     CURR_DRAW_STATE = state;
 }
 
-function populate_list(values, selectedItem, className) {
+function populate_list (values, selectedItem, className) {
     //console.log("SELECTED ITEM", selectedItem);
     var optionsHtml = '';
     var selectedHtml = '';
@@ -1522,27 +1573,6 @@ function populate_list(values, selectedItem, className) {
 }
 
 
-/*            <ul class="inst-params">\
-                <li>\
-                    <span class="inst-param-title">Glide</span><br>\
-                    <input type="text" class="kk-knob kk-param-1"/>\
-                </li><!--\
-                --><li>\
-                    <span class="inst-param-title">Attack</span><br>\
-                    <input type="text" class="kk-knob kk-param-2"/>\
-                </li><!--\
-                --><li>\
-                    <span class="inst-param-title">Decay</span><br>\
-                    <input type="text" class="kk-knob kk-param-3"/>\
-                </li><!--\
-                --><li>\
-                    <span class="inst-param-title">Sustain</span><br>\
-                    <input type="text" class="kk-knob kk-param-4"/>\
-                </li>\
-            </ul>\*/
-
-
-
 /* -------- Instrument panel -------- */
 
 
@@ -1554,14 +1584,14 @@ function populate_list(values, selectedItem, className) {
 /* completes the ACTIVE SHAPE: finishes the path by connecting the latest point
    to the origin. Adds the shape to PROJECT.shapesList. Initializes new shape 
 */
-function complete_active_shape(){
+function complete_active_shape () {
 
     ACTIVE_SHAPE.path.attr("path", path_to_string(ACTIVE_SHAPE.path) + "Z");
     ACTIVE_SHAPE.path.attr(shapeFilledAttr);
     ACTIVE_SHAPE.init_shape_attr_popup();
     ACTIVE_SHAPE.set_inst_color_id(SELECTED_INSTCOLOR_ID);
 
-    ACTIVE_SHAPE.set_note_values();
+    ACTIVE_SHAPE.update_note_values();
     ACTIVE_SHAPE.update_pan();
 
     PROJECT.shapesList.push(ACTIVE_SHAPE);
@@ -1579,7 +1609,7 @@ function complete_active_shape(){
 /* ------------------------------ NOTE CHOOSING ----------------------------- */
 /* ========================================================================== */
 
-function indexOfNote(letter, scale) {
+function indexOfNote (letter, scale) {
     //console.log("looking for", letter, "in", scale);
     for (var i = scale.length - 1; i >= 0; i--) {
         if (teoria.note(scale[i]).chroma() === teoria.note(letter).chroma()) {
@@ -1640,7 +1670,7 @@ function transpose_by_scale_degree (note, deg) {
     return newNote;
 }
 
-function note_chooser1(freq, theta) {
+function note_chooser1 (freq, theta) {
     //console.log("================ NOTE CHOOSER ================")
 
     var note = Tone.Frequency(freq).toMidi();
@@ -1859,7 +1889,7 @@ function synth_chooser (name) {
 /* ========================================================================== */
 
 
-function lineDistance( point1, point2 ) {
+function lineDistance (point1, point2) {
     var xs = 0;
     var ys = 0;
     xs = point2.getX() - point1.getX();
@@ -1873,11 +1903,11 @@ function isBetween (val, a, b) {
     return (val > a && val <= b);
 }
 
-function path_to_string(path){
+function path_to_string (path) {
     return path.attr("path").join()
 }
 
-function subpath_to_string(path, i){
+function subpath_to_string (path, i) {
     return path.attr("path")[i].join()
 }
 
@@ -1892,7 +1922,7 @@ function volume_to_stroke_width (vol) {
     }
 }
 
-function hexToRgbA(hex, a){
+function hexToRgbA (hex, a) {
     var c;
     if(/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)){
         c= hex.substring(1).split('');
@@ -1911,7 +1941,7 @@ function hexToRgbA(hex, a){
 /* ========================================================================== */
 
 
-$(".show-hide").on("click", function(){
+$(".show-hide").on("click", function () {
     var target = $(this).attr("data-target");
     if (target === "menu") {
         if ($(".top-bar").css("top") == "0px") {
@@ -1929,21 +1959,21 @@ $(".show-hide").on("click", function(){
     }
 });
 
-function show_menu() {
+function show_menu () {
     $(".top-bar").animate({"top":'0px'}, 200);
     $(".show-hide-menu").html('<i class="ion-chevron-up"></i>');
 }
 
-function hide_menu() {
+function hide_menu () {
     $(".top-bar").animate({"top":"-19px"}, 200);
     $(".show-hide-menu").html('<i class="ion-chevron-down"></i>');
 }
 
-function expand_inst_selectors() {
+function expand_inst_selectors () {
     $(".inst-selectors").animate({"height":'92px'}, 200);
     $(".show-hide-inst").html('<i class="ion-chevron-up"></i>');
 }
-function reduce_inst_selectors() {
+function reduce_inst_selectors () {
     $(".inst-selectors").animate({"height":'20px'}, 200);
     $(".show-hide-inst").html('<i class="ion-chevron-down"></i>');
 }
@@ -1972,17 +2002,17 @@ function hide_info_pane() {
 /* ---------------------------------- Info ---------------------------------- */
 /* ========================================================================== */
 
-function set_info_text(text){
+function set_info_text (text) {
     $(".info-pane .info-pane-text").html(text);
 }
 
 /* ============================= Fullscreen ================================= */
 
-$(".enter-fullscreen").on("click", function(){
+$(".enter-fullscreen").on("click", function () {
     toggleFullScreen();
 });
 
-function toggleFullScreen() {
+function toggleFullScreen () {
   if (!document.fullscreenElement &&    // alternative standard method
       !document.mozFullScreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement ) {  // current working methods
     if (document.documentElement.requestFullscreen) {
@@ -2011,7 +2041,7 @@ document.addEventListener("fullscreenchange", onFullScreenChange, false);
 document.addEventListener("webkitfullscreenchange", onFullScreenChange, false);
 document.addEventListener("mozfullscreenchange", onFullScreenChange, false);
 
-function onFullScreenChange() {
+function onFullScreenChange () {
     var fullscreenElement = document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement;
     if (fullscreenElement) {
         $(".enter-fullscreen").html('<i class="ion-arrow-shrink"></i>')
@@ -2029,10 +2059,10 @@ function onFullScreenChange() {
 /* ================================ Project ================================= */
 /* ========================================================================== */
 var projectData;
-function project_dump(){
+function project_dump () {
     projectData = PROJECT.dump()
 }
 
-function project_load(){
+function project_load () {
     PROJECT.load(projectData);
 }

@@ -3,13 +3,17 @@
 
 # TEAM
 
-    <name> -- <role> -- <twitter>
-
-# THANKS
-
-    <name>
+    Elias Jarzombek - Implementation - https://twitter.com/jarz_0
+    Charlie Colony  - Conception
 
 # TECHNOLOGY COLOPHON
 
-    CSS3, HTML5
+    JS libraries:
+    ToneJS          https://tonejs.github.io/
+    RaphaelJS       http://dmitrybaranovskiy.github.io/raphael/
+    Teoria          https://github.com/saebekassebil/teoria
+    RecordeJS       https://github.com/mattdiamond/Recorderjs
+    KhantrolKnob    https://github.com/AndrewKarasek/khantrol-knob
+
+    CSS3, HTML5, JavaScript
     Apache Server Configs, jQuery, Modernizr, Normalize.css

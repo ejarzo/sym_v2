@@ -271,8 +271,12 @@ ul {
 /* ========================================================================== */
 /* ============================= INSTRUEMNTS ================================ */
 .inst-selectors {
-  position: relative;
+  position: absolute;
   height: 20px;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
   background: #fff; }
   .inst-selectors ul.inst-list {
     overflow-x: scroll;
