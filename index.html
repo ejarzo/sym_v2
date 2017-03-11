@@ -28,15 +28,15 @@
                     <li class="logo"><a href="#">SYM</a></li><!-- 
                     --><!-- <li><a href="#">My Projects</a></li> --><!-- 
                     --><li class="discover-link"><a href="#">Discover</a></li><!-- 
-                    --><li><a href="#">Info</a></li><!-- 
-                    --><li class="dropdown"><a href="#">Help</a>
+                    --><li><a href="#" class="show-overlay" data="info">Info</a></li><!-- 
+                    --><li class="dropdown"><a href="#" >Help</a>
                         <div class="dropdown-content">
-                            <a href="#">Tutorial</a>
+                            <a href="#" class="show-overlay" data="tutorial">Tutorial</a>
                             <a href="#">Keyboard Shortcuts</a>
                         </div>
                     </li><!-- 
                     --><li class="account-link dropdown">
-                        <a href="#">Account: <strong>Elias</strong></a>
+                        <a href="#">Account: <strong>Coming Soon</strong></a>
                         <div class="dropdown-content">
                             <a href="#">My Profile</a>
                             <a href="#">My Projects</a>
@@ -62,10 +62,33 @@
 
                 
                 <div class="controls-section tools-controls">
-                    <button class="ctrl-elem tool active" id="draw-tool" title="Draw Tool (TAB to toggle)">DRAW</button>
-                    <button class="ctrl-elem tool" id="adjust-tool" title="Edit Tool (TAB to toggle)">ADJUST</button>
+                    <button class="ctrl-elem tool active" id="draw-tool" title="Draw Tool (TAB to toggle)">
+                        <div class="color-palette dropdown">
+                            <div class="dropdown-content">
+                                <div class="palette-background">
+                                    <div class="palette-color inst-color0" onclick="set_draw_inst_color(0)"></div>
+                                    <div class="palette-color inst-color1" onclick="set_draw_inst_color(1)"></div>
+                                    <div class="palette-color inst-color2" onclick="set_draw_inst_color(2)"></div>
+                                    <div class="palette-color inst-color3" onclick="set_draw_inst_color(3)"></div>
+                                    <div class="palette-color inst-color4" onclick="set_draw_inst_color(4)"></div>
+                                </div>
+
+                            </div>
+                        </div>
+                            <!-- <img class="tool-icon" src="img/cursor_draw.svg"> -->
+                            <span>DRAW</span>
+                    </button>
+                    <button class="ctrl-elem tool" id="adjust-tool" title="Edit Tool (TAB to toggle)">
+                       <!--  <img class="tool-icon" src="img/cursor_edit.svg"> -->
+                       EDIT
+                    </button>
                 </div>
                 
+<!--                 <div class="divider"></div>
+
+                <div class="controls-section color-controls">
+                </div> -->
+
                 <div class="divider"></div>
 
                 <div class="controls-section grid-controls">
@@ -77,6 +100,12 @@
                         <div>
                             <input class="checkbox" type="checkbox" name="snap" id="snap" title="Toggle Snap To Grid">
                             <label for="snap" title="Toggle Snap To Grid">Snap to Grid</label>
+                        </div>
+                    </div>
+                    <div class="ctrl-elem">
+                        <div>
+                            <input class="checkbox" type="checkbox" name="auto-quantize" id="auto-quantize" title="Snaps shapes to the same length">
+                            <label for="auto-quantize" title="Snaps shapes to the same length">Auto-Quantize</label>
                         </div>
                     </div>
                 </div>
@@ -124,6 +153,15 @@
                 <i class="ion-record"></i> REC
             </div>
             
+            <!-- Overlays -->
+            <div class="hidden overlay tutorial-overlay">
+                <p>Tutorial coming soon.</p>
+                <button class="close-overlay">Close</button>
+            </div>
+            <div class="hidden overlay info-overlay">
+                <p>Info coming soon.</p>
+                <button class="close-overlay">Close</button>
+            </div>
         </div>
 
         <!-- Instruments -->

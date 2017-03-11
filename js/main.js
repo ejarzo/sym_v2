@@ -43,30 +43,29 @@ var inst1Color  = colors[0];
 
 /* ------------------------------- ATTRIBUTES ------------------------------- */
 /* shapes */
-var shapeDefaultAttr        = {stroke: black, opacity: 1};
+var shapeDefaultAttr        = {opacity: 1};
 var shapeHoverAttr          = {"stroke-width": 3};
-var shapeFilledPreviewAttr  = {fill: "rgba(120,120,120,.1)"};
 var shapeFilledAttr         = {opacity: 1};
 var shapeWarningAttr        = {fill: warningRed, stroke: warningRed};
-var shapeSelectedAttr       = {fill: "rgba(0,0,0,.5)", stroke: black, "stroke-width": 3};
 var shapeMutedAttr          = {opacity: 0.2};
+var completedShapeOpacity   = 0.4;
+var previewShapeOpacity     = 0.1;
 
 /* animated circle */
-var animCircleAttr          = {"fill": "#111", "stroke": "#111", "stroke-width": 2, opacity: 1};
-var animCircleBangStartAttr = {"r": 7, "fill": "#fff"};
-var animCircleBangEndAttr   = {"r": 3, "fill": "#111"};
+var animCircleAttr          = {"stroke-width": 2, opacity: 1};
+var animCircleBangStartAttr = {r: 7, "fill": "#fff"};
 
 /* handles */
-var handlesWarningAttr = {"opacity": 0.2};
-var handlesDefaultAttr = {"r": 3, "stroke-width": 2};
-var handleHoverInAttr = {"r": 6, "stroke-width": 3};
+var handlesWarningAttr = {opacity: 0.2};
+var handlesDefaultAttr = {r: 3, "stroke-width": 2};
+var handleHoverInAttr = {r: 6, "stroke-width": 3};
 
 /* hover hint */
-var hoverCircleAttr   = {fill: "#AAA", stroke: "#aaa", opacity: 0.5};
-var hoverLineAttr     = {"stroke": "#AAA", "stroke-width": "2", opacity: 0.5};
+var hoverCircleAttr   = {"fill": "#ddd", "fill-opacity": .4, "stroke": "#ddd", "stroke-width": 2};
+var hoverLineAttr     = {"stroke-width": "2", opacity: 0.5};
 
 /* grid */
-var gridDotAttr       = {"fill": "#777", "stroke-width": 1, "stroke": "#FFF"};
+var gridDotAttr       = {fill: "#777", "stroke-width": 1, stroke: "#FFF"};
 
 /* --------------------------------- GLOBALS -------------------------------- */
 
@@ -76,11 +75,11 @@ Tone.Transport.latencyHint = 'interactive';
 var DEFAULT_TEMPO = 5;
 
 var PLAYING = false;
-var synthsList =  ["Marimba", "Duo", "Sub Bass", "Simple", "AM", "FM", 
+var synthsList =  ["Marimba", "Duo", "Keys", "Sub Bass", "Simple", "AM", 
                    "Super Saw", "Membrane", "Kalimba", "Cello", "Pizz"];
 var DEFAULT_SYNTH = synthsList[0];
 var SELECTED_INSTCOLOR_ID = 0;
-
+var SELECTED_SHAPE_ID = -1;
 //var PRESETS = new Presets();
 
 /* ======== SCALE ===================================================== */
@@ -101,11 +100,10 @@ var gridDots = r.set();
 
 /* ======== TOOLS ====================================================== */
 var CURR_TOOL = "draw"; // draw, adjust
-var CURR_DRAW_STATE = "ready";
+var CURR_DRAW_STATE = "ready"; // ready, drawing
 
 /* ======== LINE TO MOUSE ============================================== */
 var ORIGIN_RADIUS = 15;
-var PREV_ENDPOINT;
 var hoverLine = r.path().attr(hoverLineAttr);
 var hoverCircle = r.circle(0,0,3).attr(hoverCircleAttr);
 
@@ -132,7 +130,8 @@ class Project {
         this.rootNote = this.scaleObj.tonic.toString();
         this.shapesList = [];
         this.instColors = [];
-        
+        this.quantizeLength = 700;
+
         /* Init */
         this.init_tempo();
         this.init_scale_select();
@@ -148,10 +147,12 @@ class Project {
         //console.log("SETTING SCALE TO:", name);
         this.scaleObj = teoria.note(this.rootNote).scale(name);
         //console.log(this.scaleObj.simple());
-        for (var i = this.shapesList.length - 1; i >= 0; i--) {
-            //console.log(i);
-            this.shapesList[i].update_start_freq();
-        }
+        this.shapesList.forEach(function (shape) {
+            if (shape.included) {
+                shape.update_start_freq();
+            }
+        });
+
         this.reset_all_notes();
     }
     set_tonic (name) {
@@ -161,9 +162,11 @@ class Project {
         this.scaleObj = note.scale(currScaleName);
         this.rootNote = note.toString();
         //console.log("new scale:", this.scaleObj.simple())
-        for (var i = this.shapesList.length - 1; i >= 0; i--) {
-            this.shapesList[i].update_start_freq();
-        }
+        this.shapesList.forEach(function (shape) {
+            if (shape.included) {
+                shape.update_start_freq();
+            }
+        });
         this.reset_all_notes();
     }
 
@@ -193,31 +196,36 @@ class Project {
         hide_details();
         $(".shape-attr-popup").remove();
         stop_handler();
-        for (var i = this.shapesList.length - 1; i >= 0; i--) {
-            this.shapesList[i].unmute();
-            this.shapesList[i].delete();
-        }
+        this.shapesList.forEach(function (shape) {
+            if (shape.included) {
+                shape.unmute();
+                shape.delete();    
+            }
+        });
         r.clear();
         init_grid();
         
         if ($("#grid").is(":checked")) {show_grid();} 
         else {hide_grid();}
         
-        this.shapesList = [];
-        ACTIVE_SHAPE = new Shape(0);
-        
-        hoverLine = r.path().attr(hoverLineAttr);
-        hoverCircle = r.circle(0,0,3).attr(hoverCircleAttr);
+        this.shapesList.length = 0;
+        ACTIVE_SHAPE = new Shape(0, SELECTED_INSTCOLOR_ID);
+        var color = PROJECT.instColors[SELECTED_INSTCOLOR_ID].color;
+        hoverLine = r.path().attr(hoverLineAttr).attr("stroke", color);
+        hoverCircle = r.circle(0,0,3).attr(hoverCircleAttr).attr({"stroke": color, "fill": color});
         if (CURR_TOOL == "adjust") {
             hoverCircle.hide();
         }
         select_tool("draw");
+        console.log(this.shapesList);
     }
 
     reset_all_notes () {
-        for (var i = this.shapesList.length - 1; i >= 0; i--) {
-            this.shapesList[i].update_note_values();
-        }
+        this.shapesList.forEach(function (shape) {
+            if (shape.included) {
+                shape.update_note_values();
+            }
+        });
     }
 
     /* ---------- I/O ---------- */
@@ -238,7 +246,7 @@ class Project {
                 var shapeData = {
                     pathList: coords,
                     startFreqIndex: currShape.startFreqIndex,
-                    synthName: currShape.synthName,
+                    //synthName: currShape.synthName,
                     volume: currShape.volume,
                     isMuted: currShape.isMuted
                 }
@@ -255,17 +263,16 @@ class Project {
     }
 
     load (proj_obj) {
-        console.log("LOADING:", proj_obj);
-        // TODO confirm lose progress
-        this.clear_canvas();
+        console.log("Loading Project:", proj_obj);
 
+        this.clear_canvas();
         this.tempo = proj_obj.tempo;
         this.set_tempo(this.tempo);
         this.scaleObj = teoria.note(proj_obj.tonic).scale(proj_obj.scaleName);
         this.rootNote = this.scaleObj.tonic.toString();
 
         for (var i = 0; i < proj_obj.shapesList.length; i++) {
-            var newShape = new Shape (i, proj_obj.shapesList[i]);
+            var newShape = new Shape (i, 0, proj_obj.shapesList[i]);
             newShape.update_note_values();
             this.shapesList.push(newShape);
         }
@@ -281,7 +288,7 @@ class Project {
 /* ========================================================================== */
 /* ------------------------------- Shape class ------------------------------ */
 class Shape {
-    constructor (id, savedData) {
+    constructor (id, instColorId, savedData) {
         var parent = this;
         this.id = id;
 
@@ -301,9 +308,9 @@ class Shape {
                 dx = snap_to_grid(dx);
                 dy = snap_to_grid(dy);
                 //console.log(dx, dy);
-                for (var j = parent.nodes.length - 1; j >= 0; j--) {
-                    var nodeX = parent.nodes[j].getX();
-                    var nodeY = parent.nodes[j].getY();
+                for (var i = parent.nodes.length - 1; i >= 0; i--) {
+                    var nodeX = parent.nodes[i].getX();
+                    var nodeY = parent.nodes[i].getY();
                     var newX = nodeX + (dx - this.odx);
                     var newY = nodeY + (dy - this.ody);  
                     /*var animCircleX = parent.animCircle.attr("cx");
@@ -312,8 +319,8 @@ class Shape {
                     var newAnimY = animCircleY + (dy - this.ody);*/
                     //var transform = this.animCircle.matrix.split();
                     //console.log(transform);
-                    //parent.nodes[j].handle.translate(dx - this.odx, dy - this.ody);
-                    parent.nodes[j].handle.attr({"cx": newX, "cy": newY});
+                    //parent.nodes[i].handle.translate(dx - this.odx, dy - this.ody);
+                    parent.nodes[i].handle.attr({"cx": newX, "cy": newY});
                     //parent.animCircle.transform("t"+dx+","+dy);
                 }
               
@@ -331,6 +338,33 @@ class Shape {
                 this.drag = true;
 
                 parent.update_pan();
+
+                var center = parent.get_center_coord_percent();
+                console.log(center.y)
+                if (center.y > .8) {
+                    parent.startFreqIndex = -4;
+                } else if (center.y > .6) {
+                    parent.startFreqIndex = -3;
+                } else if (center.y > .4) {
+                    parent.startFreqIndex = -2;
+                } else if (center.y > .2) {
+                    parent.startFreqIndex = -1;
+                } else if (center.y > 0) {
+                    parent.startFreqIndex = 0;
+                } else if (center.y > -.2) {
+                    parent.startFreqIndex = 1;
+                } else if (center.y > -.4) {
+                    parent.startFreqIndex = 2;
+                } else if (center.y > -.6) {
+                    parent.startFreqIndex = 3;
+                } else if (center.y > -.8) {
+                    parent.startFreqIndex = 4;
+                } else if (center.y > -1) {
+                    parent.startFreqIndex = 5;
+                }
+    /*            parent.update_start_freq();
+                parent.update_note_values(); */
+
             }
         },
         this.up = function (e) {
@@ -338,6 +372,8 @@ class Shape {
                 e.stopPropagation();
                 parent.show_attr_popup(e);
             }
+            parent.update_start_freq();
+            parent.update_note_values();    
             //parent.animCircle.transform("t0,0");
             this.odx = this.ody = 0;
         };
@@ -371,6 +407,7 @@ class Shape {
 
         /* ----- Details ----- */
         this.show_attr_popup = function (event) {
+            SELECTED_SHAPE_ID = this.id;
             this.path.attr({"fill-opacity": 0.9});
             var xPad = 23;
             var yPad = 43;
@@ -407,14 +444,19 @@ class Shape {
 
         /* ----- Delete ----- */
         this.delete = function () {
+            this.popup.remove();
+            
             this.stop();
             this.path.remove();
             
             this.part.removeAll();
-            
-            for (var i = this.nodes.length - 1; i >= 0; i--) {
-                this.nodes[i].handle.remove();
-            }
+            this.part.dispose();
+            this.synth.dispose();
+
+            this.nodes.forEach(function (node) {
+                node.handle.remove();
+            });
+
             this.included = false;
         }
         
@@ -426,66 +468,68 @@ class Shape {
             //this.synth.volume.value = "-inf";
             this.part.mute = true;
             this.path.attr({"opacity": 0.3});
-            for (var i = this.nodes.length - 1; i >= 0; i--) {
-                this.nodes[i].handle.attr(shapeMutedAttr);
-            }
+            this.nodes.forEach(function (node) {
+                node.handle.attr(shapeMutedAttr);
+            });
             this.animCircle.attr(shapeMutedAttr);
         
             var unmuteHtml = '<button class="shape-attr-mute shape-attr-unmute">Unmute</button>';
-            $popup.find(".mute-button-cont").html(unmuteHtml);
+            this.popup.find(".mute-button-cont").html(unmuteHtml);
         }
         this.unmute = function () {
             console.log("unmute");
             this.isMuted = false;
             this.part.mute = false;
             this.path.attr({"opacity": 1});
-            for (var i = this.nodes.length - 1; i >= 0; i--) {
-                this.nodes[i].handle.attr(handlesDefaultAttr);
-                this.nodes[i].handle.attr("opacity", 1);
-            }
-            this.animCircle.attr(animCircleAttr);
+            this.nodes.forEach(function (node) {
+                node.handle.attr(handlesDefaultAttr);
+                node.handle.attr("opacity", 1);
+            });
+            this.animCircle.attr(this.animCircleAttr);
             this.synth.volume.value = this.volume;
             
             var muteHtml = '<button class="shape-attr-mute">Mute</button>';
-            $popup.find(".mute-button-cont").html(muteHtml);
+            this.popup.find(".mute-button-cont").html(muteHtml);
         }
 
         /* ----- Solo ----- */
         this.solo = function () {
             this.isSoloed = true;
-            for (var i = PROJECT.shapesList.length - 1; i >= 0; i--) {
-                if (i != this.id) {
-                    if (PROJECT.shapesList[i].isMuted == false) {
-                        PROJECT.shapesList[i].isMutedFromSolo = true;
-                        PROJECT.shapesList[i].mute();
-                    }
+            PROJECT.shapesList.forEach(function (shape) {
+                if (shape.id != parent.id && shape.included && !shape.isMuted) {
+                    shape.isMutedFromSolo = true;
+                    shape.mute();
                 }
-            }
+            });
             var unsoloHtml = '<button class="shape-attr-solo shape-attr-unsolo">Unsolo</button>';
-            $popup.find(".solo-button-cont").html(unsoloHtml);
+            this.popup.find(".solo-button-cont").html(unsoloHtml);
         }
         this.unsolo = function () {
             this.isSoloed = false;
-            for (var i = PROJECT.shapesList.length - 1; i >= 0; i--) {
-                if (i != this.id) {
-                    if (PROJECT.shapesList[i].isMutedFromSolo) {
-                        PROJECT.shapesList[i].isMutedFromSolo = false;
-                        PROJECT.shapesList[i].unmute();
+            PROJECT.shapesList.forEach(function (shape) {
+                if (shape.i != parent.id && shape.included) {
+                    if (shape.isMutedFromSolo) {
+                        shape.isMutedFromSolo = false;
+                        shape.unmute();
                     }
                 }
-            }
+            });
             var soloHtml = '<button class="shape-attr-solo">Solo</button>';
-            $popup.find(".solo-button-cont").html(soloHtml);
+            this.popup.find(".solo-button-cont").html(soloHtml);
         }
 
         /* ============== variables and attributes ============== */
         
         // inst-color
-        this.instColorId = SELECTED_INSTCOLOR_ID;
+        this.instColorId = instColorId;
         this.instColorObj = function () {return PROJECT.instColors[this.instColorId]};
-
+        console.log("INSTCOLOR OBJ:", this.instColorObj);
+        // style attributes
+        this.shapeDefaultAttr = {fill: hexToRgbA(this.instColorObj().color, 0.4), stroke: this.instColorObj().color};
+        this.animCircleAttr = {opacity: 1, fill: this.instColorObj().color, stroke: this.instColorObj().color, "stroke-width": 2};
+        
         // tone
-        this.synthName = DEFAULT_SYNTH;
+        //this.synthName = DEFAULT_SYNTH;
         
         this.pan = 0;        
         this.volume = -8;        
@@ -497,8 +541,9 @@ class Shape {
         this.isSoloed = false;
 
         // path
-        this.path = r.path().attr(shapeDefaultAttr);
+        this.path = r.path().attr(this.shapeDefaultAttr);
         this.path.attr("stroke-width", volume_to_stroke_width(this.volume));
+        
         this.path.hover(this.hoverIn(), this.hoverOut());
         this.path.drag(this.move, this.start, this.up);
 
@@ -513,7 +558,7 @@ class Shape {
         this.included = true;
 
         // animation
-        this.animCircle = r.circle(0, 0, 5).attr(animCircleAttr).toFront().hide();
+        this.animCircle = r.circle(0, 0, 5).attr(this.animCircleAttr).toFront().hide();
 
         /* ============== load from saved shape ============== */
         if (savedData) {
@@ -523,8 +568,8 @@ class Shape {
             this.completed = true;
             this.startFreqIndex = savedData.startFreqIndex;
             
-            console.log("LOADING SYNTH:", savedData.synthName);
-            this.synthName = savedData.synthName;
+            //console.log("LOADING SYNTH:", savedData.synthName);
+            //this.synthName = savedData.synthName;
 
             this.volume = savedData.volume;
             this.path.attr("stroke-width", volume_to_stroke_width(this.volume));
@@ -545,87 +590,91 @@ class Shape {
             this.path.attr(shapeFilledAttr);
         }
         //this.freeverb = new Tone.Freeverb(.9).toMaster();
-        this.synth = synth_chooser(this.synthName);
+        this.synth = synth_chooser(this.instColorObj().name);
         this.init_shape_attr_popup();
         this.update_start_freq();
         this.update_pan();
-        var $popup = $("#shape-attr-popup-"+this.id);
+        
+        this.popup = $("#shape-attr-popup-"+this.id);
 
         /* ============================================================= */
         /* ======================= PART CALLBACK ======================= */
         /* ============================================================= */
         this.part = new Tone.Part(function (time, value) {
-            
-            //var parent = value.parent;
-            //var thisSynth = get_this_synth(parent);
-            var thisSynth = parent.synth.connect(parent.panner);
-            //console.log("VALUE", value);
-            
-            if (parent.isMuted) {
-                thisSynth.volume.value = -60;
-            } else {
-                thisSynth.volume.value = parent.volume;
+            if (parent.completed) {
+                //var parent = value.parent;
+                //var thisSynth = get_this_synth(parent);
+                var thisSynth = parent.synth.connect(parent.panner);
+                //console.log("VALUE", value);
+                
+                if (parent.isMuted) {
+                    thisSynth.volume.value = -60;
+                } else {
+                    thisSynth.volume.value = parent.volume;
+                }
+
+                //parent.animCircle.transform("t0,0");
+                parent.animCircle.show().toFront();
+                
+                var duration = value.dur;
+                var lengthToMiliseconds = (value.noteDur * 1000).toFixed(9);
+                //var duration = (lengthToMiliseconds / 1000).toFixed(12);
+                var note = value.noteVal;
+                console.log("note:", note);
+                //console.log("DUR:", duration)
+                //console.log("TO MIL:", lengthToMiliseconds)
+
+                Tone.Draw.schedule(function () {
+                    var startX = value.nodeFrom.getX();
+                    var startY = value.nodeFrom.getY();
+                    var endX = value.nodeTo.getX();
+                    var endY = value.nodeTo.getY();
+
+                    parent.animCircle.attr({cx : startX, cy : startY})
+                    parent.animCircle.animate({"cx": endX, "cy": endY}, lengthToMiliseconds, function () {
+                        //console.log("X,Y:", this.attr("cx"), this.attr("cy"));
+                    });
+                    //var parentColor = PROJECT.instColors[parent.instColorId].color;
+                    var parentColor = parent.instColorObj().color;
+
+                    parent.animCircle.animate(animCircleBangStartAttr, 0, "linear", function () {
+                        this.animate({"fill": parentColor, r: 3, stroke: parentColor}, 800, "ease-out");
+                    });
+                    parent.path.animate(animCircleBangStartAttr, 0, "linear", function () {
+                        this.animate({"fill": parentColor}, 800, "ease-out");
+                    });
+                }, time)
+
+                thisSynth.triggerAttackRelease(note, duration, time);
             }
-
-            //parent.animCircle.transform("t0,0");
-            parent.animCircle.show().toFront();
-            
-            var duration = value.dur;
-            var lengthToMiliseconds = (value.noteDur * 1000).toFixed(9);
-            //var duration = (lengthToMiliseconds / 1000).toFixed(12);
-            var note = value.noteVal;
-            console.log("note:", note);
-            //console.log("DUR:", duration)
-            //console.log("TO MIL:", lengthToMiliseconds)
-
-            Tone.Draw.schedule(function () {
-                var startX = value.nodeFrom.getX();
-                var startY = value.nodeFrom.getY();
-                var endX = value.nodeTo.getX();
-                var endY = value.nodeTo.getY();
-
-                parent.animCircle.attr({cx : startX, cy : startY})
-                parent.animCircle.animate({"cx": endX, "cy": endY}, lengthToMiliseconds, function () {
-                    //console.log("X,Y:", this.attr("cx"), this.attr("cy"));
-                });
-                //var parentColor = PROJECT.instColors[parent.instColorId].color;
-                var parentColor = parent.instColorObj().color;
-
-                parent.animCircle.animate(animCircleBangStartAttr, 0, "linear", function () {
-                    this.animate({"fill": parentColor, r: 3, stroke: parentColor}, 800, "ease-out");
-                });
-                parent.path.animate(animCircleBangStartAttr, 0, "linear", function () {
-                    this.animate({"fill": parentColor}, 800, "ease-out");
-                });
-            }, time)
-
-            thisSynth.triggerAttackRelease(note, duration, time);
         }, []).start(0);
         this.part.loop = true;
         
         /* ============== Popup Handlers ============== */
 
         /* ------ Instrument Select ------ */
-        $popup.find(".shape-attr-inst-select").on('change' ,function () {
-            parent.set_instrument(this.value);
+        this.popup.find(".shape-attr-inst-select").on('change' ,function () {
+            //parent.set_instrument(this.value);
+            var i = $(this).prop('selectedIndex');
+            parent.set_inst_color_id(i);
         });
         
         /* ------ Starting Frequency ------ */
-        $popup.find(".arrow-up").on("click", function () {
+        this.popup.find(".arrow-up").on("click", function () {
             parent.increment_start_freq(1);
         })
 
-        $popup.find(".arrow-down").on("click", function () {
+        this.popup.find(".arrow-down").on("click", function () {
             parent.increment_start_freq(0);
         })
         
         /* ------ Volume ------ */
-        $popup.find(".signal-meter").on('change mousemove', function () {
+        this.popup.find(".signal-meter").on('change mousemove', function () {
             parent.set_volume(this.value);
         });
         
         /* ------ Toggle Mute  ------ */
-        $popup.find(".mute-button-cont").on('click', function () {
+        this.popup.find(".mute-button-cont").on('click', function () {
             console.log('asdf');
             if (parent.isMuted) {
                 parent.unmute();
@@ -635,7 +684,7 @@ class Shape {
         });
 
         /* ------ Toggle Solo ------ */
-        $popup.find(".solo-button-cont").on('click', function () {
+        this.popup.find(".solo-button-cont").on('click', function () {
             if (parent.isSoloed) {
                 parent.unsolo();
             } else {
@@ -644,43 +693,31 @@ class Shape {
         });
         
         /* ------ Delete ------ */
-        $popup.find(".shape-attr-delete-shape").on("click", function () {
+        this.popup.find(".shape-attr-delete-shape").on("click", function () {
             parent.delete();
-            $popup.hide();
         });
-
-       /* $popup.find(".shape-attr-delete-shape").hover(function(){
-            parent.path.attr(shapeWarningAttr);
-            for (var i = parent.nodes.length - 1; i >= 0; i--) {
-                parent.nodes[i].handle.hide();
-            }function(
-        }, ){
-            parent.path.attr(shapeSelectedAttr);
-            for (var i = parent.nodes.length - 1; i >= 0; i--) {
-                parent.nodes[i].handle.show();
-            }
-        });*/
         
         /* ------ Set Perimeter ------ */
-        $popup.find(".shape-attr-set-perim").on("click", function () {
-            var len = 500;
-            parent.set_perim_length(len);
+        this.popup.find(".shape-attr-set-perim").on("click", function () {
+            parent.set_perim_length(PROJECT.quantizeLength);
         });
     }
 
     /* ---- SETTERS ---- */
     complete () {
         this.path.attr("path", path_to_string(this.path) + "Z");
-        this.path.attr(shapeFilledAttr);
+        this.path.attr({"fill-opacity": completedShapeOpacity});
+        
         this.init_shape_attr_popup();
-        this.set_inst_color_id(SELECTED_INSTCOLOR_ID);
-
         this.update_note_values();
         this.update_pan();
-
         
-        //console.log(PROJECT.shapesList);
+        if (PROJECT.isAutoQuantized) {
+            this.set_perim_length(PROJECT.quantizeLength);
+        }
+        this.completed = true;
     }
+
     increment_start_freq (dir) {
         var freq = this.start_freq;
         var note = Tone.Frequency(freq).toMidi();
@@ -711,19 +748,29 @@ class Shape {
     }
 
     set_inst_color_id (id) {
-        console.log("setting to id:", id)
-        //console.log(PROJECT.instColors[id].name);
+        console.log("setting to InstColor:", id)
         var instColor = PROJECT.instColors[id];
+        
         this.instColorId = id;
         this.set_instrument(instColor.name);
-        this.path.attr({fill: hexToRgbA(instColor.color, 0.4), stroke: instColor.color})
-        populate_list(synthsList, this.synthName, "#shape-attr-popup-"+this.id+" .shape-attr-inst-select");
+        this.shapeDefaultAttr = {fill: hexToRgbA(instColor.color, 0.4), stroke: instColor.color};
+        this.animCircleAttr = {fill: instColor.color, stroke: instColor.color};
+
+        this.path.attr(this.shapeDefaultAttr); 
+        this.nodes.forEach(function (node) {
+            node.set_color(instColor.color)
+        })
+        this.animCircle.attr(this.animCircleAttr);
+
+        populate_list(synthsList, this.instColorObj().name, "#shape-attr-popup-"+this.id+" .shape-attr-inst-select");
     }
 
     set_instrument (name) {
         this.synth.triggerRelease();
-        this.synthName = name;
+        //this.synthName = name;
+        this.synth.dispose();
         this.synth = synth_chooser(name);
+        this.refresh_shape_attr_popup();
     }
     
     set_perim_length (len) {
@@ -779,7 +826,7 @@ class Shape {
         this.refresh_shape_attr_popup();
     }
     
-    update_pan () {
+    get_center_coord_percent () {
         var bBox = this.path.getBBox();
         var xMean = (bBox.x + (bBox.width + bBox.x)) / 2;
         var xMin = 0;
@@ -791,8 +838,26 @@ class Shape {
         if (xMean < -1) {
             xMean = -1;
         }
+        
+        var yMean = (bBox.y + (bBox.height + bBox.y)) / 2;
+        var yMin = 0;
+        var yMax = $("#holder").height();
+        yMean = (yMean / yMax) * 2 - 1;
+        if (yMean > 1) {
+            yMean = 1;
+        }
+        if (yMean < -1) {
+            yMean = -1;
+        }
+
+        return {
+            x: xMean,
+            y: yMean
+        }
+    }
+    update_pan () {
         //console.log(xMean);
-        this.panner.pan.value = xMean * 0.7;
+        this.panner.pan.value = this.get_center_coord_percent().x * 0.7;
     }
     
     update_note_values() {
@@ -828,6 +893,15 @@ class Shape {
         this.part.loopEnd = totalLength;
     }
 
+    /* --- Getters ---*/
+    get_origin() {
+        var ox = this.path.attr("path")[0][1];
+        var oy = this.path.attr("path")[0][2];
+        return {
+            x: ox,
+            y: oy
+        }
+    }
     /* --- Transport --- */
 
     stop () {
@@ -884,12 +958,13 @@ class Shape {
             </div>';
         $("body").append(popupHtml);
 
-        populate_list(synthsList, this.synthName, "#shape-attr-popup-"+i+" .shape-attr-inst-select")
+        populate_list(synthsList, this.instColorObj().name, "#shape-attr-popup-"+i+" .shape-attr-inst-select")
     }
 
     refresh_shape_attr_popup () {
         var i = this.id;
-        //$popup.find("#start-freq-label").html(this.start_freq);
+        //this.popup.find("#start-freq-label").html(this.start_freq);
+        populate_list(synthsList, this.instColorObj().name, "#shape-attr-popup-"+i+" .shape-attr-inst-select")
         $("#start-freq-label-"+i).html(this.start_freq);
     }
     
@@ -929,11 +1004,11 @@ class Shape {
     
     print_shape_info () {
         console.log("=== Printing shape info ===");
-        for (var i = 0; i < this.nodes.length; i++) {
+        this.nodes.forEach(function (node) {
             console.log(i);
-            console.log("noteval", this.nodes[i].noteVal);
-            console.log("duration", this.nodes[i].duration);
-        }
+            console.log("noteval", node.noteVal);
+            console.log("duration", node.duration);
+        });
     }  
 }
 
@@ -991,7 +1066,11 @@ class Node {
                 this.odx = dx;
                 this.ody = dy;
                 // TODO ?
-                PROJECT.shapesList[shapeId].update_note_values();
+                if (PROJECT.isAutoQuantized) {
+                    PROJECT.shapesList[shapeId].set_perim_length(PROJECT.quantizeLength);
+                } else {
+                    PROJECT.shapesList[shapeId].update_note_values();
+                }
             }
         }
 
@@ -1038,6 +1117,14 @@ class Node {
             return this.handle.attr("cy") + transform.dy;
         }
 
+        this.set_color = function (color) {
+            if (this.isFirst) {
+                this.handle.attr({fill: color, stroke: color})
+            } else {
+                this.handle.attr({stroke: color})
+            }
+        }
+
         this.handle.drag(this.move, this.up);
         this.handle.hover(this.hoverIn(this.handle), this.hoverOut(this.handle));
     }
@@ -1065,7 +1152,7 @@ class InstColor {
                         <option>Instrument</option>\
                     </select>\
                     <i class="ion-arrow-left-b"></i>\
-                    <span class="selected-inst-icon"><img src="img/sin_white.png"></span>\
+                    <!--<span class="selected-inst-icon"><img src="img/sin_white.png"></span>-->\
                     <ul class="inst-params">\
                 <li>\
                     <span class="inst-param-title">Glide</span><br>\
@@ -1095,14 +1182,20 @@ class InstColor {
         this.li.css({"background-color": hexToRgbA(this.color, 0.7), "border-color": this.color});
         
         this.li.on("click", function () {
-            //console.log(this);
-            $(".inst-option").removeClass("selected-inst");
-            $(this).addClass("selected-inst");
-            var synthName = $(this).attr("data");
-            hoverLine.attr({stroke: parent.color});
-            hoverCircle.attr({fill: parent.color, stroke: parent.color});
-            SELECTED_INSTCOLOR_ID = parent.id;
-            ACTIVE_SHAPE.set_inst_color_id(parent.id);
+            //set_draw_inst_color(parent.id);
+        })
+
+        this.li.find(".inst-select").on("change", function () {
+            var val = $(this).val();
+            parent.name = val;
+            console.log(val)
+            PROJECT.shapesList.forEach(function (shape) {
+                console.log(val);
+                if (shape.included && shape.instColorObj().id == parent.id) {
+                    console.log("found");
+                    shape.set_instrument(val);
+                }
+            });
         })
     }
 }
@@ -1115,18 +1208,20 @@ class InstColor {
 /* ========================================================================== */
 
 var PROJECT = new Project;
-var ACTIVE_SHAPE = new Shape(PROJECT.shapesList.length);
+var ACTIVE_SHAPE /*= new Shape(PROJECT.shapesList.length, SELECTED_INSTCOLOR_ID)*/;
 
 $(document).ready(function () {
 
     init_grid();
     hide_handles();
+    set_draw_inst_color(0);
 
     hide_menu();
+    alert("Welcome to Shape Your Music. This application is currently under development, and you may experience bugs. If you have questions feel free to contact me at ejarz25@gmail.com. - Elias");
     //hide_info_pane();
 
 
-
+/*
     $(".kk-knob").khantrolKnob({
         css: "skeleton",
     })
@@ -1168,7 +1263,7 @@ $(document).ready(function () {
                 PROJECT.shapesList[i].synth.envelope.sustain = val;
             }
         }
-    });
+    });*/
 });
 
 /* ========================================================================== */
@@ -1179,8 +1274,9 @@ $(document).ready(function () {
     
 /* ---------- Keyboard shortcuts ---------- */
 window.onkeydown = function (e) {
+    console.log(e.which);
     // TAB
-    if (e.which == 9) {
+    if (e.which === 9) {
         console.log("tab");
         if (CURR_TOOL === "draw") {
             select_tool("adjust");
@@ -1188,7 +1284,6 @@ window.onkeydown = function (e) {
             select_tool("draw");
         }
         e.preventDefault();
-        //select_tool("draw");
     }
     // SPACE
     if (e.which === 32) { 
@@ -1198,7 +1293,22 @@ window.onkeydown = function (e) {
         }
         toggle_play_stop();
     }
+    // DELETE 
+    if (e.which === 8) {
+        if (SELECTED_SHAPE_ID >= 0) {
+            PROJECT.shapesList[SELECTED_SHAPE_ID].delete();
+            SELECTED_SHAPE_ID = -1;
+        }
+    }
 };
+
+/* ---------- Right Click ---------- */
+$("#holder").on('contextmenu', function(ev) {
+    ev.preventDefault();
+    console.log("right click");
+    //alert('success!');
+    return false;
+}, false);
 
 /* ---------- Toggle play / stop ---------- */
 $(".play-stop-toggle").click(function () {
@@ -1265,6 +1375,21 @@ $("#grid").click(function () {
     }
 });
 
+/* ---------- Toggle quantization ---------- */
+$("#auto-quantize").click(function () {
+    if ($("#auto-quantize").is(":checked")) {
+        PROJECT.isAutoQuantized = true;
+        PROJECT.shapesList.forEach(function (shape) {
+            if (shape.included) {
+                shape.set_perim_length(PROJECT.quantizeLength);
+            }
+        });
+    } 
+    else {
+        PROJECT.isAutoQuantized = false;
+    }
+});
+
 /* ========================================================================== */
 /* --------------------------- HOLDER MOUSEMOVE ----------------------------- */
 /* ========================================================================== */
@@ -1275,19 +1400,20 @@ $("#holder").on("mousemove", function (e) {
     x = snap_to_grid(x);
     y = snap_to_grid(y);
 
-    if ((ACTIVE_SHAPE.path.attr("path")).length) {
-        var origin_x = ACTIVE_SHAPE.path.attr("path")[0][1];
-        var origin_y = ACTIVE_SHAPE.path.attr("path")[0][2];
-    }
+    if (CURR_DRAW_STATE == "drawing") {
+        var origin_x = ACTIVE_SHAPE.get_origin().x;
+        var origin_y = ACTIVE_SHAPE.get_origin().y;
 
-    if (x < (origin_x + ORIGIN_RADIUS) && x > (origin_x - ORIGIN_RADIUS) && 
-            y < (origin_y + ORIGIN_RADIUS) && y > (origin_y - ORIGIN_RADIUS)) {
-        x = origin_x;
-        y = origin_y;
-        ACTIVE_SHAPE.path.attr({"fill-opacity": 0.1});
-    } 
-    else {
-        ACTIVE_SHAPE.path.attr("fill-opacity", 0);
+        // snap to origin
+        if (x < (origin_x + ORIGIN_RADIUS) && x > (origin_x - ORIGIN_RADIUS) && 
+                y < (origin_y + ORIGIN_RADIUS) && y > (origin_y - ORIGIN_RADIUS)) {
+            x = origin_x;
+            y = origin_y;
+            ACTIVE_SHAPE.path.attr({"fill-opacity": previewShapeOpacity});
+        }
+        else {
+            ACTIVE_SHAPE.path.attr("fill-opacity", 0);
+        }
     }
 
     var endpoint = "L" + x + "," + y;
@@ -1302,58 +1428,70 @@ $("#holder").on("mousemove", function (e) {
 /* --------------------------- HOLDER MOUSEDOWN ----------------------------- */
 /* ========================================================================== */
 $("#holder").on( "mousedown", function (e) {
+    console.log(e.which); // 1 == left click, 3 == right click
     if ($(".shape-attr-popup").is(":visible")) {
         hide_details();
     }
-    
-    if (CURR_TOOL == "draw") {
-
-        var x = e.pageX - GLOBAL_MARGIN;
-        var y = e.pageY - GLOBAL_MARGIN;
+    if (e.which === 1) {
         
-        x = snap_to_grid(x);
-        y = snap_to_grid(y);
-
-        var prev_n = [];
-
-        /* Update previous node if the path already exists */
-        if ((ACTIVE_SHAPE.path.attr("path")).length) {
-            var origin_x = ACTIVE_SHAPE.path.attr("path")[0][1];
-            var origin_y = ACTIVE_SHAPE.path.attr("path")[0][2];
-            prev_n = ACTIVE_SHAPE.path.attr("path")[ACTIVE_SHAPE.length() - 1];
-        }
-
-        /* Snaps to origin => complete shape if within the radius */
-        if (x < (origin_x + ORIGIN_RADIUS) && x > (origin_x - ORIGIN_RADIUS) && 
-            y < (origin_y + ORIGIN_RADIUS) && y > (origin_y - ORIGIN_RADIUS)) {
-            set_draw_state("ready");
-            ACTIVE_SHAPE.path.attr({"fill-opacity": 0.3});
-            ACTIVE_SHAPE.complete();
-            PROJECT.shapesList.push(ACTIVE_SHAPE);
-
-            ACTIVE_SHAPE = new Shape(PROJECT.shapesList.length);
-
-            hoverLine.attr("path", "");
-            PREV_ENDPOINT = "";
-        }
-        /* If not, add to current path */ 
-        else {        
-            PREV_ENDPOINT = "M" + x + "," + y;
-            var moveTo = "M" + x + "," + y;
-            var lineTo = "L" + x + "," + y;
-
-            hoverLine.attr("path", moveTo);                
-
-            /* shape is empty */
-            if (ACTIVE_SHAPE.path.attr("path") === "") {
-                set_draw_state("drawing");
-                ACTIVE_SHAPE.path.attr("path", moveTo);
-                ACTIVE_SHAPE.animCircle.show();
-            } else {
-                ACTIVE_SHAPE.path.attr("path", path_to_string(ACTIVE_SHAPE.path) + lineTo);
+        if (CURR_TOOL == "draw") {
+            if (CURR_DRAW_STATE == "ready") {
+                console.log("creating new shape with instcolor", SELECTED_INSTCOLOR_ID);
+                ACTIVE_SHAPE = new Shape(PROJECT.shapesList.length, SELECTED_INSTCOLOR_ID);
             }
-            var newNode = new Node(x, y, ACTIVE_SHAPE.length(), PROJECT.shapesList.length);
-            ACTIVE_SHAPE.nodes.push(newNode);
+
+            var x = e.pageX - GLOBAL_MARGIN;
+            var y = e.pageY - GLOBAL_MARGIN;
+            
+            x = snap_to_grid(x);
+            y = snap_to_grid(y);
+
+            var prev_n = [];
+
+            /* Update previous node if the path already exists */
+            if ((ACTIVE_SHAPE.path.attr("path")).length) {
+                var origin_x = ACTIVE_SHAPE.get_origin().x;
+                var origin_y = ACTIVE_SHAPE.get_origin().y;
+                prev_n = ACTIVE_SHAPE.path.attr("path")[ACTIVE_SHAPE.length() - 1];
+            }
+
+            /* Snaps to origin => complete shape if within the radius */
+            if (x < (origin_x + ORIGIN_RADIUS) && x > (origin_x - ORIGIN_RADIUS) && 
+                y < (origin_y + ORIGIN_RADIUS) && y > (origin_y - ORIGIN_RADIUS)) {
+                set_draw_state("ready");
+                ACTIVE_SHAPE.complete();
+                PROJECT.shapesList.push(ACTIVE_SHAPE);
+                ACTIVE_SHAPE = null;
+
+                hoverLine.attr("path", "");
+                //PREV_ENDPOINT = "";
+            }
+            /* If not, add to current path */ 
+            else if (x != prev_n[1] && y != prev_n[2]){    
+                //PREV_ENDPOINT = "M" + x + "," + y;
+                var moveTo = "M" + x + "," + y;
+                var lineTo = "L" + x + "," + y;
+
+                hoverLine.attr("path", moveTo);                
+
+                /* shape is empty */
+                if (ACTIVE_SHAPE.path.attr("path") === "") {
+                    set_draw_state("drawing");
+                    ACTIVE_SHAPE.path.attr("path", moveTo);
+                } else {
+                    ACTIVE_SHAPE.path.attr("path", path_to_string(ACTIVE_SHAPE.path) + lineTo);
+                }
+                var newNode = new Node(x, y, ACTIVE_SHAPE.length(), PROJECT.shapesList.length);
+                ACTIVE_SHAPE.nodes.push(newNode);
+            }
+        }
+    }
+    if (e.which === 3) {
+        if (ACTIVE_SHAPE) {
+            hoverLine.attr("path", "");
+            set_draw_state("ready");
+            ACTIVE_SHAPE.delete();
+            ACTIVE_SHAPE = null;
         }
     }
 });
@@ -1401,11 +1539,11 @@ function play_handler () {
 function stop_handler () {
     $(".play-stop-toggle").html("<i class='ion-play'></i>");
     PLAYING = false;
-    for (var i = PROJECT.shapesList.length - 1; i >= 0; i--) {
-        if (PROJECT.shapesList[i].included) {
-            PROJECT.shapesList[i].stop();
-        }        
-    }
+    PROJECT.shapesList.forEach(function (shape) {
+        if (shape.included) {
+            shape.stop();
+        }                
+    });
     Tone.Transport.stop(0);
     Tone.Master.mute = true;
     if (RECORDING) {
@@ -1504,21 +1642,28 @@ function snap_to_grid (p) {
 
 /* -------- HANDLES -------- */
 function hide_handles () {
-    for (var i = PROJECT.shapesList.length - 1; i >= 0; i--) {
-        PROJECT.shapesList[i].hide_handles();
-    }
+    PROJECT.shapesList.forEach(function (shape) {
+        if (shape.included) {
+            shape.hide_handles();
+        }
+    });
 }
 
 function show_handles () {
-    for (var i = PROJECT.shapesList.length - 1; i >= 0; i--) {
-        PROJECT.shapesList[i].show_handles();
-    }
+    PROJECT.shapesList.forEach(function (shape) {
+        if (shape.included) {
+            shape.show_handles();
+        }
+    });
 }
 
 function hide_details () {
-    for (var i = PROJECT.shapesList.length - 1; i >= 0; i--) {
-        PROJECT.shapesList[i].path.attr({"fill-opacity": 0.5});
-    }
+    SELECTED_SHAPE_ID = -1;
+    PROJECT.shapesList.forEach(function (shape) {
+        if (shape.included) {
+            shape.path.attr({"fill-opacity": completedShapeOpacity});
+        }
+    });
     $(".shape-attr-popup").hide();
 }
 
@@ -1572,36 +1717,21 @@ function populate_list (values, selectedItem, className) {
     $(className).html(optionsHtml);
 }
 
-
-/* -------- Instrument panel -------- */
-
-
-
-/* ========================================================================== */
-/* ------------------------------ SHAPE ACTIONS ----------------------------- */
-/* ========================================================================== */
-
-/* completes the ACTIVE SHAPE: finishes the path by connecting the latest point
-   to the origin. Adds the shape to PROJECT.shapesList. Initializes new shape 
-*/
-function complete_active_shape () {
-
-    ACTIVE_SHAPE.path.attr("path", path_to_string(ACTIVE_SHAPE.path) + "Z");
-    ACTIVE_SHAPE.path.attr(shapeFilledAttr);
-    ACTIVE_SHAPE.init_shape_attr_popup();
-    ACTIVE_SHAPE.set_inst_color_id(SELECTED_INSTCOLOR_ID);
-
-    ACTIVE_SHAPE.update_note_values();
-    ACTIVE_SHAPE.update_pan();
-
-    PROJECT.shapesList.push(ACTIVE_SHAPE);
-
-    ACTIVE_SHAPE = new Shape(PROJECT.shapesList.length);
-
-    hoverLine.attr("path", "");
-    PREV_ENDPOINT = "";
+/* -------- Instrument Colors -------- */
+function set_draw_inst_color (id) {
+    //$(".inst-option").removeClass("selected-inst");
+    //instColor.li.addClass("selected-inst");
+    SELECTED_INSTCOLOR_ID = id;
+    var instColor = PROJECT.instColors[id];
+    $(".color-palette").css({background: instColor.color})
+    var synthName = instColor.li.find(".inst-select").attr("data");
     
-    console.log(PROJECT.shapesList);
+    hoverLine.attr({stroke: instColor.color});
+    hoverCircle.attr({fill: instColor.color, stroke: instColor.color});
+    
+    if (CURR_DRAW_STATE === "drawing") {
+        ACTIVE_SHAPE.set_inst_color_id(instColor.id);
+    }
 }
 
 
@@ -1717,8 +1847,23 @@ function synth_chooser (name) {
         case "AM":
             synth = new Tone.AMSynth();
             break;
-        case "FM":
-            synth = new Tone.FMSynth();
+        case "Keys":
+            synth = new Tone.Synth({
+                "oscillator": {
+                    "detune": 0,
+                    "type": "custom",
+                    "partials" : [2, 1, 2, 2],
+                    "phase": 0,
+                    "volume": 0
+                },
+                "envelope": {
+                    "attack": 0.005,
+                    "decay": 0.3,
+                    "sustain": 0.2,
+                    "release": 1,
+                },
+                "portamento": 0.01,
+                "volume": -20});
             break;
         case "Duo":
             synth = new Tone.DuoSynth();
@@ -1746,7 +1891,7 @@ function synth_chooser (name) {
                     }
                 });
             break;
-        case "Sub Bass":
+        case "SubBass":
             synth =  new Tone.MonoSynth(
                     {
                         "portamento": 0.08,
@@ -1775,7 +1920,7 @@ function synth_chooser (name) {
                     }
                 );
             break;
-        case "Super Saw":
+        case "SuperSaw":
             synth =  new Tone.Synth(
                    {
                     "oscillator" : {
@@ -1900,7 +2045,7 @@ function lineDistance (point1, point2) {
 }
 
 function isBetween (val, a, b) {
-    return (val > a && val <= b);
+    return (val >= a && val <= b);
 }
 
 function path_to_string (path) {
@@ -1940,6 +2085,20 @@ function hexToRgbA (hex, a) {
 /* ---------------------------------- Menu ---------------------------------- */
 /* ========================================================================== */
 
+$(".show-overlay").on("click", function () {
+    $(".overlay").hide();
+    console.log("asdsad");
+    var target = "." + $(this).attr("data") + "-overlay";
+    console.log(target);
+    $(target).show();
+});
+
+$(".close-overlay").on("click", function () {
+    console.log("asdsad");
+    var target = "." + $(this).attr("data") + "-overlay";
+    console.log(target);
+    $(".overlay").hide();
+});
 
 $(".show-hide").on("click", function () {
     var target = $(this).attr("data-target");
@@ -1965,7 +2124,7 @@ function show_menu () {
 }
 
 function hide_menu () {
-    $(".top-bar").animate({"top":"-19px"}, 200);
+    $(".top-bar").animate({"top":"-20px"}, 200);
     $(".show-hide-menu").html('<i class="ion-chevron-down"></i>');
 }
 

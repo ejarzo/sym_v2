@@ -1,10 +1,10 @@
 /* ========================================================================== */
 /* =============================== VARIABLES ================================ */
 
-//@import url('https://fonts.googleapis.com/css?family=Source+Code+Pro:400,700')
+@import url('https://fonts.googleapis.com/css?family=Source+Code+Pro:400,700')
 //@import url('https://fonts.googleapis.com/css?family=Lekton:400,700')
 
-$font-stack: 'Source Code Pro', "Consolas", monospace
+$font-stack: 'Source Code Pro', 'Consolas', 'Inconsolata', monospace
 
 $color-white: #fff
 $color-grey-light: #bbb
@@ -23,7 +23,7 @@ $inst-color-0: #c9563c
 $inst-color-1: #f4b549
 $inst-color-2: #2a548e
 $inst-color-3: #705498
-$inst-color-4: #F5A923
+$inst-color-4: #05804D
 $inst-color-5: #023FA5
 $inst-color-6: #05804D
 
@@ -37,9 +37,12 @@ $inst-color-6: #05804D
     transition: all .1s ease-in-out
     color: $color-grey-med
     transform: scaleX(1) scaleY(1) scaleZ(1)
+    position: relative
+    z-index: 100
     &:hover
         transform: scaleX(1.2) scaleY(1.2) scaleZ(1)
         color: $color-black
+        z-index: 5000
     &:active
         transform: scaleX(1.2) scaleY(1.2) scaleZ(1)
         color: $color-black
@@ -84,19 +87,8 @@ $inst-color-6: #05804D
     display: inline-block
     .dropdown-content
         @include drop_shadow
-        min-width: calc(100% + 1px)
-        left: -1px
-        padding: 4px
         display: none
         position: absolute
-        z-index: 300
-        border: 1px solid $color-grey-med
-        //border-right: none
-        //border-top: none
-        background: #eee
-        a
-            margin-bottom: 3px
-            padding-top: 0
     &:hover 
         .dropdown-content
             display: block
@@ -191,6 +183,18 @@ ul
     background: #eee
     height: 20px
     top: 0
+    .dropdown
+        .dropdown-content
+            @include drop_shadow
+            min-width: calc(100% + 1px)
+            left: -1px
+            padding: 4px
+            z-index: 300
+            border: 1px solid $color-grey-med
+            background: #eee
+            a
+                margin-bottom: 3px
+                padding-top: 0
     ul
         height: 100%
         li
@@ -248,6 +252,8 @@ ul
         margin-right: 10px
         display: inline-block
 
+    .tool-icon
+        width: 30px
     .controls-section
         display: inline-block
         margin: 0
@@ -256,6 +262,10 @@ ul
         height: 40px
         //border-right: 1px solid $color-grey-light
         &.tools-controls
+            button
+                span
+                    position: relative
+                    top: -5px
             border: 1px solid $color-grey-light
             .ctrl-elem 
                 margin: 0
@@ -338,6 +348,60 @@ ul
                 color: $color-grey-med
                 text-decoration: underline
 
+    //.color-controls
+    .color-palette
+        //vertical-align: bottom
+        //position: relative
+        position: relative
+        z-index: 500
+        top: 2px
+        left: -14px
+        border: 2px solid $color-white
+        width: 24px
+        height: 24px
+        background: $inst-color-0
+        border-radius: 2px
+        .dropdown-content
+            background: transparent
+            border-radius: 2px
+            border: 5px solid $color-white
+            padding: 5px
+            width: 30px
+            padding-top: 20px
+            padding-bottom: 0
+            left: -5px
+            top: -5px
+            .palette-background
+                padding-top: 10px
+                position: relative
+                background: $color-white
+                width: 30px
+                padding-left: 5px
+                padding-right: 5px
+                left: -10px
+            .palette-color
+                cursor: pointer
+                display: inline-block
+                @include button_expand_on_hover
+                position: relative
+                z-index: 500
+                height: 20px
+                width: 20px
+                border-radius: 10%
+
+                //border: 2px solid transparent
+                //border-radius: 10%
+
+            .inst-color0
+                background: $inst-color-0
+            .inst-color1
+                background: $inst-color-1
+            .inst-color2
+                background: $inst-color-2
+            .inst-color3
+                background: $inst-color-3
+            .inst-color4
+                background: $inst-color-4
 /* ========================================================================== */
 /* =============================== RECORDING ================================ */
 
@@ -387,15 +451,15 @@ ul
             width: 25%
             
             .inst-title
-                cursor: pointer
-                &:hover
+                //cursor: pointer
+                /* &:hover
                     .selected-inst-icon
-                        display: inline-block
+                        display: inline-block */
                 select
                     background: transparent
                     border-color: transparent
                     //width: 50%
-                .selected-inst-icon
+                /* .selected-inst-icon
                     display: inline-block
                     float: right
                     padding-right: 5px
@@ -404,7 +468,7 @@ ul
                     display: none
                     opacity: 0.6
                     img
-                        height: 15px
+                        height: 15px */
                 i
                     @include button_expand_on_hover
                     color: $color-white !important
@@ -509,6 +573,17 @@ ul
     color: $color-grey-med
     @include button_expand_on_hover
 
+
+/* ========================================================================== */
+/* ========================= Overlay ========================= */
+
+.overlay
+    width: 100%
+    height: 100vh
+    background: $color-white
+    position: absolute
+    text-align: center
+    padding-top: 100px
 
 /* ========================================================================== */
 /* ========================= Shape attributes popup ========================= */
