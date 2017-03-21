@@ -435,33 +435,16 @@ ul
         &::-webkit-scrollbar
             display: none
         li.inst-option
+            width: 20%
             font-size: 12px
             display: inline-block
             height: 100%
             vertical-align: middle
             color: $color-grey-dark
-            //border-bottom: 5px solid transparen
-            width: 25%
-            
             .inst-title
-                //cursor: pointer
-                /* &:hover
-                    .selected-inst-icon
-                        display: inline-block */
                 select
                     background: transparent
                     border-color: transparent
-                    //width: 50%
-                /* .selected-inst-icon
-                    display: inline-block
-                    float: right
-                    padding-right: 5px
-                    padding-top: 3px
-                    height: 100%
-                    display: none
-                    opacity: 0.6
-                    img
-                        height: 15px */
                 i
                     @include button_expand_on_hover
                     color: $color-white !important
@@ -474,7 +457,6 @@ ul
                 .selected-inst-icon
                     opacity: 1
                     display: inline-block !important
-
 
             .inst-params
                 height: 100%
@@ -568,7 +550,7 @@ ul
 
 
 /* ========================================================================== */
-/* ========================= Modal ========================= */
+/* ================================== Modal ================================= */
 
 .modal-background
     position: absolute
@@ -627,6 +609,7 @@ ul
                             //content: " :"
                     &.right
                         font-weight: bold
+
 /* ========================================================================== */
 /* ========================= Shape attributes popup ========================= */
 

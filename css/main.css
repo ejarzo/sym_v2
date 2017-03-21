@@ -358,56 +358,42 @@ ul {
     .inst-selectors ul.inst-list::-webkit-scrollbar {
       display: none; }
     .inst-selectors ul.inst-list li.inst-option {
+      width: 20%;
       font-size: 12px;
       display: inline-block;
       height: 100%;
       vertical-align: middle;
-      color: #444;
-      width: 25%; }
-      .inst-selectors ul.inst-list li.inst-option .inst-title {
-        /* &:hover
-         * .selected-inst-icon
-         *     display: inline-block */
-        /* .selected-inst-icon
-         * display: inline-block
-         * float: right
-         * padding-right: 5px
-         * padding-top: 3px
-         * height: 100%
-         * display: none
-         * opacity: 0.6
-         * img
-         *     height: 15px */ }
-        .inst-selectors ul.inst-list li.inst-option .inst-title select {
-          background: transparent;
-          border-color: transparent; }
-        .inst-selectors ul.inst-list li.inst-option .inst-title i {
-          -webkit-transition: all 0.1s ease-in-out;
-          -moz-transition: all 0.1s ease-in-out;
-          -o-transition: all 0.1s ease-in-out;
-          transition: all 0.1s ease-in-out;
-          color: #777;
-          transform: scaleX(1) scaleY(1) scaleZ(1);
-          position: relative;
-          z-index: 100;
-          color: #fff !important;
-          float: right;
-          padding-right: 5px;
-          font-size: 18px;
-          position: relative;
-          top: -2px; }
-          .inst-selectors ul.inst-list li.inst-option .inst-title i:hover {
-            transform: scaleX(1.2) scaleY(1.2) scaleZ(1);
-            color: #222;
-            z-index: 5000; }
-          .inst-selectors ul.inst-list li.inst-option .inst-title i:active {
-            transform: scaleX(1.2) scaleY(1.2) scaleZ(1);
-            color: #222; }
-          .inst-selectors ul.inst-list li.inst-option .inst-title i:disabled {
-            color: #bbb; }
-            .inst-selectors ul.inst-list li.inst-option .inst-title i:disabled:hover {
-              color: #bbb;
-              transform: scaleX(1) scaleY(1) scaleZ(1); }
+      color: #444; }
+      .inst-selectors ul.inst-list li.inst-option .inst-title select {
+        background: transparent;
+        border-color: transparent; }
+      .inst-selectors ul.inst-list li.inst-option .inst-title i {
+        -webkit-transition: all 0.1s ease-in-out;
+        -moz-transition: all 0.1s ease-in-out;
+        -o-transition: all 0.1s ease-in-out;
+        transition: all 0.1s ease-in-out;
+        color: #777;
+        transform: scaleX(1) scaleY(1) scaleZ(1);
+        position: relative;
+        z-index: 100;
+        color: #fff !important;
+        float: right;
+        padding-right: 5px;
+        font-size: 18px;
+        position: relative;
+        top: -2px; }
+        .inst-selectors ul.inst-list li.inst-option .inst-title i:hover {
+          transform: scaleX(1.2) scaleY(1.2) scaleZ(1);
+          color: #222;
+          z-index: 5000; }
+        .inst-selectors ul.inst-list li.inst-option .inst-title i:active {
+          transform: scaleX(1.2) scaleY(1.2) scaleZ(1);
+          color: #222; }
+        .inst-selectors ul.inst-list li.inst-option .inst-title i:disabled {
+          color: #bbb; }
+          .inst-selectors ul.inst-list li.inst-option .inst-title i:disabled:hover {
+            color: #bbb;
+            transform: scaleX(1) scaleY(1) scaleZ(1); }
       .inst-selectors ul.inst-list li.inst-option.selected-inst .selected-inst-icon {
         opacity: 1;
         display: inline-block !important; }
@@ -537,7 +523,7 @@ ul {
       transform: scaleX(1) scaleY(1) scaleZ(1); }
 
 /* ========================================================================== */
-/* ========================= Modal ========================= */
+/* ================================== Modal ================================= */
 .modal-background {
   position: absolute;
   left: 0;

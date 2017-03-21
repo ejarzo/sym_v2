@@ -204,7 +204,6 @@ class Project {
     
     clear_canvas () {
         hide_details();
-        $(".shape-attr-popup").remove();
         stop_handler();
         this.shapesList.forEach(function (shape) {
             if (shape.included) {
@@ -212,6 +211,9 @@ class Project {
                 shape.delete();    
             }
         });
+        $(".shape-attr-popup").remove();
+        //$(".shape-attr-popup").show();
+
         r.clear();
         init_grid();
         
@@ -219,13 +221,17 @@ class Project {
         else {hide_grid();}
         
         this.shapesList.length = 0;
+        
         ACTIVE_SHAPE = new Shape(0, SELECTED_INSTCOLOR_ID);
         var color = PROJECT.instColors[SELECTED_INSTCOLOR_ID].color;
+
         hoverLine = r.path().attr(hoverLineAttr).attr("stroke", color);
         hoverCircle = r.circle(0,0,3).attr(hoverCircleAttr).attr({"stroke": color, "fill": color});
+        
         if (CURR_TOOL == "adjust") {
             hoverCircle.hide();
         }
+        
         select_tool("draw");
         console.log(this.shapesList);
     }
@@ -351,27 +357,8 @@ class Shape {
 
                 var center = parent.get_center_coord_percent();
                 console.log(center.y)
-                if (center.y > .8) {
-                    parent.startFreqIndex = -4;
-                } else if (center.y > .6) {
-                    parent.startFreqIndex = -3;
-                } else if (center.y > .4) {
-                    parent.startFreqIndex = -2;
-                } else if (center.y > .2) {
-                    parent.startFreqIndex = -1;
-                } else if (center.y > 0) {
-                    parent.startFreqIndex = 0;
-                } else if (center.y > -.2) {
-                    parent.startFreqIndex = 1;
-                } else if (center.y > -.4) {
-                    parent.startFreqIndex = 2;
-                } else if (center.y > -.6) {
-                    parent.startFreqIndex = 3;
-                } else if (center.y > -.8) {
-                    parent.startFreqIndex = 4;
-                } else if (center.y > -1) {
-                    parent.startFreqIndex = 5;
-                }
+                parent.startFreqIndex = vert_pos_to_start_freq_index(center.y);
+               
             }
         },
         this.up = function (e) {
@@ -424,36 +411,39 @@ class Shape {
             var y = event.clientY;
             var i = parent.id;
 
-            var popup = $("#shape-attr-popup-"+i);
             var holderWidth = $("#holder").width();
             var holderHeight = $("#holder").height();
-            var toolTipArrow = $("#shape-attr-popup-"+i+" .tooltip-arrow");
-            popup.css({left: x+xPad, top: y-yPad});
+            
+            var toolTipArrow = this.popup.find(".tooltip-arrow");
+            this.popup.css({left: x+xPad, top: y-yPad});
 
-            if (x + popup.width() + xPad > holderWidth) {
-                //console.log("show on left");
+            // make sure always on screen
+            if (x + this.popup.width() + xPad > holderWidth) {
                 toolTipArrow.removeClass("arrow-left");
                 toolTipArrow.addClass("arrow-right");
-                popup.css({left: x-(popup.width() + 2*xPad)});
+                this.popup.css({left: x-(this.popup.width() + 2*xPad)});
             } else {
                 toolTipArrow.removeClass("arrow-right");
                 toolTipArrow.addClass("arrow-left");
             }
-            if (y + popup.height() > holderHeight + 40) {
-                popup.css({top: holderHeight-popup.height()});
+            if (y + this.popup.height() > holderHeight + 40) {
+                this.popup.css({top: holderHeight-this.popup.height()});
                 var distFromBottom = holderHeight-y + 10;
-                //console.log(distFromBottom);
                 toolTipArrow.css("top", "calc(100% - "+distFromBottom+"px)");
             } else {
                 toolTipArrow.css("top", "40px");
             }
             
-            popup.show();
+            this.popup.show();
         }
 
         /* ----- Delete ----- */
         this.delete = function () {
+            console.log("deleting");
+            console.log($("#shape-attr-popup-0"));
+            
             this.popup.remove();
+            console.log(this.popup);
             
             this.stop();
             this.path.remove();
@@ -490,11 +480,12 @@ class Shape {
             this.isMuted = false;
             this.part.mute = false;
             this.path.attr({"opacity": 1});
+            
             this.nodes.forEach(function (node) {
                 node.handle.attr(handlesDefaultAttr);
                 node.handle.attr("opacity", 1);
             });
-            this.animCircle.attr(this.animCircleAttr);
+            this.animCircle.attr("opacity", 1);
             this.synth.volume.value = this.volume;
             
             var muteHtml = '<button class="shape-attr-mute">Mute</button>';
@@ -594,8 +585,10 @@ class Shape {
             this.path.attr("path", pathString);
             this.id = id;
             this.path.attr(shapeFilledAttr);
-            this.init_shape_attr_popup();
         }
+        
+        this.popup = $("<div>", {"id": "shape-attr-popup-"+this.id, "class": "shape-attr-popup"}).html(this.get_popup_content());
+        $("body").append(this.popup);
 
         //this.freeverb = new Tone.Freeverb(.9).toMaster();
         this.synth = synth_chooser(this.instColorObj().name);
@@ -603,7 +596,6 @@ class Shape {
         this.update_start_freq();
         this.update_pan();
         
-        this.popup = $("#shape-attr-popup-"+this.id);
 
         /* ============================================================= */
         /* ======================= PART CALLBACK ======================= */
@@ -658,17 +650,14 @@ class Shape {
         }, []).start(0);
         this.part.loop = true;
         
+
         /* ============== Popup Handlers ============== */
 
-        /* ------ Instrument Select ------ */
-/*        this.popup.find(".shape-attr-inst-select").on('change' ,function () {
-            //parent.set_instrument(this.value);
-            var i = $(this).prop('selectedIndex');
-            parent.set_inst_color_id(i);
-        });*/
-        
-        this.popup.find(".color-palette").on("click", function () {
-            console.log("yo");
+        /* ------ Instrument Select ------ */        
+        this.popup.find(".palette-color").on("click", function () {
+            var colorId = $(this).attr("data");
+            console.log(colorId);
+            parent.set_inst_color_id(colorId);
         })
 
         /* ------ Starting Frequency ------ */
@@ -720,7 +709,6 @@ class Shape {
         this.path.attr("path", path_to_string(this.path) + "Z");
         this.path.attr({"fill-opacity": completedShapeOpacity});
         
-        this.init_shape_attr_popup();
 
         this.update_note_values();
         this.update_pan();
@@ -729,6 +717,8 @@ class Shape {
             this.set_perim_length(PROJECT.quantizeLength);
         }
         this.completed = true;
+        
+        this.refresh_shape_attr_popup();
     }
 
     increment_start_freq (dir) {
@@ -775,10 +765,11 @@ class Shape {
         })
         this.animCircle.attr(this.animCircleAttr);
 
-        populate_list(synthsList, this.instColorObj().name, "#shape-attr-popup-"+this.id+" .shape-attr-inst-select");
+        //populate_list(synthsList, this.instColorObj().name, "#shape-attr-popup-"+this.id+" .shape-attr-inst-select");
     }
 
     set_instrument (name) {
+        console.log("setting instrument to:", name);
         this.synth.triggerRelease();
         //this.synthName = name;
         this.synth.dispose();
@@ -924,82 +915,63 @@ class Shape {
     }
 
     /* --- Shape Attr Popup --- */
-    init_shape_attr_popup () {
-        var i = this.id;
-        console.log("init shape attr popup", i);
+    get_popup_content () {
+        //console.log("GETTING shape attr popup content", this.id);
+        
         var colorPickerHtml = '';
-        
-        for (var j = 0; j < PROJECT.instColors.length; j++) {
-            console.log(j)
-            colorPickerHtml += '<div class="palette-color inst-color'+j+'" style="background: '+PROJECT.instColors[j].color+'" data="'+i+'" onclick="set_shape_inst_color_id('+i+','+j+')"></div>';
-            //colorPicker.append('<div class="palette-color inst-color'+i+'" data="'+i+'"></div>');
-            //$(".palette-color.inst-color"+i).css("background", PROJECT.instColors[i].color);
-        }
-
-        var popupHtml = '\
-            <div class="shape-attr-popup" id="shape-attr-popup-'+i+'">\
-                <div class="tooltip-arrow arrow-left"></div>\
-                <div>\
-                    <span>Shape: '+i+'</span>\
-                    <!--<span class="close-popup">X</span>-->\
-                </div>\
-                <div class="section">\
-                    <label>Instrument:</label>\
-                    <div class="color-palette dropdown" style="background: '+this.instColorObj().color+'">\
-                            <div class="dropdown-content">\
-                                <div class="palette-background">'+colorPickerHtml+'</div>\
-                            </div>\
-                        </div>\
-                    <!--<select class="shape-attr-inst-select"></select>-->\
-                </div>\
-                <div class="section">\
-                    <label>Starting Note:</label>\
-                    <span class="shape-attr-start-freq">\
-                        <span class="start-freq-label" id="start-freq-label-'+i+'">'+this.start_freq+'</span>\
-                        <button class="arrow arrow-up"><i class="ion-arrow-up-b"></i></button>\
-                        <button class="arrow arrow-down"><i class="ion-arrow-down-b"></i></button>\
-                    </span>\
-                </div>\
-                <div class="section">\
-                    Volume:\
-                    <input type="range" class="signal-meter"\
-                           value="'+this.volume+'" min="-18" max="0">\
-                </div>\
-                <div class="section mute-solo">\
-                    <div class="button-cont mute-button-cont">\
-                        <button class="shape-attr-mute">Mute</button>\
-                    </div><div class="button-cont solo-button-cont">\
-                        <button class="shape-attr-solo">Solo</button>\
-                    </div>\
-                </div>\
-                <div class="section">\
-                    <button class="shape-attr-delete-shape">Delete Shape</button>\
-                </div>\
-                <div class="section">\
-                    <button class="shape-attr-set-perim">DANKIFY</button>\
-                </div>\
-            </div>';
-        
-        $("body").append(popupHtml);
-        
-/*
-        var colorPicker = $("#shape-attr-popup-"+i+" .color-palette .dropdown-content .palette-background");
-        
-        var colorPickerHtml = "";
-            
-        console.log("starrting loop");
         for (var i = 0; i < PROJECT.instColors.length; i++) {
-            //colorPickerHtml +=
-            colorPicker.append('<div class="palette-color inst-color'+i+'" data="'+i+'"></div>');
-            $(".palette-color.inst-color"+i).css("background", PROJECT.instColors[i].color);
-        }*/
+            colorPickerHtml += '<div class="palette-color inst-color'+i+'" style="background: '+PROJECT.instColors[i].color+'" data="'+i+'")"></div>';
+        }
+        
+        var popupHtml = '\
+            <div class="tooltip-arrow arrow-left"></div>\
+            <div>\
+                <span>Shape: '+this.id+'</span>\
+                <!--<span class="close-popup">X</span>-->\
+            </div>\
+            <div class="section">\
+                <label>Instrument:</label>\
+                <div class="color-palette dropdown" style="background: '+this.instColorObj().color+'">\
+                        <div class="dropdown-content">\
+                            <div class="palette-background">'+colorPickerHtml+'</div>\
+                        </div>\
+                    </div>\
+                <!--<select class="shape-attr-inst-select"></select>-->\
+            </div>\
+            <div class="section">\
+                <label>Starting Note:</label>\
+                <span class="shape-attr-start-freq">\
+                    <span class="start-freq-label">'+this.start_freq+'</span>\
+                    <button class="arrow arrow-up"><i class="ion-arrow-up-b"></i></button>\
+                    <button class="arrow arrow-down"><i class="ion-arrow-down-b"></i></button>\
+                </span>\
+            </div>\
+            <div class="section">\
+                Volume:\
+                <input type="range" class="signal-meter"\
+                       value="'+this.volume+'" min="-18" max="0">\
+            </div>\
+            <div class="section mute-solo">\
+                <div class="button-cont mute-button-cont">\
+                    <button class="shape-attr-mute">Mute</button>\
+                </div><div class="button-cont solo-button-cont">\
+                    <button class="shape-attr-solo">Solo</button>\
+                </div>\
+            </div>\
+            <div class="section">\
+                <button class="shape-attr-delete-shape">Delete Shape</button>\
+            </div>\
+            <div class="section">\
+                <button class="shape-attr-set-perim">Quantize</button>\
+            </div>';
+
+        return popupHtml;
     }
 
     refresh_shape_attr_popup () {
-        var i = this.id;
-        //this.popup.find("#start-freq-label").html(this.start_freq);
-        populate_list(synthsList, this.instColorObj().name, "#shape-attr-popup-"+i+" .shape-attr-inst-select")
-        $("#start-freq-label-"+i).html(this.start_freq);
+        console.log("REFRESH POPUP");
+        this.popup.find(".start-freq-label").html(this.start_freq);
+        this.popup.find(".color-palette").css({"background": this.instColorObj().color});
     }
     
 
@@ -1250,7 +1222,7 @@ $(document).ready(function () {
     set_draw_inst_color(0);
 
     hide_menu();
-    alert("Welcome to Shape Your Music. This application is currently under development, and you may experience bugs. If you have questions feel free to contact me at ejarz25@gmail.com. - Elias");
+    //alert("Welcome to Shape Your Music. This application is currently under development, and you may experience bugs. If you have questions feel free to contact me at ejarz25@gmail.com. - Elias");
     //hide_info_pane();
 
 
@@ -1483,7 +1455,7 @@ $("#holder").on( "mousedown", function (e) {
 
             var prev_n = [];
             
-            console.log("active shape length:", ACTIVE_SHAPE.length());
+            //console.log("active shape length:", ACTIVE_SHAPE.length());
 
             /* Update previous node if the path already exists */
             if (ACTIVE_SHAPE.length()) {
@@ -1540,11 +1512,6 @@ $("#holder").on( "mousedown", function (e) {
 /* -------------------------------- FUNCTIONS ------------------------------- */
 /* ========================================================================== */
 /* ========================================================================== */
-
-function set_shape_inst_color_id(shapeId, colorId) {
-    PROJECT.shapesList[shapeId].set_inst_color_id(colorId);
-    $("#shape-attr-popup-"+shapeId+" .color-palette").css("background", PROJECT.instColors[colorId].color);
-}
 
 
 /* ========================================================================== */
@@ -1962,6 +1929,8 @@ function synth_chooser (name) {
         case "SuperSaw":
             synth =  new Tone.Synth(
                    {
+                    vibratoAmount:1,
+                    vibratoRate:5,
                     "oscillator" : {
                         "type" : "fatsawtooth",
                         "count" : 3,
@@ -1975,6 +1944,13 @@ function synth_chooser (name) {
                         "attackCurve" : "exponential"
                     }
                 });
+            var tremolo = new Tone.Tremolo({
+                "frequency" : 8,
+                "type" : "sine",
+                "depth" : 2,
+                "spread" : 180
+            }).toMaster().start();
+            synth.connect(tremolo);
             break;
         case "Simple":
             synth = new Tone.Synth();
@@ -2188,6 +2164,29 @@ function hexToRgbA (hex, a) {
     throw new Error('Bad Hex');
 }
 
+function vert_pos_to_start_freq_index (pos) {
+    if (pos > .8) {
+        return -4;
+    } else if (pos > .6) {
+        return -3;
+    } else if (pos > .4) {
+        return -2;
+    } else if (pos > .2) {
+        return -1;
+    } else if (pos > 0) {
+        return 0;
+    } else if (pos > -.2) {
+        return 1;
+    } else if (pos > -.4) {
+        return 2;
+    } else if (pos > -.6) {
+        return 3;
+    } else if (pos > -.8) {
+        return 4;
+    } else if (pos > -1) {
+        return 5;
+    } else return 6;
+}
 
 /* ========================================================================== */
 /* ---------------------------------- Menu ---------------------------------- */
