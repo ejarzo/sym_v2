@@ -1250,7 +1250,7 @@ $(document).ready(function () {
     set_draw_inst_color(0);
 
     hide_menu();
-    //alert("Welcome to Shape Your Music. This application is currently under development, and you may experience bugs. If you have questions feel free to contact me at ejarz25@gmail.com. - Elias");
+    alert("Welcome to Shape Your Music. This application is currently under development, and you may experience bugs. If you have questions feel free to contact me at ejarz25@gmail.com. - Elias");
     //hide_info_pane();
 
 
