@@ -25,17 +25,23 @@
             <!-- The Menu -->
             <div class="menu">
                 <ul>
-                    <li class="logo"><a href="#">SYM</a></li><!-- 
-                    --><!-- <li><a href="#">My Projects</a></li> --><!-- 
-                    --><li class="discover-link"><a href="#">Discover</a></li><!-- 
-                    --><li><a href="#" class="show-overlay" data="info">Info</a></li><!-- 
-                    --><li class="dropdown"><a href="#" >Help</a>
+                    <li class="logo">
+                        <a href="#">SYM</a>
+                    </li>
+                    <li class="discover-link">
+                        <a href="#">Discover</a>
+                    </li>
+                    <li>
+                        <a href="#" class="show-modal" data="info">Info</a>
+                    </li>
+                    <li class="dropdown">
+                        <a href="#" >Help</a>
                         <div class="dropdown-content">
-                            <a href="#" class="show-overlay" data="tutorial">Tutorial</a>
-                            <a href="#">Keyboard Shortcuts</a>
+                            <a href="#" class="show-modal" data="tutorial">Tutorial</a>
+                            <a href="#" class="show-modal" data="shortcuts">Keyboard Shortcuts</a>
                         </div>
-                    </li><!-- 
-                    --><li class="account-link dropdown">
+                    </li>
+                    <li class="account-link dropdown">
                         <a href="#">Account: <strong>Coming Soon</strong></a>
                         <div class="dropdown-content">
                             <a href="#">My Profile</a>
@@ -51,6 +57,7 @@
 
             <!-- The Controls -->
             <div class="controls">
+                
                 <div class="controls-section transport-controls">
                     <button class="transport-icon play-stop-toggle info-text" title="Play project (SPACE)">
                         <i class="ion-play"></i>
@@ -60,19 +67,11 @@
                     </button>
                 </div>
 
-                
                 <div class="controls-section tools-controls">
                     <button class="ctrl-elem tool active" id="draw-tool" title="Draw Tool (TAB to toggle)">
                         <div class="color-palette dropdown">
                             <div class="dropdown-content">
-                                <div class="palette-background">
-                                    <div class="palette-color inst-color0" onclick="set_draw_inst_color(0)"></div>
-                                    <div class="palette-color inst-color1" onclick="set_draw_inst_color(1)"></div>
-                                    <div class="palette-color inst-color2" onclick="set_draw_inst_color(2)"></div>
-                                    <div class="palette-color inst-color3" onclick="set_draw_inst_color(3)"></div>
-                                    <div class="palette-color inst-color4" onclick="set_draw_inst_color(4)"></div>
-                                </div>
-
+                                <div class="palette-background"></div>
                             </div>
                         </div>
                             <!-- <img class="tool-icon" src="img/cursor_draw.svg"> -->
@@ -84,13 +83,7 @@
                     </button>
                 </div>
                 
-<!--                 <div class="divider"></div>
-
-                <div class="controls-section color-controls">
-                </div> -->
-
                 <div class="divider"></div>
-
                 <div class="controls-section grid-controls">
                     <div class="ctrl-elem">
                         <div>
@@ -111,7 +104,6 @@
                 </div>
                 
                 <div class="divider"></div>
-
                 <div class="controls-section music-controls">
                     <span class="ctrl-elem">
                         <label>Tempo:</label><br>
@@ -128,7 +120,6 @@
                 </div>
 
                 <div class="divider"></div>
-
                 <div class="controls-section canvas-controls">
                     <button class="transport-icon enter-fullscreen" title="Toggle Fullscreen">
                         <i class="ion-arrow-expand"></i>
@@ -138,7 +129,7 @@
                 
                <!--  <div class="divider"></div> -->
 
-<!--                 <div class="controls-section project-controls">
+                <!-- <div class="controls-section project-controls">
                     <button class="ctrl-elem" onclick="project_dump()">Save Project</button>
                     <button class="ctrl-elem" onclick="project_load()">Load Project</button>
                 </div> -->
@@ -154,13 +145,45 @@
             </div>
             
             <!-- Overlays -->
-            <div class="hidden overlay tutorial-overlay">
-                <p>Tutorial coming soon.</p>
-                <button class="close-overlay">Close</button>
+            <div class="hidden modal-background tutorial-modal">
+                <div class="modal">
+                    <div class="modal-content">
+                        <p>Tutorial coming soon.</p>
+                    </div>
+                    <div class="close-modal">x</div>
+                </div>
             </div>
-            <div class="hidden overlay info-overlay">
-                <p>Info coming soon.</p>
-                <button class="close-overlay">Close</button>
+            <div class="hidden modal-background info-modal">
+                <div class="modal">
+                    <div class="modal-content">
+                        <p>Info Coming Soon...</p>
+                        <p>By Elias Jarzombek: <a href="https://ejarzo.github.io" target="blank">ejarzo.github.io</a></p>
+
+                    </div>
+                    <div class="close-modal">x</div>
+                </div>
+            </div>
+            <div class="hidden modal-background shortcuts-modal">
+                <div class="modal">
+                    <h3>Keyboard Shortcuts</h3>
+                    <div class="modal-content">
+                        <table>
+                            <tr>
+                                <td class="left">Play/Stop</td>
+                                <td class="right">SPACE</td>
+                            </tr>
+                            <tr>
+                                <td class="left">Toggle Draw/Edit Mode</td>
+                                <td class="right">TAB</td>
+                            </tr>
+                            <tr>
+                                <td class="left">Delete shape (Edit Mode)</td>
+                                <td class="right">DELETE</td>
+                            </tr>                   
+                        </table>
+                    </div>
+                    <div class="close-modal">x</div>
+                </div>
             </div>
         </div>
 
@@ -168,6 +191,8 @@
         <div class="inst-selectors">
             <ul class="inst-list"></ul>
         </div>
+
+
         <!-- The Info Panel -->
        <!--  <div class="info-pane">
             <button class="show-hide show-hide-info-pane">
@@ -193,7 +218,6 @@
         <script src="js/vendor/recorder.js"></script>
         <script src="js/plugins.js"></script>
 
-        <script src="js/presetXX.js"></script>
         <script src="js/main.js"></script>
 
         <!-- Google Analytics: change UA-XXXXX-X to be your site's ID. -->

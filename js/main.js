@@ -75,7 +75,7 @@ Tone.Transport.latencyHint = 'interactive';
 var DEFAULT_TEMPO = 5;
 
 var PLAYING = false;
-var synthsList =  ["Marimba", "Duo", "Keys", "Sub Bass", "Simple", "AM", 
+var synthsList =  ["colton_08", "Marimba", "colton_12", "Duo", "Keys", "Sub Bass", "Simple", "AM", 
                    "Super Saw", "Membrane", "Kalimba", "Cello", "Pizz"];
 var DEFAULT_SYNTH = synthsList[0];
 var SELECTED_INSTCOLOR_ID = 0;
@@ -108,7 +108,7 @@ var hoverLine = r.path().attr(hoverLineAttr);
 var hoverCircle = r.circle(0,0,3).attr(hoverCircleAttr);
 
 /* ======== RECORDING =====================----========================= */
-var masterLimiter = new Tone.Limiter(-60);
+//var masterLimiter = new Tone.Limiter(-60);
 var rec = new Recorder(Tone.Master);
 var RECORD_ARMED = false;
 var RECORDING = false;
@@ -137,6 +137,7 @@ class Project {
         this.init_scale_select();
         this.init_tonic_select();
         this.init_inst_colors();
+        this.init_color_picker();
     }
     /* ---------- SETTERS ---------- */
     set_tempo (tempo) {
@@ -191,7 +192,16 @@ class Project {
         }
         console.log(this.instColors);
     }
-
+    
+    init_color_picker(){
+        var colorPicker = $(".color-palette .dropdown-content .palette-background");
+        var colorPickerHtml = "";
+        for (var i = 0; i < this.instColors.length; i++) {
+            colorPicker.append('<div class="palette-color inst-color'+i+'" onclick="set_draw_inst_color('+i+')"></div>');
+            $(".palette-color.inst-color"+i).css("background", this.instColors[i].color);
+        }
+    }
+    
     clear_canvas () {
         hide_details();
         $(".shape-attr-popup").remove();
@@ -362,9 +372,6 @@ class Shape {
                 } else if (center.y > -1) {
                     parent.startFreqIndex = 5;
                 }
-    /*            parent.update_start_freq();
-                parent.update_note_values(); */
-
             }
         },
         this.up = function (e) {
@@ -373,7 +380,9 @@ class Shape {
                 parent.show_attr_popup(e);
             }
             parent.update_start_freq();
-            parent.update_note_values();    
+            if (parent.completed) {
+                parent.update_note_values();    
+            }
             //parent.animCircle.transform("t0,0");
             this.odx = this.ody = 0;
         };
@@ -562,14 +571,11 @@ class Shape {
 
         /* ============== load from saved shape ============== */
         if (savedData) {
-
             var pathList = savedData.pathList;
 
             this.completed = true;
             this.startFreqIndex = savedData.startFreqIndex;
-            
             //console.log("LOADING SYNTH:", savedData.synthName);
-            //this.synthName = savedData.synthName;
 
             this.volume = savedData.volume;
             this.path.attr("stroke-width", volume_to_stroke_width(this.volume));
@@ -588,10 +594,12 @@ class Shape {
             this.path.attr("path", pathString);
             this.id = id;
             this.path.attr(shapeFilledAttr);
+            this.init_shape_attr_popup();
         }
+
         //this.freeverb = new Tone.Freeverb(.9).toMaster();
         this.synth = synth_chooser(this.instColorObj().name);
-        this.init_shape_attr_popup();
+        //this.synth = presetXX;
         this.update_start_freq();
         this.update_pan();
         
@@ -653,12 +661,16 @@ class Shape {
         /* ============== Popup Handlers ============== */
 
         /* ------ Instrument Select ------ */
-        this.popup.find(".shape-attr-inst-select").on('change' ,function () {
+/*        this.popup.find(".shape-attr-inst-select").on('change' ,function () {
             //parent.set_instrument(this.value);
             var i = $(this).prop('selectedIndex');
             parent.set_inst_color_id(i);
-        });
+        });*/
         
+        this.popup.find(".color-palette").on("click", function () {
+            console.log("yo");
+        })
+
         /* ------ Starting Frequency ------ */
         this.popup.find(".arrow-up").on("click", function () {
             parent.increment_start_freq(1);
@@ -709,6 +721,7 @@ class Shape {
         this.path.attr({"fill-opacity": completedShapeOpacity});
         
         this.init_shape_attr_popup();
+
         this.update_note_values();
         this.update_pan();
         
@@ -913,10 +926,15 @@ class Shape {
     /* --- Shape Attr Popup --- */
     init_shape_attr_popup () {
         var i = this.id;
-        var start_freq = this.start_freq;
-
-        var synthSelectHtml = '';
-        var selectHtml = '';
+        console.log("init shape attr popup", i);
+        var colorPickerHtml = '';
+        
+        for (var j = 0; j < PROJECT.instColors.length; j++) {
+            console.log(j)
+            colorPickerHtml += '<div class="palette-color inst-color'+j+'" style="background: '+PROJECT.instColors[j].color+'" data="'+i+'" onclick="set_shape_inst_color_id('+i+','+j+')"></div>';
+            //colorPicker.append('<div class="palette-color inst-color'+i+'" data="'+i+'"></div>');
+            //$(".palette-color.inst-color"+i).css("background", PROJECT.instColors[i].color);
+        }
 
         var popupHtml = '\
             <div class="shape-attr-popup" id="shape-attr-popup-'+i+'">\
@@ -927,7 +945,12 @@ class Shape {
                 </div>\
                 <div class="section">\
                     <label>Instrument:</label>\
-                    <select class="shape-attr-inst-select"></select>\
+                    <div class="color-palette dropdown" style="background: '+this.instColorObj().color+'">\
+                            <div class="dropdown-content">\
+                                <div class="palette-background">'+colorPickerHtml+'</div>\
+                            </div>\
+                        </div>\
+                    <!--<select class="shape-attr-inst-select"></select>-->\
                 </div>\
                 <div class="section">\
                     <label>Starting Note:</label>\
@@ -956,9 +979,20 @@ class Shape {
                     <button class="shape-attr-set-perim">DANKIFY</button>\
                 </div>\
             </div>';
+        
         $("body").append(popupHtml);
-
-        populate_list(synthsList, this.instColorObj().name, "#shape-attr-popup-"+i+" .shape-attr-inst-select")
+        
+/*
+        var colorPicker = $("#shape-attr-popup-"+i+" .color-palette .dropdown-content .palette-background");
+        
+        var colorPickerHtml = "";
+            
+        console.log("starrting loop");
+        for (var i = 0; i < PROJECT.instColors.length; i++) {
+            //colorPickerHtml +=
+            colorPicker.append('<div class="palette-color inst-color'+i+'" data="'+i+'"></div>');
+            $(".palette-color.inst-color"+i).css("background", PROJECT.instColors[i].color);
+        }*/
     }
 
     refresh_shape_attr_popup () {
@@ -1152,21 +1186,20 @@ class InstColor {
                         <option>Instrument</option>\
                     </select>\
                     <i class="ion-arrow-left-b"></i>\
-                    <!--<span class="selected-inst-icon"><img src="img/sin_white.png"></span>-->\
                     <ul class="inst-params">\
                 <li>\
                     <span class="inst-param-title">Glide</span><br>\
                     <input type="text" class="kk-knob kk-param-1"/>\
-                </li><!--\
-                --><li>\
+                </li>\
+                <li>\
                     <span class="inst-param-title">Attack</span><br>\
                     <input type="text" class="kk-knob kk-param-2"/>\
-                </li><!--\
-                --><li>\
+                </li>\
+                <li>\
                     <span class="inst-param-title">Decay</span><br>\
                     <input type="text" class="kk-knob kk-param-3"/>\
-                </li><!--\
-                --><li>\
+                </li>\
+                <li>\
                     <span class="inst-param-title">Sustain</span><br>\
                     <input type="text" class="kk-knob kk-param-4"/>\
                 </li>\
@@ -1217,11 +1250,11 @@ $(document).ready(function () {
     set_draw_inst_color(0);
 
     hide_menu();
-    alert("Welcome to Shape Your Music. This application is currently under development, and you may experience bugs. If you have questions feel free to contact me at ejarz25@gmail.com. - Elias");
+    //alert("Welcome to Shape Your Music. This application is currently under development, and you may experience bugs. If you have questions feel free to contact me at ejarz25@gmail.com. - Elias");
     //hide_info_pane();
 
 
-/*
+
     $(".kk-knob").khantrolKnob({
         css: "skeleton",
     })
@@ -1230,40 +1263,40 @@ $(document).ready(function () {
         var val = $(this).val()/300;
         console.log(val);
         for (var i = PROJECT.shapesList.length - 1; i >= 0; i--) {
-            if (PROJECT.shapesList[i].synthName == "Simple"){
+            //if (PROJECT.shapesList[i].instColorObj.name == "Simple"){
                 PROJECT.shapesList[i].synth.portamento = val;
                 
-            }
+            //}
         }
     });
     $(".kk-param-2").change(function () {
         var val = $(this).val()/100;
         for (var i = PROJECT.shapesList.length - 1; i >= 0; i--) {
-            if (PROJECT.shapesList[i].synthName == "Simple"){
+            //if (PROJECT.shapesList[i].instColorObj.name == "Simple"){
                 PROJECT.shapesList[i].synth.envelope.attack = val+0.005;
-            }
+            //}
         }
     });
     $(".kk-param-3").change(function () {
         var val = $(this).val()/100;
         console.log(val);
         for (var i = PROJECT.shapesList.length - 1; i >= 0; i--) {
-            if (PROJECT.shapesList[i].synthName == "Simple"){
+            //if (PROJECT.shapesList[i].instColorObj.name == "Simple"){
                 console.log(PROJECT.shapesList[i].synth.envelope);
                 PROJECT.shapesList[i].synth.envelope.decay = val+0.005;
-            }
+            //}
         }
     });
     $(".kk-param-4").change(function () {
         var val = $(this).val()/100;
         console.log(val);
         for (var i = PROJECT.shapesList.length - 1; i >= 0; i--) {
-            if (PROJECT.shapesList[i].synthName == "Simple"){
+            //if (PROJECT.shapesList[i].instColorObj.name == "Simple"){
                 console.log(PROJECT.shapesList[i].synth.envelope);
                 PROJECT.shapesList[i].synth.envelope.sustain = val;
-            }
+            //}
         }
-    });*/
+    });
 });
 
 /* ========================================================================== */
@@ -1405,8 +1438,9 @@ $("#holder").on("mousemove", function (e) {
         var origin_y = ACTIVE_SHAPE.get_origin().y;
 
         // snap to origin
-        if (x < (origin_x + ORIGIN_RADIUS) && x > (origin_x - ORIGIN_RADIUS) && 
-                y < (origin_y + ORIGIN_RADIUS) && y > (origin_y - ORIGIN_RADIUS)) {
+        if (ACTIVE_SHAPE.length() > 1 && x < (origin_x + ORIGIN_RADIUS) 
+                && x > (origin_x - ORIGIN_RADIUS) && y < (origin_y + ORIGIN_RADIUS) 
+                && y > (origin_y - ORIGIN_RADIUS)) {
             x = origin_x;
             y = origin_y;
             ACTIVE_SHAPE.path.attr({"fill-opacity": previewShapeOpacity});
@@ -1435,6 +1469,7 @@ $("#holder").on( "mousedown", function (e) {
     if (e.which === 1) {
         
         if (CURR_TOOL == "draw") {
+            
             if (CURR_DRAW_STATE == "ready") {
                 console.log("creating new shape with instcolor", SELECTED_INSTCOLOR_ID);
                 ACTIVE_SHAPE = new Shape(PROJECT.shapesList.length, SELECTED_INSTCOLOR_ID);
@@ -1447,17 +1482,19 @@ $("#holder").on( "mousedown", function (e) {
             y = snap_to_grid(y);
 
             var prev_n = [];
+            
+            console.log("active shape length:", ACTIVE_SHAPE.length());
 
             /* Update previous node if the path already exists */
-            if ((ACTIVE_SHAPE.path.attr("path")).length) {
+            if (ACTIVE_SHAPE.length()) {
                 var origin_x = ACTIVE_SHAPE.get_origin().x;
                 var origin_y = ACTIVE_SHAPE.get_origin().y;
                 prev_n = ACTIVE_SHAPE.path.attr("path")[ACTIVE_SHAPE.length() - 1];
             }
-
             /* Snaps to origin => complete shape if within the radius */
-            if (x < (origin_x + ORIGIN_RADIUS) && x > (origin_x - ORIGIN_RADIUS) && 
-                y < (origin_y + ORIGIN_RADIUS) && y > (origin_y - ORIGIN_RADIUS)) {
+            if (ACTIVE_SHAPE.length() > 1 && x < (origin_x + ORIGIN_RADIUS) && 
+                    x > (origin_x - ORIGIN_RADIUS) && y < (origin_y + ORIGIN_RADIUS) && 
+                    y > (origin_y - ORIGIN_RADIUS)) {
                 set_draw_state("ready");
                 ACTIVE_SHAPE.complete();
                 PROJECT.shapesList.push(ACTIVE_SHAPE);
@@ -1467,7 +1504,7 @@ $("#holder").on( "mousedown", function (e) {
                 //PREV_ENDPOINT = "";
             }
             /* If not, add to current path */ 
-            else if (x != prev_n[1] && y != prev_n[2]){    
+            else if ((x != prev_n[1] || y != prev_n[2])){    
                 //PREV_ENDPOINT = "M" + x + "," + y;
                 var moveTo = "M" + x + "," + y;
                 var lineTo = "L" + x + "," + y;
@@ -1504,7 +1541,10 @@ $("#holder").on( "mousedown", function (e) {
 /* ========================================================================== */
 /* ========================================================================== */
 
-
+function set_shape_inst_color_id(shapeId, colorId) {
+    PROJECT.shapesList[shapeId].set_inst_color_id(colorId);
+    $("#shape-attr-popup-"+shapeId+" .color-palette").css("background", PROJECT.instColors[colorId].color);
+}
 
 
 /* ========================================================================== */
@@ -1719,11 +1759,10 @@ function populate_list (values, selectedItem, className) {
 
 /* -------- Instrument Colors -------- */
 function set_draw_inst_color (id) {
-    //$(".inst-option").removeClass("selected-inst");
-    //instColor.li.addClass("selected-inst");
     SELECTED_INSTCOLOR_ID = id;
     var instColor = PROJECT.instColors[id];
-    $(".color-palette").css({background: instColor.color})
+
+    $(".controls-section .color-palette").css({background: instColor.color})
     var synthName = instColor.li.find(".inst-select").attr("data");
     
     hoverLine.attr({stroke: instColor.color});
@@ -1944,34 +1983,31 @@ function synth_chooser (name) {
             synth = new Tone.MembraneSynth();
             break;
         case "Kalimba":
-            synth = new Tone.FMSynth(
-            {
-                "harmonicity":8,
-                "modulationIndex": 2,
-                "oscillator" : {
-                    "type": "sine"
-                },
-                "envelope": {
-                    "attack": 0.001,
-                    "decay": 2,
-                    "sustain": 0.1,
-                    "release": 2
-                },
-                "modulation" : {
-                    "type" : "square"
-                },
-                "modulationEnvelope" : {
-                    "attack": 0.002,
-                    "decay": 0.2,
-                    "sustain": 0,
-                    "release": 0.2
-                }
-            }
-                );
+            synth = new Tone.FMSynth({
+                    "harmonicity": 8,
+                    "modulationIndex": 2,
+                    "oscillator": {
+                        "type": "sine"
+                    },
+                    "envelope": {
+                        "attack": 0.001,
+                        "decay": 2,
+                        "sustain": 0.1,
+                        "release": 2
+                    },
+                    "modulation" : {
+                        "type" : "square"
+                    },
+                    "modulationEnvelope" : {
+                        "attack": 0.002,
+                        "decay": 0.2,
+                        "sustain": 0,
+                        "release": 0.2
+                    }
+                });
             break;
         case "Cello":
-            synth = new Tone.FMSynth(
-            {
+            synth = new Tone.FMSynth({
                 "harmonicity": 3.01,
                 "modulationIndex": 14,
                 "oscillator": {
@@ -1992,12 +2028,10 @@ function synth_chooser (name) {
                     "sustain": 0.2,
                     "release": 0.1
                 }
-            }
-                );
+            });
             break;
-            case "Pizz":
-            synth = new Tone.MonoSynth(
-            {
+        case "Pizz":
+            synth = new Tone.MonoSynth({
                  "oscillator": {
                     "type": "sawtooth"
                 },
@@ -2020,8 +2054,82 @@ function synth_chooser (name) {
                     "baseFrequency": 800,
                     "octaves": -1.2
                 }
-            }
-                );
+            });
+            break;
+        case "colton_12":
+            synth = new Tone.MembraneSynth({
+                "pitchDecay": 1,
+                "octaves": 30,
+                "oscillator": {
+                    "type": "sine"
+                },
+                "envelope": {
+                    "attack": 0.001,
+                    "decay": 2,
+                    "sustain": 0.001,
+                    "release": 1.4,
+                    "attackCurve": "exponential"
+                }
+            })
+            var cheby = new Tone.Chebyshev({
+                "order" : 50
+            }).toMaster();
+            synth.chain(cheby)
+            break;
+        case "colton_08":
+            synth = new Tone.DuoSynth({
+                    vibratoAmount:0,
+                    vibratoRate:10,
+                    harmonicity:3,
+                    voice0: {
+                        volume:-10,
+                        portamento:0,
+                        oscillator:{
+                            type:"sine"
+                        },
+                        filterEnvelope: {
+                            attack:0,
+                            decay:0,
+                            sustain:0,
+                            release:0,
+                        },
+                        envelope: {
+                            attack:0.5,
+                            decay:2,
+                            sustain:2,
+                            release:1,
+                        },
+                    },
+                    voice1:{
+                        volume:-10,
+                        portamento:0,
+                        oscillator: {
+                            type:"sine"
+                        },
+                        filterEnvelope: {
+                            attack:0,
+                            decay:0,
+                            sustain:0,
+                            release:0,
+                        },
+                        envelope: {
+                            attack:0.01,
+                            decay:2,
+                            sustain:0,
+                            release:2,
+                        },
+                    }
+                });
+
+            var chorus = new Tone.Chorus({
+                frequency : 1,
+                delayTime : 2,
+                depth : 20,
+                feedback : 0.1,
+                type : "square",
+                spread : 80
+            }).toMaster();
+            synth.chain(chorus)
             break;
         default:
     }
@@ -2084,20 +2192,23 @@ function hexToRgbA (hex, a) {
 /* ========================================================================== */
 /* ---------------------------------- Menu ---------------------------------- */
 /* ========================================================================== */
+$(".modal-background").on("click", function () {
+    $(".modal-background").hide();
+});
 
-$(".show-overlay").on("click", function () {
-    $(".overlay").hide();
-    console.log("asdsad");
-    var target = "." + $(this).attr("data") + "-overlay";
-    console.log(target);
+$('.modal').click(function (e) {
+  e.stopPropagation();
+});
+
+$(".show-modal").on("click", function () {
+    $(".modal-background").hide();
+    var target = "." + $(this).attr("data") + "-modal";
     $(target).show();
 });
 
-$(".close-overlay").on("click", function () {
-    console.log("asdsad");
-    var target = "." + $(this).attr("data") + "-overlay";
-    console.log(target);
-    $(".overlay").hide();
+$(".close-modal").on("click", function () {
+    var target = "." + $(this).attr("data") + "-modal";
+    $(".modal-background").hide();
 });
 
 $(".show-hide").on("click", function () {
