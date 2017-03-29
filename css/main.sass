@@ -7,6 +7,7 @@
 $font-stack: 'Source Code Pro', 'Consolas', 'Inconsolata', monospace
 
 $color-white: #fff
+$color-grey-lighter: #eee
 $color-grey-light: #bbb
 $color-grey-med: #777
 $color-grey-dark: #444
@@ -246,7 +247,9 @@ ul
     width: 100%
     padding-bottom: 10px
     background-color: $color-white
-    
+    //overflow: hidden
+    //width: 320px
+    //white-space: nowrap
     .divider
         width: 1px
         height: 40px
@@ -257,32 +260,46 @@ ul
 
     .tool-icon
         width: 30px
+
     .controls-section
         display: inline-block
         margin: 0
-        //padding: 0 12px
         vertical-align: top
         height: 40px
-        //border-right: 1px solid $color-grey-light
+        
         &.tools-controls
+            -moz-box-shadow:    inset 0 1px 8px 0px $color-grey-light  
+            -webkit-box-shadow: inset 0 1px 8px 0px $color-grey-light
+            box-shadow:         inset 0 1px 8px 0px $color-grey-light
+            background-color: $color-grey-lighter
+            border-radius: 3px
+            margin-right: 50px
             button
+                margin: 0
                 span
                     position: relative
                     top: -5px
-            border: 1px solid $color-grey-light
-            .ctrl-elem 
-                margin: 0
+
+            #draw-tool
+                border-top-left-radius: 3px
+                border-bottom-left-radius: 3px
+            
+            #adjust-tool
+                border-top-right-radius: 3px
+                border-bottom-right-radius: 3px
+
         &.transport-controls
-            border: 1px solid $color-grey-light
+            font-size: 16px
+            width: 100px
+            margin-right: 10px
+
         &.grid-controls
             position: relative
             top: 2px
 
     button.ctrl-elem 
-        border: 2px solid $color-white
         border-radius: 0px
-        background-color: $color-white
-        color: $color-grey-med
+        color: $color-grey-dark
         height: 100%
         padding: 0 20px 0 20px
         &:hover 
@@ -293,9 +310,9 @@ ul
         &:disabled
             color: $color-grey-light !important
             &:hover
-                color: $color-grey-light !important
-                background: transparent !important
-                text-decoration: none !important
+                color: $color-grey-light
+                background: transparent
+                text-decoration: none
         &.clear
             @include button_warning
 
@@ -303,7 +320,7 @@ ul
         @include button_expand_on_hover
         background: none
         border: none
-        color: $color-grey-med
+        color: $color-grey-dark
         font-size: 1.5em
         vertical-align: middle
         width: 40px
@@ -340,8 +357,8 @@ ul
         text-transform: capitalize
     
     button.active 
-        background-color: #555 !important
-        color: #eee !important
+        background-color: $color-grey-dark !important
+        color: $color-white !important
 
     .project-controls
         button 
@@ -358,7 +375,7 @@ ul
     position: relative
     z-index: 500
     top: 2px
-    left: -14px
+    left: -10px
     border: 2px solid $color-white
     width: 24px
     height: 24px
@@ -627,8 +644,13 @@ ul
     top: 100px
     padding: 5px 15px
     .color-palette
+        color: $color-white
+        text-align: center
         left: 0
-        top: 6px
+        //top: 6px
+        i
+            position: relative
+            top: 2px
     .tooltip-arrow
         @include tooltip_arrow
 
@@ -673,22 +695,32 @@ ul
         &.arrow-down 
             margin-left: -3px
 
+    button
+        background: $color-grey-lighter
+        border-radius: 2px
+        border: 1px solid $color-grey-light
+        &:active
+            background: $color-grey-light
 
-    button.shape-attr-delete-shape
-        @include button_warning
-        padding-top: 4px
+        &.shape-attr-delete-shape
+            background: none
+            @include button_warning
+            padding-top: 4px
 
     .mute-solo 
         .button-cont 
             display: inline-block
+            text-align: center
             width: 50%
-            height: 100%
+            //height: 100%
             button 
-                height: 100%
-                width: 100%
+                background: none
+                //height: 100%
+                width: 80px
                 text-align: center
                 display: block
-                padding: 0
+                margin: 0 auto
+                padding: 2px 4px
                 border: none
             
             .shape-attr-mute

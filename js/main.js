@@ -14,32 +14,11 @@
 
 /* --------------------------------- RAPHAEL -------------------------------- */
 var r = Raphael("holder", "100%", "100%");
-r.customAttributes.progress = function (v) {
-    var path = this.data("mypath");
-
-    if (!path) {
-        return {
-            transform: "t0,0"
-        };
-    }    
-    var len = path.getTotalLength();
-    var point = path.getPointAtLength(v * len);
-    
-    return {
-        transform: "t" + [point.x, point.y]
-    };
-};
 
 /* --------------------------------- COLORS --------------------------------- */
-var colors = ["#c9563c", "#f4b549", "#2a548e", "#705498", "#33936b"];
+var colorsList = ["#c9563c", "#f4b549", "#2a548e", "#705498", "#33936b"];
 var NUM_COLORS = 5;
-
 var warningRed  = "rgba(255,100,100,.5)";
-var black       = "rgba(30,30,30,1)";
-var white       = "rgba(255,255,255, .8)";
-var inst1Color  = colors[0];
-
-
 
 /* ------------------------------- ATTRIBUTES ------------------------------- */
 /* shapes */
@@ -67,17 +46,20 @@ var hoverLineAttr     = {"stroke-width": "2", opacity: 0.5};
 /* grid */
 var gridDotAttr       = {fill: "#777", "stroke-width": 1, stroke: "#FFF"};
 
+
 /* --------------------------------- GLOBALS -------------------------------- */
 
 /* ======== AUDIO ===================================================== */
 /* "interactive", "playback", "balanced", "fastest"*/
 Tone.Transport.latencyHint = 'interactive';
-var DEFAULT_TEMPO = 5;
 
 var PLAYING = false;
-var synthsList =  ["colton_08", "Marimba", "colton_12", "Duo", "Keys", "Sub Bass", "Simple", "AM", 
-                   "Super Saw", "Membrane", "Kalimba", "Cello", "Pizz"];
+var synthsList =  ["colton_08", "Marimba", "colton_12", "Duo", "Keys", "Sub Bass", 
+                   "Simple", "AM", "Super Saw", "Membrane", "Kalimba", "Cello", "Pizz"];
+
 var DEFAULT_SYNTH = synthsList[0];
+var DEFAULT_TEMPO = 5;
+
 var SELECTED_INSTCOLOR_ID = 0;
 var SELECTED_SHAPE_ID = -1;
 //var PRESETS = new Presets();
@@ -187,7 +169,7 @@ class Project {
 
     init_inst_colors () {
         for (var i = 0; i < NUM_COLORS; i++) {
-            var instColor = new InstColor(i, synthsList[i], colors[i]);
+            var instColor = new InstColor(i, synthsList[i], colorsList[i]);
             this.instColors.push(instColor);
         }
         console.log(this.instColors);
@@ -353,11 +335,9 @@ class Shape {
                 this.ody = dy;
                 this.drag = true;
 
-                parent.update_pan();
-
-                var center = parent.get_center_coord_percent();
-                console.log(center.y)
-                parent.startFreqIndex = vert_pos_to_start_freq_index(center.y);
+                var center = parent.get_center_point();
+                parent.update_pan(center.x);
+                parent.startFreqIndex = y_coord_to_index(center.y);
                
             }
         },
@@ -367,7 +347,7 @@ class Shape {
                 parent.show_attr_popup(e);
             }
             parent.update_start_freq();
-            if (parent.completed) {
+            if (parent.isCompleted) {
                 parent.update_note_values();    
             }
             //parent.animCircle.transform("t0,0");
@@ -385,7 +365,7 @@ class Shape {
         };
         this.hoverOut = function () {
             return function (event) {
-                parent.path.attr("stroke-width", volume_to_stroke_width(parent.volume));
+                parent.path.attr("stroke-width", vol_to_stroke_width(parent.volume));
             };
         };
 
@@ -403,6 +383,7 @@ class Shape {
 
         /* ----- Details ----- */
         this.show_attr_popup = function (event) {
+            console.log("PERIMTER:", this.getPerim());
             SELECTED_SHAPE_ID = this.id;
             this.path.attr({"fill-opacity": 0.9});
             var xPad = 23;
@@ -434,16 +415,13 @@ class Shape {
                 toolTipArrow.css("top", "40px");
             }
             
+            this.refresh_shape_attr_popup();
             this.popup.show();
         }
 
         /* ----- Delete ----- */
         this.delete = function () {
-            console.log("deleting");
-            console.log($("#shape-attr-popup-0"));
-            
             this.popup.remove();
-            console.log(this.popup);
             
             this.stop();
             this.path.remove();
@@ -522,15 +500,13 @@ class Shape {
         
         // inst-color
         this.instColorId = instColorId;
-        this.instColorObj = function () {return PROJECT.instColors[this.instColorId]};
-        console.log("INSTCOLOR OBJ:", this.instColorObj);
+        this.get_inst_color = function () {return PROJECT.instColors[this.instColorId]};
+
         // style attributes
-        this.shapeDefaultAttr = {fill: hexToRgbA(this.instColorObj().color, 0.4), stroke: this.instColorObj().color};
-        this.animCircleAttr = {opacity: 1, fill: this.instColorObj().color, stroke: this.instColorObj().color, "stroke-width": 2};
+        this.shapeDefaultAttr = {fill: hex_to_Rgba(this.get_inst_color().color, 0.4), stroke: this.get_inst_color().color};
+        this.animCircleAttr = {opacity: 1, fill: this.get_inst_color().color, stroke: this.get_inst_color().color, "stroke-width": 2};
         
         // tone
-        //this.synthName = DEFAULT_SYNTH;
-        
         this.pan = 0;        
         this.volume = -8;        
         this.panner = new Tone.Panner(this.pan).toMaster();
@@ -540,10 +516,12 @@ class Shape {
         this.isMutedFromSolo = false;
         this.isSoloed = false;
 
+        this.quantizeMult = 1;
+
         // path
         this.path = r.path().attr(this.shapeDefaultAttr);
-        this.path.attr("stroke-width", volume_to_stroke_width(this.volume));
-        
+        this.path.attr("stroke-width", vol_to_stroke_width(this.volume));
+        this.getPerim = function () {return this.path.getTotalLength()};
         this.path.hover(this.hoverIn(), this.hoverOut());
         this.path.drag(this.move, this.start, this.up);
 
@@ -554,7 +532,7 @@ class Shape {
         this.length = function () {return (this.path.attr("path")).length};
         this.startFreqIndex = 0;
         this.startFreq;
-        this.completed = false;
+        this.isCompleted = false;
         this.included = true;
 
         // animation
@@ -564,12 +542,12 @@ class Shape {
         if (savedData) {
             var pathList = savedData.pathList;
 
-            this.completed = true;
+            this.isCompleted = true;
             this.startFreqIndex = savedData.startFreqIndex;
             //console.log("LOADING SYNTH:", savedData.synthName);
 
             this.volume = savedData.volume;
-            this.path.attr("stroke-width", volume_to_stroke_width(this.volume));
+            this.path.attr("stroke-width", vol_to_stroke_width(this.volume));
 
             var pathString = "M" + pathList[0].x + "," + pathList[0].y
             var firstNode = new Node(pathList[0].x, pathList[0].y, 1, id);
@@ -581,6 +559,8 @@ class Shape {
                 this.nodes.push(newNode);
             }
 
+            this.update_pan(this.get_center_point().x);
+            
             pathString += "Z";
             this.path.attr("path", pathString);
             this.id = id;
@@ -591,17 +571,16 @@ class Shape {
         $("body").append(this.popup);
 
         //this.freeverb = new Tone.Freeverb(.9).toMaster();
-        this.synth = synth_chooser(this.instColorObj().name);
+        this.synth = synth_chooser(this.get_inst_color().name);
         //this.synth = presetXX;
         this.update_start_freq();
-        this.update_pan();
         
 
         /* ============================================================= */
         /* ======================= PART CALLBACK ======================= */
         /* ============================================================= */
         this.part = new Tone.Part(function (time, value) {
-            if (parent.completed) {
+            if (parent.isCompleted) {
                 //var parent = value.parent;
                 //var thisSynth = get_this_synth(parent);
                 var thisSynth = parent.synth.connect(parent.panner);
@@ -635,7 +614,7 @@ class Shape {
                         //console.log("X,Y:", this.attr("cx"), this.attr("cy"));
                     });
                     //var parentColor = PROJECT.instColors[parent.instColorId].color;
-                    var parentColor = parent.instColorObj().color;
+                    var parentColor = parent.get_inst_color().color;
 
                     parent.animCircle.animate(animCircleBangStartAttr, 0, "linear", function () {
                         this.animate({"fill": parentColor, r: 3, stroke: parentColor}, 800, "ease-out");
@@ -693,6 +672,33 @@ class Shape {
             }
         });
         
+        /* ------ Position ------ */
+        this.popup.find(".shape-attr-tofront").on('click', function () {
+            parent.path.toFront();
+            parent.animCircle.toFront();
+            parent.nodes.forEach(function (node) {
+                node.handle.toFront();
+            })
+        });
+        this.popup.find(".shape-attr-toback").on('click', function () {
+            parent.nodes.forEach(function (node) {
+                node.handle.toBack();
+            })
+            parent.animCircle.toBack();
+            parent.path.toBack();
+            gridDots.toBack();
+        });
+
+        /* ------ Size ------ */
+        this.popup.find(".shape-attr-double").on('click', function () {
+            parent.set_quantize_length(2);
+            parent.refresh_shape_attr_popup();
+        });
+        this.popup.find(".shape-attr-half").on('click', function () {
+            parent.set_quantize_length(0.5);
+            parent.refresh_shape_attr_popup();
+        });
+
         /* ------ Delete ------ */
         this.popup.find(".shape-attr-delete-shape").on("click", function () {
             parent.delete();
@@ -700,7 +706,7 @@ class Shape {
         
         /* ------ Set Perimeter ------ */
         this.popup.find(".shape-attr-set-perim").on("click", function () {
-            parent.set_perim_length(PROJECT.quantizeLength);
+            parent.set_perim_length(PROJECT.quantizeLength * parent.quantizeMult);
         });
     }
 
@@ -709,20 +715,23 @@ class Shape {
         this.path.attr("path", path_to_string(this.path) + "Z");
         this.path.attr({"fill-opacity": completedShapeOpacity});
         
+        var center = this.get_center_point();
+        this.startFreqIndex = y_coord_to_index(center.y);
+        this.update_start_freq();
 
         this.update_note_values();
-        this.update_pan();
+        this.update_pan(center.x);
         
         if (PROJECT.isAutoQuantized) {
             this.set_perim_length(PROJECT.quantizeLength);
         }
-        this.completed = true;
+        this.isCompleted = true;
         
         this.refresh_shape_attr_popup();
     }
 
     increment_start_freq (dir) {
-        var freq = this.start_freq;
+        var freq = this.startFreq;
         var note = Tone.Frequency(freq).toMidi();
 
         console.log(freq);
@@ -743,7 +752,7 @@ class Shape {
     set_volume (val) {
         this.volume = val;
         this.synth.volume.value = val;
-        this.set_stroke_width(volume_to_stroke_width(val));
+        this.set_stroke_width(vol_to_stroke_width(val));
     }
 
     set_stroke_width (val) {
@@ -756,7 +765,7 @@ class Shape {
         
         this.instColorId = id;
         this.set_instrument(instColor.name);
-        this.shapeDefaultAttr = {fill: hexToRgbA(instColor.color, 0.4), stroke: instColor.color};
+        this.shapeDefaultAttr = {fill: hex_to_Rgba(instColor.color, 0.4), stroke: instColor.color};
         this.animCircleAttr = {fill: instColor.color, stroke: instColor.color};
 
         this.path.attr(this.shapeDefaultAttr); 
@@ -765,7 +774,7 @@ class Shape {
         })
         this.animCircle.attr(this.animCircleAttr);
 
-        //populate_list(synthsList, this.instColorObj().name, "#shape-attr-popup-"+this.id+" .shape-attr-inst-select");
+        //populate_list(synthsList, this.get_inst_color().name, "#shape-attr-popup-"+this.id+" .shape-attr-inst-select");
     }
 
     set_instrument (name) {
@@ -777,12 +786,22 @@ class Shape {
         this.refresh_shape_attr_popup();
     }
     
+    set_quantize_length (val) {
+        var newPerim = val * this.getPerim();
+        console.log("NEW PERIM:", newPerim);
+        if (PROJECT.isAutoQuantized) {
+            this.quantizeMult *= val;
+            newPerim = PROJECT.quantizeLength * this.quantizeMult;
+        }
+        this.set_perim_length(newPerim);
+    }
+
     set_perim_length (len) {
         var currLen = this.path.getTotalLength();
         //var targetSize = Math.round(currLen / len) * len;
         var ratio = len / currLen;
         var transform = this.path.matrix.split();
-        console.log("transform:", transform);
+        //console.log("transform:", transform);
 
         var newPath = (Raphael.transformPath(this.path.attr("path"), "s"+ratio+","+ratio));
         var pathNoCurves = [];
@@ -804,33 +823,27 @@ class Shape {
             }
         }
         pathNoCurves.push(["Z"])
-        //console.log(this.path);
-        //console.log("---", pathNoCurves);
-        //console.log(newPath);
         this.path.attr("path", pathNoCurves);
-        //console.log(this.path);
-
-        //var test = r.path(Raphael.transformPath(this.path.attr("path"), "s"+ratio+","+ratio));
         
         console.log("current perim:", currLen, "setting to:", len, "ratio:", ratio);
-        //console.log("transform:", transform);
         console.log("new perim:", this.path.getTotalLength());
+
         this.update_note_values();
     }
 
     /* --- Updaters --- */
 
     update_start_freq () {
-        console.log("update start freq");
+        //console.log("update start freq");
         var startFreq = Tone.Frequency(PROJECT.rootNote).toMidi();
-        console.log("params:", startFreq, this.startFreqIndex);
+        //console.log("params:", startFreq, this.startFreqIndex);
         var newStartFreq = transpose_by_scale_degree(startFreq, this.startFreqIndex);
-        this.start_freq = newStartFreq;
-        console.log(this.start_freq);
+        this.startFreq = newStartFreq;
+        //console.log(this.startFreq);
         this.refresh_shape_attr_popup();
     }
     
-    get_center_coord_percent () {
+    get_center_point () {
         var bBox = this.path.getBBox();
         var xMean = (bBox.x + (bBox.width + bBox.x)) / 2;
         var xMin = 0;
@@ -859,9 +872,9 @@ class Shape {
             y: yMean
         }
     }
-    update_pan () {
+    update_pan (val) {
         //console.log(xMean);
-        this.panner.pan.value = this.get_center_coord_percent().x * 0.7;
+        this.panner.pan.value = val * 0.7;
     }
     
     update_note_values() {
@@ -893,7 +906,12 @@ class Shape {
         var lastNoteInfo = this.get_note_info(this.nodes[0], this.nodes[iLast], this.nodes[iLast - 1]);
         this.part.add(delay, lastNoteInfo);
         
-        var totalLength = delay + lastNoteInfo.noteDur;
+        if (PROJECT.isAutoQuantized) {
+            var totalLength = PROJECT.quantizeLength * this.quantizeMult * PROJECT.tempo / 1000;
+        } else {
+            var totalLength = delay + lastNoteInfo.noteDur;
+        }
+        console.log("TOTAL LENGTH:", totalLength, PROJECT.tempo);
         this.part.loopEnd = totalLength;
     }
 
@@ -925,23 +943,21 @@ class Shape {
         
         var popupHtml = '\
             <div class="tooltip-arrow arrow-left"></div>\
-            <div>\
-                <span>Shape: '+this.id+'</span>\
-                <!--<span class="close-popup">X</span>-->\
-            </div>\
             <div class="section">\
-                <label>Instrument:</label>\
-                <div class="color-palette dropdown" style="background: '+this.instColorObj().color+'">\
+                <!--<span class="close-popup">X</span>-->\
+                <!--<label>Instrument:</label>-->\
+                <div class="color-palette dropdown" style="background: '+this.get_inst_color().color+'">\
+                        <!--<i class="ion-chevron-down"></i>-->\
                         <div class="dropdown-content">\
                             <div class="palette-background">'+colorPickerHtml+'</div>\
                         </div>\
                     </div>\
-                <!--<select class="shape-attr-inst-select"></select>-->\
+                <span>Shape: '+this.id+'</span>\
             </div>\
             <div class="section">\
                 <label>Starting Note:</label>\
                 <span class="shape-attr-start-freq">\
-                    <span class="start-freq-label">'+this.start_freq+'</span>\
+                    <span class="start-freq-label">'+this.startFreq+'</span>\
                     <button class="arrow arrow-up"><i class="ion-arrow-up-b"></i></button>\
                     <button class="arrow arrow-down"><i class="ion-arrow-down-b"></i></button>\
                 </span>\
@@ -959,10 +975,17 @@ class Shape {
                 </div>\
             </div>\
             <div class="section">\
-                <button class="shape-attr-delete-shape">Delete Shape</button>\
+                <button class="shape-attr-set-perim">Quantize</button>\
+                <button class="shape-attr-double">*2</button>\
+                <button class="shape-attr-half">/2</button>\
+                <span class="quantizemult-label">'+this.quantizeMult+'</span>\
             </div>\
             <div class="section">\
-                <button class="shape-attr-set-perim">Quantize</button>\
+                <button class="shape-attr-tofront">To Front</button>\
+                <button class="shape-attr-toback">To Back</button>\
+            </div>\
+            <div class="section">\
+                <button class="shape-attr-delete-shape">Delete Shape</button>\
             </div>';
 
         return popupHtml;
@@ -970,8 +993,9 @@ class Shape {
 
     refresh_shape_attr_popup () {
         console.log("REFRESH POPUP");
-        this.popup.find(".start-freq-label").html(this.start_freq);
-        this.popup.find(".color-palette").css({"background": this.instColorObj().color});
+        this.popup.find(".start-freq-label").html(this.startFreq);
+        this.popup.find(".quantizemult-label").html(this.quantizeMult);
+        this.popup.find(".color-palette").css({"background": this.get_inst_color().color});
     }
     
 
@@ -982,12 +1006,12 @@ class Shape {
     */
     get_note_info (node, nodePrev, nodePrevPrev) {
         var noteVal;
-        var duration = (lineDistance(node, nodePrev) * PROJECT.tempo) / 1000;
+        var duration = (line_distance(node, nodePrev) * PROJECT.tempo) / 1000;
         var isFirst = false;
         
         if (!nodePrevPrev) {
             isFirst = true;
-            noteVal = this.start_freq;
+            noteVal = this.startFreq;
         } else {
             var theta = Raphael.angle(node.getX(), node.getY(), 
                                       nodePrevPrev.getX(), nodePrevPrev.getY(), 
@@ -1024,7 +1048,7 @@ class Node {
     constructor (x, y, i, shapeId) {
         var parent = this;
         this.id = shapeId;
-        var shapeColor = ACTIVE_SHAPE.instColorObj().color;
+        var shapeColor = ACTIVE_SHAPE.get_inst_color().color;
         
         // if first node
         if ((i-1) == 0) {
@@ -1071,11 +1095,12 @@ class Node {
                 
                 this.odx = dx;
                 this.ody = dy;
+                var parentShape = PROJECT.shapesList[shapeId];
                 // TODO ?
                 if (PROJECT.isAutoQuantized) {
-                    PROJECT.shapesList[shapeId].set_perim_length(PROJECT.quantizeLength);
+                    parentShape.set_perim_length(PROJECT.quantizeLength * parentShape.quantizeMult);
                 } else {
-                    PROJECT.shapesList[shapeId].update_note_values();
+                    parentShape.update_note_values();
                 }
             }
         }
@@ -1143,7 +1168,7 @@ class InstColor {
         var parent = this;
         this.id = i;
         this.name = synthsList[i];
-        this.color = colors[i];
+        this.color = colorsList[i];
         var className = "inst-"+i;
         var selectedHtml = "";
 
@@ -1184,7 +1209,7 @@ class InstColor {
         
         populate_list(synthsList, this.name, ".inst-"+i+" .inst-title select");
         this.li.find(".inst-title").css({"background-color": this.color, "color": "#fff"});
-        this.li.css({"background-color": hexToRgbA(this.color, 0.7), "border-color": this.color});
+        this.li.css({"background-color": hex_to_Rgba(this.color, 0.7), "border-color": this.color});
         
         this.li.on("click", function () {
             //set_draw_inst_color(parent.id);
@@ -1196,7 +1221,7 @@ class InstColor {
             console.log(val)
             PROJECT.shapesList.forEach(function (shape) {
                 console.log(val);
-                if (shape.included && shape.instColorObj().id == parent.id) {
+                if (shape.included && shape.get_inst_color().id == parent.id) {
                     console.log("found");
                     shape.set_instrument(val);
                 }
@@ -1222,12 +1247,12 @@ $(document).ready(function () {
     set_draw_inst_color(0);
 
     hide_menu();
-    //alert("Welcome to Shape Your Music. This application is currently under development, and you may experience bugs. If you have questions feel free to contact me at ejarz25@gmail.com. - Elias");
+    alert("Welcome to Shape Your Music. This application is currently under development, and you may experience bugs. If you have questions feel free to contact me at ejarz25@gmail.com. - Elias");
     //hide_info_pane();
 
 
 
-    $(".kk-knob").khantrolKnob({
+/*    $(".kk-knob").khantrolKnob({
         css: "skeleton",
     })
 
@@ -1235,7 +1260,7 @@ $(document).ready(function () {
         var val = $(this).val()/300;
         console.log(val);
         for (var i = PROJECT.shapesList.length - 1; i >= 0; i--) {
-            //if (PROJECT.shapesList[i].instColorObj.name == "Simple"){
+            //if (PROJECT.shapesList[i].get_inst_color().name == "Simple"){
                 PROJECT.shapesList[i].synth.portamento = val;
                 
             //}
@@ -1244,7 +1269,7 @@ $(document).ready(function () {
     $(".kk-param-2").change(function () {
         var val = $(this).val()/100;
         for (var i = PROJECT.shapesList.length - 1; i >= 0; i--) {
-            //if (PROJECT.shapesList[i].instColorObj.name == "Simple"){
+            //if (PROJECT.shapesList[i].get_inst_color().name == "Simple"){
                 PROJECT.shapesList[i].synth.envelope.attack = val+0.005;
             //}
         }
@@ -1253,7 +1278,7 @@ $(document).ready(function () {
         var val = $(this).val()/100;
         console.log(val);
         for (var i = PROJECT.shapesList.length - 1; i >= 0; i--) {
-            //if (PROJECT.shapesList[i].instColorObj.name == "Simple"){
+            //if (PROJECT.shapesList[i].get_inst_color().name == "Simple"){
                 console.log(PROJECT.shapesList[i].synth.envelope);
                 PROJECT.shapesList[i].synth.envelope.decay = val+0.005;
             //}
@@ -1268,7 +1293,7 @@ $(document).ready(function () {
                 PROJECT.shapesList[i].synth.envelope.sustain = val;
             //}
         }
-    });
+    });*/
 });
 
 /* ========================================================================== */
@@ -1386,7 +1411,7 @@ $("#auto-quantize").click(function () {
         PROJECT.isAutoQuantized = true;
         PROJECT.shapesList.forEach(function (shape) {
             if (shape.included) {
-                shape.set_perim_length(PROJECT.quantizeLength);
+                shape.set_perim_length(PROJECT.quantizeLength * shape.quantizeMult);
             }
         });
     } 
@@ -1596,16 +1621,13 @@ function record_stop () {
 }
 
 function arm_record () {
-    $(".transport-controls").css({"border-color": "#F00", "border-width": "1px"})
     $(".record-toggle").css({"color": "#F00"})
     RECORD_ARMED = true;
     console.log("record armed");
 }
 
 function disarm_record () {
-    $(".record-toggle").css({"color": "#777"})
-    $(".transport-controls").css({"border-color": "#DDD", "border-width": "1px"})
-
+    $(".record-toggle").css({"color": "#444"})
     RECORD_ARMED = false;
     console.log("record DISarmed");
 }
@@ -1630,6 +1652,30 @@ function init_grid () {
         }
     }
 }
+/*$(window).resize(function () {
+    init_grid();
+    if ($("#grid").is(":checked")) {show_grid();} 
+    else {hide_grid();}
+});*/
+var waitForFinalEvent = (function () {
+  var timers = {};
+  return function (callback, ms, uniqueId) {
+    if (!uniqueId) {
+      uniqueId = "Don't call this twice without a uniqueId";
+    }
+    if (timers[uniqueId]) {
+      clearTimeout (timers[uniqueId]);
+    }
+    timers[uniqueId] = setTimeout(callback, ms);
+  };
+})();
+$(window).resize(function () {
+    waitForFinalEvent(function(){
+        init_grid();
+        if ($("#grid").is(":checked")) {show_grid();} 
+        else {hide_grid();}
+    }, 500, "some unique string");
+});
 
 function hide_grid () {
     gridDots.hide();
@@ -1745,7 +1791,7 @@ function set_draw_inst_color (id) {
 /* ------------------------------ NOTE CHOOSING ----------------------------- */
 /* ========================================================================== */
 
-function indexOfNote (letter, scale) {
+function index_of_note (letter, scale) {
     //console.log("looking for", letter, "in", scale);
     for (var i = scale.length - 1; i >= 0; i--) {
         if (teoria.note(scale[i]).chroma() === teoria.note(letter).chroma()) {
@@ -1770,7 +1816,7 @@ function transpose_by_scale_degree (note, deg) {
 
     var addOctaves = parseInt(deg / length);
     //console.log("ADD OCTAVES", addOctaves)
-    var noteIndex = indexOfNote(noteLetter, scaleSimple);
+    var noteIndex = index_of_note(noteLetter, scaleSimple);
     //console.log("note index", noteIndex);
     var newNoteIndex = noteIndex + (deg % length);
     //console.log("new note index", newNoteIndex);
@@ -1833,7 +1879,7 @@ function note_chooser1 (freq, theta) {
     var upperBound = dTheta;
 
     for (var i = notesInScale; i > 0; i--) {
-        if(isBetween(absTheta, lowerBound, upperBound)) {
+        if(is_between(absTheta, lowerBound, upperBound)) {
             /*console.log("THETA:", absTheta);
             console.log("IN THIS SECTOR:", i);
             console.log("IS NEGATIVE:", neg_mult);*/
@@ -1845,7 +1891,11 @@ function note_chooser1 (freq, theta) {
     }
     return newNote;
 }
-   
+
+/* ========================================================================== */
+/* ----------------------------- SYNTH CHOOSING ----------------------------- */
+/* ========================================================================== */
+
 function synth_chooser (name) {
     var synth = new Tone.AMSynth();
 
@@ -2117,8 +2167,7 @@ function synth_chooser (name) {
 /* -------------------------------- HELPER  --------------------------------- */
 /* ========================================================================== */
 
-
-function lineDistance (point1, point2) {
+function line_distance (point1, point2) {
     var xs = 0;
     var ys = 0;
     xs = point2.getX() - point1.getX();
@@ -2128,7 +2177,7 @@ function lineDistance (point1, point2) {
     return Math.sqrt( xs + ys );
 }
 
-function isBetween (val, a, b) {
+function is_between (val, a, b) {
     return (val >= a && val <= b);
 }
 
@@ -2140,7 +2189,7 @@ function subpath_to_string (path, i) {
     return path.attr("path")[i].join()
 }
 
-function volume_to_stroke_width (vol) {
+function vol_to_stroke_width (vol) {
     vol = parseInt(vol);
     if (vol < -10) {
         return 1;
@@ -2151,7 +2200,7 @@ function volume_to_stroke_width (vol) {
     }
 }
 
-function hexToRgbA (hex, a) {
+function hex_to_Rgba (hex, a) {
     var c;
     if(/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)){
         c= hex.substring(1).split('');
@@ -2164,7 +2213,7 @@ function hexToRgbA (hex, a) {
     throw new Error('Bad Hex');
 }
 
-function vert_pos_to_start_freq_index (pos) {
+function y_coord_to_index (pos) {
     if (pos > .8) {
         return -4;
     } else if (pos > .6) {
@@ -2242,6 +2291,7 @@ function expand_inst_selectors () {
     $(".inst-selectors").animate({"height":'92px'}, 200);
     $(".show-hide-inst").html('<i class="ion-chevron-up"></i>');
 }
+
 function reduce_inst_selectors () {
     $(".inst-selectors").animate({"height":'20px'}, 200);
     $(".show-hide-inst").html('<i class="ion-chevron-down"></i>');

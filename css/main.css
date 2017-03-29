@@ -170,22 +170,33 @@ ul {
     vertical-align: top;
     height: 40px; }
     .controls .controls-section.tools-controls {
-      border: 1px solid #bbb; }
-      .controls .controls-section.tools-controls button span {
-        position: relative;
-        top: -5px; }
-      .controls .controls-section.tools-controls .ctrl-elem {
+      -moz-box-shadow: inset 0 1px 8px 0px #bbb;
+      -webkit-box-shadow: inset 0 1px 8px 0px #bbb;
+      box-shadow: inset 0 1px 8px 0px #bbb;
+      background-color: #eee;
+      border-radius: 3px;
+      margin-right: 50px; }
+      .controls .controls-section.tools-controls button {
         margin: 0; }
+        .controls .controls-section.tools-controls button span {
+          position: relative;
+          top: -5px; }
+      .controls .controls-section.tools-controls #draw-tool {
+        border-top-left-radius: 3px;
+        border-bottom-left-radius: 3px; }
+      .controls .controls-section.tools-controls #adjust-tool {
+        border-top-right-radius: 3px;
+        border-bottom-right-radius: 3px; }
     .controls .controls-section.transport-controls {
-      border: 1px solid #bbb; }
+      font-size: 16px;
+      width: 100px;
+      margin-right: 10px; }
     .controls .controls-section.grid-controls {
       position: relative;
       top: 2px; }
   .controls button.ctrl-elem {
-    border: 2px solid #fff;
     border-radius: 0px;
-    background-color: #fff;
-    color: #777;
+    color: #444;
     height: 100%;
     padding: 0 20px 0 20px; }
     .controls button.ctrl-elem:hover {
@@ -196,9 +207,9 @@ ul {
     .controls button.ctrl-elem:disabled {
       color: #bbb !important; }
       .controls button.ctrl-elem:disabled:hover {
-        color: #bbb !important;
-        background: transparent !important;
-        text-decoration: none !important; }
+        color: #bbb;
+        background: transparent;
+        text-decoration: none; }
     .controls button.ctrl-elem.clear {
       color: #ff6464; }
       .controls button.ctrl-elem.clear:hover {
@@ -216,7 +227,7 @@ ul {
     z-index: 100;
     background: none;
     border: none;
-    color: #777;
+    color: #444;
     font-size: 1.5em;
     vertical-align: middle;
     width: 40px;
@@ -260,8 +271,8 @@ ul {
   .controls .scale-select, .controls .tonic-select {
     text-transform: capitalize; }
   .controls button.active {
-    background-color: #555 !important;
-    color: #eee !important; }
+    background-color: #444 !important;
+    color: #fff !important; }
   .controls .project-controls button {
     padding: 0; }
     .controls .project-controls button:hover {
@@ -273,7 +284,7 @@ ul {
   position: relative;
   z-index: 500;
   top: 2px;
-  left: -14px;
+  left: -10px;
   border: 2px solid #fff;
   width: 24px;
   height: 24px;
@@ -588,8 +599,12 @@ ul {
   top: 100px;
   padding: 5px 15px; }
   .shape-attr-popup .color-palette {
-    left: 0;
-    top: 6px; }
+    color: #fff;
+    text-align: center;
+    left: 0; }
+    .shape-attr-popup .color-palette i {
+      position: relative;
+      top: 2px; }
   .shape-attr-popup .tooltip-arrow {
     top: 40px;
     border: solid transparent;
@@ -658,23 +673,31 @@ ul {
       margin-left: 8px; }
     .shape-attr-popup .arrow.arrow-down {
       margin-left: -3px; }
-  .shape-attr-popup button.shape-attr-delete-shape {
-    color: #ff6464;
-    padding-top: 4px; }
-    .shape-attr-popup button.shape-attr-delete-shape:hover {
-      text-decoration: underline;
-      background-color: transparent;
-      color: #ff6464; }
+  .shape-attr-popup button {
+    background: #eee;
+    border-radius: 2px;
+    border: 1px solid #bbb; }
+    .shape-attr-popup button:active {
+      background: #bbb; }
+    .shape-attr-popup button.shape-attr-delete-shape {
+      background: none;
+      color: #ff6464;
+      padding-top: 4px; }
+      .shape-attr-popup button.shape-attr-delete-shape:hover {
+        text-decoration: underline;
+        background-color: transparent;
+        color: #ff6464; }
   .shape-attr-popup .mute-solo .button-cont {
     display: inline-block;
-    width: 50%;
-    height: 100%; }
+    text-align: center;
+    width: 50%; }
     .shape-attr-popup .mute-solo .button-cont button {
-      height: 100%;
-      width: 100%;
+      background: none;
+      width: 80px;
       text-align: center;
       display: block;
-      padding: 0;
+      margin: 0 auto;
+      padding: 2px 4px;
       border: none; }
     .shape-attr-popup .mute-solo .button-cont .shape-attr-mute {
       border: 1px solid #6e6efa;
