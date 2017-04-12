@@ -273,7 +273,7 @@ ul
             box-shadow:         inset 0 1px 8px 0px $color-grey-light
             background-color: $color-grey-lighter
             border-radius: 3px
-            margin-right: 50px
+            margin-right: 40px
             button
                 margin: 0
                 span
@@ -283,7 +283,6 @@ ul
             #draw-tool
                 border-top-left-radius: 3px
                 border-bottom-left-radius: 3px
-            
             #adjust-tool
                 border-top-right-radius: 3px
                 border-bottom-right-radius: 3px
@@ -305,24 +304,28 @@ ul
         &:hover 
             background-color: $color-grey-med
             color: $color-white
+
         &:focus
             outline: none
+
         &:disabled
             color: $color-grey-light !important
             &:hover
                 color: $color-grey-light
                 background: transparent
                 text-decoration: none
+        
         &.clear
             @include button_warning
 
+        &.active
+            background-color: $color-grey-dark !important
+            color: $color-white !important
+
     .transport-icon
         @include button_expand_on_hover
-        background: none
-        border: none
         color: $color-grey-dark
         font-size: 1.5em
-        vertical-align: middle
         width: 40px
         height: 100%
         i
@@ -356,9 +359,6 @@ ul
     .scale-select, .tonic-select
         text-transform: capitalize
     
-    button.active 
-        background-color: $color-grey-dark !important
-        color: $color-white !important
 
     .project-controls
         button 
@@ -432,14 +432,12 @@ ul
 /* ============================= INSTRUEMNTS ================================ */
 
 .inst-selectors
-    //position: relative
     position: absolute
     height: 20px
     bottom: 0
     left: 0
     right: 0
     z-index: 100
-
     //height: 92px
     //width: 100%
     background: $color-white
@@ -452,13 +450,14 @@ ul
         &::-webkit-scrollbar
             display: none
         li.inst-option
-            width: 20%
+            width: 25%
             font-size: 12px
             display: inline-block
             height: 100%
             vertical-align: middle
-            color: $color-grey-dark
+            color: $color-white
             .inst-title
+                height: 20px
                 select
                     background: transparent
                     border-color: transparent
@@ -479,13 +478,10 @@ ul
                 height: 100%
                 li
                     display: inline-block
-                    //border-right: 2px solid #777
                     height: 67px
                     min-width: 65px
                     width: 25%
-                    //border: 1px solid $inst-color-1
                     overflow: hidden
-                    //background: $inst-color-1
                     padding-right: 10px
                     padding-left: 10px
                 .inst-param-title
@@ -497,9 +493,9 @@ ul
                     font-size: .9em
 
 .show-hide-inst
-    position: absolute
-    right: 0px
-    bottom: -20px
+    float: right
+    position: relative
+    background: none
 
 /* ========================================================================== */
 /* ================================= KNOBS ================================== */
@@ -511,11 +507,11 @@ ul
     .kk-hand
         width: 2px
         left: 12px
-        background-color: $color-grey-dark
-        border-color: $color-grey-dark
+        background-color: $color-white
+        border-color: $color-white
 
     .kk-face
-        border: 2px solid $color-grey-dark
+        border: 2px solid $color-white
         @include button_expand_on_hover
         //@include drop_shadow
         width: 30px

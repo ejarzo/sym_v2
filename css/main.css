@@ -175,7 +175,7 @@ ul {
       box-shadow: inset 0 1px 8px 0px #bbb;
       background-color: #eee;
       border-radius: 3px;
-      margin-right: 50px; }
+      margin-right: 40px; }
       .controls .controls-section.tools-controls button {
         margin: 0; }
         .controls .controls-section.tools-controls button span {
@@ -216,6 +216,9 @@ ul {
         text-decoration: underline;
         background-color: transparent;
         color: #ff6464; }
+    .controls button.ctrl-elem.active {
+      background-color: #444 !important;
+      color: #fff !important; }
   .controls .transport-icon {
     -webkit-transition: all 0.1s ease-in-out;
     -moz-transition: all 0.1s ease-in-out;
@@ -225,11 +228,8 @@ ul {
     transform: scaleX(1) scaleY(1) scaleZ(1);
     position: relative;
     z-index: 100;
-    background: none;
-    border: none;
     color: #444;
     font-size: 1.5em;
-    vertical-align: middle;
     width: 40px;
     height: 100%; }
     .controls .transport-icon:hover {
@@ -270,9 +270,6 @@ ul {
     display: inline-block; }
   .controls .scale-select, .controls .tonic-select {
     text-transform: capitalize; }
-  .controls button.active {
-    background-color: #444 !important;
-    color: #fff !important; }
   .controls .project-controls button {
     padding: 0; }
     .controls .project-controls button:hover {
@@ -369,42 +366,44 @@ ul {
     .inst-selectors ul.inst-list::-webkit-scrollbar {
       display: none; }
     .inst-selectors ul.inst-list li.inst-option {
-      width: 20%;
+      width: 25%;
       font-size: 12px;
       display: inline-block;
       height: 100%;
       vertical-align: middle;
-      color: #444; }
-      .inst-selectors ul.inst-list li.inst-option .inst-title select {
-        background: transparent;
-        border-color: transparent; }
-      .inst-selectors ul.inst-list li.inst-option .inst-title i {
-        -webkit-transition: all 0.1s ease-in-out;
-        -moz-transition: all 0.1s ease-in-out;
-        -o-transition: all 0.1s ease-in-out;
-        transition: all 0.1s ease-in-out;
-        color: #777;
-        transform: scaleX(1) scaleY(1) scaleZ(1);
-        position: relative;
-        z-index: 100;
-        color: #fff !important;
-        float: right;
-        padding-right: 5px;
-        font-size: 18px;
-        position: relative;
-        top: -2px; }
-        .inst-selectors ul.inst-list li.inst-option .inst-title i:hover {
-          transform: scaleX(1.2) scaleY(1.2) scaleZ(1);
-          color: #222;
-          z-index: 5000; }
-        .inst-selectors ul.inst-list li.inst-option .inst-title i:active {
-          transform: scaleX(1.2) scaleY(1.2) scaleZ(1);
-          color: #222; }
-        .inst-selectors ul.inst-list li.inst-option .inst-title i:disabled {
-          color: #bbb; }
-          .inst-selectors ul.inst-list li.inst-option .inst-title i:disabled:hover {
-            color: #bbb;
-            transform: scaleX(1) scaleY(1) scaleZ(1); }
+      color: #fff; }
+      .inst-selectors ul.inst-list li.inst-option .inst-title {
+        height: 20px; }
+        .inst-selectors ul.inst-list li.inst-option .inst-title select {
+          background: transparent;
+          border-color: transparent; }
+        .inst-selectors ul.inst-list li.inst-option .inst-title i {
+          -webkit-transition: all 0.1s ease-in-out;
+          -moz-transition: all 0.1s ease-in-out;
+          -o-transition: all 0.1s ease-in-out;
+          transition: all 0.1s ease-in-out;
+          color: #777;
+          transform: scaleX(1) scaleY(1) scaleZ(1);
+          position: relative;
+          z-index: 100;
+          color: #fff !important;
+          float: right;
+          padding-right: 5px;
+          font-size: 18px;
+          position: relative;
+          top: -2px; }
+          .inst-selectors ul.inst-list li.inst-option .inst-title i:hover {
+            transform: scaleX(1.2) scaleY(1.2) scaleZ(1);
+            color: #222;
+            z-index: 5000; }
+          .inst-selectors ul.inst-list li.inst-option .inst-title i:active {
+            transform: scaleX(1.2) scaleY(1.2) scaleZ(1);
+            color: #222; }
+          .inst-selectors ul.inst-list li.inst-option .inst-title i:disabled {
+            color: #bbb; }
+            .inst-selectors ul.inst-list li.inst-option .inst-title i:disabled:hover {
+              color: #bbb;
+              transform: scaleX(1) scaleY(1) scaleZ(1); }
       .inst-selectors ul.inst-list li.inst-option.selected-inst .selected-inst-icon {
         opacity: 1;
         display: inline-block !important; }
@@ -426,9 +425,9 @@ ul {
           font-size: 0.9em; }
 
 .show-hide-inst {
-  position: absolute;
-  right: 0px;
-  bottom: -20px; }
+  float: right;
+  position: relative;
+  background: none; }
 
 /* ========================================================================== */
 /* ================================= KNOBS ================================== */
@@ -439,10 +438,10 @@ ul {
   .kk-skeleton .kk-hand {
     width: 2px;
     left: 12px;
-    background-color: #444;
-    border-color: #444; }
+    background-color: #fff;
+    border-color: #fff; }
   .kk-skeleton .kk-face {
-    border: 2px solid #444;
+    border: 2px solid #fff;
     -webkit-transition: all 0.1s ease-in-out;
     -moz-transition: all 0.1s ease-in-out;
     -o-transition: all 0.1s ease-in-out;

@@ -76,8 +76,8 @@
                         </div>
                             <!-- <img class="tool-icon" src="img/cursor_draw.svg"> -->
                             <span>DRAW</span>
-                    </button>
-                    <button class="ctrl-elem tool" id="adjust-tool" title="Edit Tool (TAB to toggle)">
+                    </button><!-- 
+                     --><button class="ctrl-elem tool" id="adjust-tool" title="Edit Tool (TAB to toggle)">
                        <!--  <img class="tool-icon" src="img/cursor_edit.svg"> -->
                        EDIT
                     </button>
@@ -110,12 +110,12 @@
                         <input type="range" class="tempo-slider" min="-6" max="-1">
                     </span>
                     <span class="ctrl-elem">
-                        <label>Scale:</label><br>
-                        <select class="scale-select"></select>
-                    </span>
-                    <span class="ctrl-elem">
                         <label>Key:</label><br>
                         <select class="tonic-select"></select>
+                    </span>
+                    <span class="ctrl-elem">
+                        <label>Scale:</label><br>
+                        <select class="scale-select"></select>
                     </span>
                 </div>
 
@@ -133,9 +133,13 @@
                     <button class="ctrl-elem" onclick="project_dump()">Save Project</button>
                     <button class="ctrl-elem" onclick="project_load()">Load Project</button>
                 </div> -->
+
+                <!-- <div class="controls-section project-controls">
+                    <button class="ctrl-elem" onclick="generate_random_shapes(1, 10)">Random Shape</button>
+                </div> -->
             </div>
 
-<!--             <button class="show-hide show-hide-inst" data-target="inst-selectors">
+            <!-- <button class="show-hide show-hide-inst" data-target="inst-selectors">
                 <i class="ion-chevron-down"></i>
             </button> -->
             
