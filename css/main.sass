@@ -1,7 +1,7 @@
 /* ========================================================================== */
 /* =============================== VARIABLES ================================ */
 
-@import url('https://fonts.googleapis.com/css?family=Source+Code+Pro:400,700')
+//@import url('https://fonts.googleapis.com/css?family=Source+Code+Pro:400,700')
 //@import url('https://fonts.googleapis.com/css?family=Lekton:400,700')
 
 $font-stack: 'Source Code Pro', 'Consolas', 'Inconsolata', monospace
@@ -75,8 +75,10 @@ $inst-color-6: #05804D
 
 @mixin show_hide_button
     position: absolute
-    background: $color-grey-med
-    color: $color-white
+    background: $color-grey-lighter
+    color: $color-grey-dark
+    border: 1px solid $color-grey-med
+    border-right: none
     font-size: 15px
     height: 20px
     i, span
@@ -226,6 +228,7 @@ ul
             &.account-link
                 float: right
                 border: none
+                //margin-right: 25px
                 border-left: 1px solid $color-grey-med
 
     button
@@ -451,9 +454,10 @@ ul
             display: none
         li.inst-option
             width: 25%
+            height: 100%
             font-size: 12px
             display: inline-block
-            height: 100%
+            text-transform: capitalize
             vertical-align: middle
             color: $color-white
             .inst-title
@@ -493,9 +497,11 @@ ul
                     font-size: .9em
 
 .show-hide-inst
+    border: none
     float: right
     position: relative
     background: none
+    top: -2px
 
 /* ========================================================================== */
 /* ================================= KNOBS ================================== */
@@ -571,10 +577,11 @@ ul
     right: 0
     top: 0
     bottom: 0
-    background: rgba(0,0,0,0.3)
+    background: rgba(0,0,0,0.4)
     width: 100vw
     height: 100vh
     z-index: 1500
+    overflow: scroll
     .modal
         @include drop_shadow
         position: absolute
@@ -589,6 +596,13 @@ ul
         left: 0
         right: 0
         background: $color-white
+        &.modal-wide
+            max-width: 900px
+            padding: 30px 70px
+        &.modal-tutorial
+            img
+                max-width: 150px
+                padding-right: 20px
         a
             //color: #070
             border-bottom: 2px solid $color-grey-light

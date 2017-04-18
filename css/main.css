@@ -1,6 +1,5 @@
 /* ========================================================================== */
 /* =============================== VARIABLES ================================ */
-@import url("https://fonts.googleapis.com/css?family=Source+Code+Pro:400,700");
 /* ========================================================================== */
 /* ================================ MIXINS ================================== */
 /* ========================================================================== */
@@ -60,8 +59,10 @@ ul {
 
 .show-hide {
   position: absolute;
-  background: #777;
-  color: #fff;
+  background: #eee;
+  color: #444;
+  border: 1px solid #777;
+  border-right: none;
   font-size: 15px;
   height: 20px; }
   .show-hide i, .show-hide span {
@@ -135,8 +136,10 @@ ul {
     z-index: 400; }
   .menu button.show-hide-menu {
     position: absolute;
-    background: #777;
-    color: #fff;
+    background: #eee;
+    color: #444;
+    border: 1px solid #777;
+    border-right: none;
     font-size: 15px;
     height: 20px;
     bottom: -20px;
@@ -367,9 +370,10 @@ ul {
       display: none; }
     .inst-selectors ul.inst-list li.inst-option {
       width: 25%;
+      height: 100%;
       font-size: 12px;
       display: inline-block;
-      height: 100%;
+      text-transform: capitalize;
       vertical-align: middle;
       color: #fff; }
       .inst-selectors ul.inst-list li.inst-option .inst-title {
@@ -425,9 +429,11 @@ ul {
           font-size: 0.9em; }
 
 .show-hide-inst {
+  border: none;
   float: right;
   position: relative;
-  background: none; }
+  background: none;
+  top: -2px; }
 
 /* ========================================================================== */
 /* ================================= KNOBS ================================== */
@@ -488,8 +494,10 @@ ul {
   z-index: 200; }
   .info-pane button.show-hide-info-pane {
     position: absolute;
-    background: #777;
-    color: #fff;
+    background: #eee;
+    color: #444;
+    border: 1px solid #777;
+    border-right: none;
     font-size: 15px;
     height: 20px;
     top: -20px;
@@ -540,10 +548,11 @@ ul {
   right: 0;
   top: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.4);
   width: 100vw;
   height: 100vh;
-  z-index: 1500; }
+  z-index: 1500;
+  overflow: scroll; }
   .modal-background .modal {
     box-shadow: -2px 2px 25px rgba(0, 0, 0, 0.1);
     position: absolute;
@@ -558,6 +567,12 @@ ul {
     left: 0;
     right: 0;
     background: #fff; }
+    .modal-background .modal.modal-wide {
+      max-width: 900px;
+      padding: 30px 70px; }
+    .modal-background .modal.modal-tutorial img {
+      max-width: 150px;
+      padding-right: 20px; }
     .modal-background .modal a {
       border-bottom: 2px solid #bbb;
       text-decoration: none;

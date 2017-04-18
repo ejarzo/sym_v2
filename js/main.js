@@ -55,7 +55,22 @@ Tone.Transport.latencyHint = 'interactive';
 var PLAYING = false;
 var synthNamesList =  ["Keys", "colton_08", "Marimba", "colton_12", "Duo", "Sub Bass", 
                    "Simple", "AM", "Super Saw", "Membrane", "Kalimba", "Cello", "Pizz"];
-var synthsList = [];
+
+var synthNameEnum = {
+    "AM": 0,
+    "Keys": 1,
+    "Duo": 2,
+    "Marimba": 3,
+    "SubBass": 4,
+    "SuperSaw": 5,
+    "Simple": 6,
+    "Membrane": 7,
+    "Kalimba": 8,
+    "Cello": 9,
+    "Pizz": 10,
+    "colton_12": 11,
+    "colton_08": 12
+}
 
 var DEFAULT_SYNTH = synthNamesList[0];
 var DEFAULT_TEMPO = 5;
@@ -110,16 +125,10 @@ class Project {
         this.tempo = DEFAULT_TEMPO;
         this.scaleObj = teoria.note(DEFAULT_KEY).scale(DEFAULT_SCALE);
         this.rootNote = this.scaleObj.tonic.toString();
+        this.synthControllersList = [];
         this.shapesList = [];
         this.instColors = [];
         this.quantizeLength = 700;
-
-        /* Init */
-        this.init_tempo();
-        this.init_scale_select();
-        this.init_tonic_select();
-        this.init_inst_colors();
-        this.init_color_picker();
     }
     /* ---------- SETTERS ---------- */
     set_tempo (tempo) {
@@ -151,7 +160,14 @@ class Project {
     }
 
     /* ---------- ACTIONS ---------- */
-
+    init () {
+        this.init_tempo();
+        this.init_scale_select();
+        this.init_tonic_select();
+        this.init_synths();
+        this.init_inst_colors();
+        this.init_color_picker();
+    }
     init_tempo () {
         $(".tempo-slider").val(this.tempo * -1);
     }
@@ -164,12 +180,437 @@ class Project {
         populate_list(tonicsList, this.scaleObj.tonic.toString(true), ".tonic-select");
     }
 
+    /* ====================================================================== */
+    /* ======================== INITIALIZE ALL SYNTHS ======================= */
+    /* ====================================================================== */
+
+    init_synths () {
+        /* --------- Defaults -------- */
+        var defaultDynamicParams = [{
+                name: "glide",
+                func: function (shape,val) {
+                    shape.synth.set("portamento",scale_val_to_range(val, 0, 101, 0, .8));
+                }
+            }, {
+                name: "attack",
+                func: function (shape,val) {
+                    shape.synth.envelope.set("attack", scale_val_to_range(val, 0, 101, 0, .8)) + 0.001;
+                }
+            }, {
+                name: "decay",
+                func: function (shape,val) {
+                    shape.synth.envelope.set("decay", scale_val_to_range(val, 0, 101, 0, 3) + 0.001);
+                }  
+            }, {
+                name: "sustain",
+                func: function (shape,val) {
+                    shape.synth.envelope.set("sustain", scale_val_to_range(val, 0, 101, 0, 1) + 0.001);
+                }
+            }];
+        
+        this.add_synth("AM", Tone.AMSynth, {}, defaultDynamicParams);
+
+        var keysParams = {
+                "oscillator": {
+                    "detune": 0,
+                    "type": "custom",
+                    "partials" : [2, 1, 2, 2],
+                    "phase": 0,
+                    "volume": 0
+                },
+                "envelope": {
+                    "attack": 0.005,
+                    "decay": 0.3,
+                    "sustain": 0.2,
+                    "release": 1,
+                },
+                "portamento": 0.01,}
+        var keysEffects = [
+                    {
+                        type: Tone.Freeverb,
+                        params: {
+                            "roomSize": 0.9,
+                            "dampening": 5000,
+                            "wet": 1
+                        }
+                    },
+                    {
+                        type: Tone.FeedbackDelay,
+                        params: {
+                            "delayTime": .7,
+                            "feedback": .8,
+                            "wet": 1
+                        }
+                    }]
+        var keysDynamicParams = [
+            {
+                name: "glide",
+                func: function (shape,val) {
+                    var newVal =  scale_val_to_range(val, 0, 101, 0, .8);
+                    shape.synth.set("portamento",newVal);
+                }
+            }, 
+            {
+                name: "attack",
+                func: function (shape,val) {
+                    shape.synth.envelope.set("attack", scale_val_to_range(val, 0, 101, 0, .8))+0.001;
+                }
+            }, 
+            {
+                name: "space",
+                func: function (shape,val) {
+                    var newVal = scale_val_to_range(val, 0, 101, -50, 0);
+                    if (shape.effect0) {
+                        shape.effect0.gain.value = newVal;
+                    } else {
+                        shape.effect0 = shape.synth.send("Keyseffect0", newVal);
+                    }                
+                }  
+            }, 
+            {
+                name: "delay",
+                func: function (shape,val) {
+                    var newVal = scale_val_to_range(val, 0, 101, -50, 0);
+                    console.log("NEWVAL:", newVal);
+                    if (shape.effect1) {
+                        shape.effect1.gain.value = newVal;
+                    } else {
+                        shape.effect1 = shape.synth.send("Keyseffect1", newVal);
+                    }    
+                }
+            }];
+
+        this.add_synth("Keys", Tone.Synth, keysParams, keysDynamicParams, keysEffects);
+        
+        this.add_synth("Duo", Tone.DuoSynth, {}, defaultDynamicParams);
+
+        var marimbaParams = {
+                "oscillator": {
+                    "partials": [1,0,2,0,3]
+                },
+                "envelope": {
+                    "attack": 0.001,
+                    "decay": 1.2,
+                    "sustain": 0,
+                    "release": 1.2
+                }}
+        this.add_synth("Marimba", Tone.Synth, marimbaParams, defaultDynamicParams);
+
+        var subBassParams = {
+                "portamento": 0.08,
+                "oscillator": {
+                    "partials": [2, 1, 3, 2, 0.4]
+                },
+                "filter": {
+                    "Q": 4,
+                    "type": "lowpass",
+                    "rolloff": -48
+                },
+                "envelope": {
+                    "attack": 0.04,
+                    "decay": 0.06,
+                    "sustain": 0.4,
+                    "release": 1
+                },
+                "filterEnvelope": {
+                    "attack": 0.01,
+                    "decay": 0.1,
+                    "sustain": 0.6,
+                    "release": 1.5,
+                    "baseFrequency": 50,
+                    "octaves": 3.4
+                }}
+        this.add_synth("SubBass", Tone.MonoSynth, subBassParams, defaultDynamicParams);
+
+        var superSawParams = {
+                "vibratoAmount":1,
+                "vibratoRate":5,
+                "oscillator" : {
+                    "type" : "fatsawtooth",
+                    "count" : 3,
+                    "spread" : 30
+                },
+                "envelope": {
+                    "attack": 0.01,
+                    "decay": 0.1,
+                    "sustain": 0.5,
+                    "release": 0.4,
+                    "attackCurve" : "exponential"
+                }}
+        var superSawEffects = [
+                {
+                    type: Tone.Tremolo,
+                    params: {
+                            frequency:10,
+                            type:"sine",
+                            depth:0.5,
+                            spread:180
+                        }
+                }]
+        this.add_synth("SuperSaw", Tone.MonoSynth, superSawParams, defaultDynamicParams, superSawEffects);
+        this.add_synth("Simple", Tone.Synth, {}, defaultDynamicParams);
+        this.add_synth("Membrane", Tone.MembraneSynth, {}, defaultDynamicParams);
+
+        var kalimbaParams = {
+                "harmonicity": 8,
+                "modulationIndex": 2,
+                "oscillator": {
+                    "type": "sine"
+                },
+                "envelope": {
+                    "attack": 0.001,
+                    "decay": 2,
+                    "sustain": 0.1,
+                    "release": 2
+                },
+                "modulation" : {
+                    "type" : "square"
+                },
+                "modulationEnvelope" : {
+                    "attack": 0.002,
+                    "decay": 0.2,
+                    "sustain": 0,
+                    "release": 0.2
+                }
+            }
+        this.add_synth("Kalimba", Tone.FMSynth, kalimbaParams, defaultDynamicParams);
+
+        var celloParams = {
+                "harmonicity": 3.01,
+                "modulationIndex": 14,
+                "oscillator": {
+                    "type": "triangle"
+                },
+                "envelope": {
+                    "attack": 0.2,
+                    "decay": 0.3,
+                    "sustain": 0.1,
+                    "release": 1.2
+                },
+                "modulation" : {
+                    "type": "square"
+                },
+                "modulationEnvelope" : {
+                    "attack": 0.01,
+                    "decay": 0.5,
+                    "sustain": 0.2,
+                    "release": 0.1
+                }
+            }
+        this.add_synth("Cello", Tone.FMSynth, celloParams, defaultDynamicParams);
+
+        var pizzParams = {
+                "oscillator": {
+                    "type": "sawtooth"
+                },
+                "filter": {
+                    "Q": 3,
+                    "type": "highpass",
+                    "rolloff": -12
+                },
+                "envelope": {
+                    "attack": 0.01,
+                    "decay": 0.3,
+                    "sustain": 0,
+                    "release": 0.9
+                },
+                "filterEnvelope": {
+                    "attack": 0.01,
+                    "decay": 0.1,
+                    "sustain": 0,
+                    "release": 0.1,
+                    "baseFrequency": 800,
+                    "octaves": -1.2
+                }
+            }
+        var pizzEffects = [
+                    {
+                        type: Tone.Freeverb,
+                        params: {
+                            "roomSize": 0.9,
+                            "dampening": 5000,
+                            "wet": 1
+                        }
+                    },
+                    {
+                        type: Tone.FeedbackDelay,
+                        params: {
+                            "delayTime": .7,
+                            "feedback": .8,
+                            "wet": 1
+                        }
+
+                    }]
+        var pizzDynamicParams = [{
+                name: "glide",
+                func: function (shape,val) {
+                    var newVal =  scale_val_to_range(val, 0, 101, 0, .8);
+                    shape.synth.set("portamento",newVal);
+                }
+            }, 
+            {
+                name: "attack",
+                func: function (shape,val) {
+                    shape.synth.envelope.set("attack", scale_val_to_range(val, 0, 101, 0, .8))+0.001;
+                }
+            }, 
+            {
+                name: "space",
+                func: function (shape,val) {
+                    var newVal = scale_val_to_range(val, 0, 101, -50, 0);
+                    if (shape.effect0) {
+                        shape.effect0.gain.value = newVal;
+                    } else {
+                        shape.effect0 = shape.synth.send("Pizzeffect0", newVal);
+                    }                
+                }  
+            }, 
+            {
+                name: "delay",
+                func: function (shape,val) {
+                    var newVal = scale_val_to_range(val, 0, 101, -50, 0);
+                    console.log("NEWVAL:", newVal);
+                    if (shape.effect1) {
+                        shape.effect1.gain.value = newVal;
+                    } else {
+                        shape.effect1 = shape.synth.send("Pizzseffect1", newVal);
+                    }    
+                }
+            }];
+        this.add_synth("Pizz", Tone.MonoSynth, pizzParams, pizzDynamicParams, pizzEffects);
+        
+        var colton12Params = {
+                "pitchDecay": 1,
+                "octaves": 30,
+                "oscillator": {
+                    "type": "sine"
+                },
+                "envelope": {
+                    "attack": 0.001,
+                    "decay": 2,
+                    "sustain": 0.001,
+                    "release": 1.4,
+                    "attackCurve": "exponential"
+                }}
+        var colton12Effects = [
+            {
+                type: Tone.Chebyshev,
+                params: {
+                    "order" : 50,
+                    "wet": 1
+                }
+            }]
+        var colton12DynamicParams = [
+            {
+                name: "glide",
+                func: function (shape,val) {
+                    var newVal =  scale_val_to_range(val, 0, 101, 0, .8);
+                    shape.synth.set("portamento",newVal);
+                }
+            }, 
+            {
+                name: "attack",
+                func: function (shape,val) {
+                    shape.synth.envelope.set("attack", scale_val_to_range(val, 0, 101, 0, .8))+0.001;
+                }
+            }, 
+            {
+                name: "zap",
+                func: function (shape,val) {
+                    var newVal = val;
+                    if (shape.effect0) {
+                        shape.effect0.gain.value = scale_val_to_range(val, 0, 101, -20, 0);
+                    } else {
+                        shape.effect0 = shape.synth.send("colton_12effect0", newVal);
+                    }                
+                }  
+            }, 
+            {
+                name: "delay",
+                func: function (shape,val) {
+                    var newVal = scale_val_to_range(val, 0, 101, -50, 0);
+                    console.log("NEWVAL:", newVal);
+                    if (shape.effect1) {
+                        shape.effect1.gain.value = newVal;
+                    } else {
+                        shape.effect1 = shape.synth.send("colton_12effect1", newVal);
+                    }    
+                }
+            }];
+        this.add_synth("colton_12", Tone.MembraneSynth, colton12Params, colton12DynamicParams, colton12Effects);
+
+        var colton08Params = {
+                vibratoAmount:0,
+                vibratoRate:10,
+                harmonicity:3,
+                voice0: {
+                    volume:-10,
+                    portamento:0,
+                    oscillator:{
+                        type:"sine"
+                    },
+                    filterEnvelope: {
+                        attack:0,
+                        decay:0,
+                        sustain:0,
+                        release:0,
+                    },
+                    envelope: {
+                        attack:0.5,
+                        decay:2,
+                        sustain:2,
+                        release:1,
+                    },
+                },
+                voice1:{
+                    volume:-10,
+                    portamento:0,
+                    oscillator: {
+                        type:"sine"
+                    },
+                    filterEnvelope: {
+                        attack:0,
+                        decay:0,
+                        sustain:0,
+                        release:0,
+                    },
+                    envelope: {
+                        attack:0.01,
+                        decay:2,
+                        sustain:0,
+                        release:2,
+                    },
+                }}
+        var colton08Effects = [
+            {
+                type: Tone.Chorus,
+                params: {
+                    "frequency" : 1,
+                    "delayTime" : 2,
+                    "depth" : 20,
+                    "feedback" : 0.1,
+                    "type" : "square",
+                    "spread" : 80
+                }
+            }]
+        this.add_synth("colton_08", Tone.DuoSynth, colton08Params, defaultDynamicParams, colton08Effects);
+    }
+
+    add_synth (name, baseType, baseParams, dynamicParamNames, effects) {
+        if (effects) {
+            var synthController = new SynthController(name, baseType, baseParams, dynamicParamNames, effects);
+        } else {
+            var synthController = new SynthController(name, baseType, baseParams, dynamicParamNames);
+        }
+        this.synthControllersList.push(synthController);
+    }
+
     init_inst_colors () {
         for (var i = 0; i < colorsList.length; i++) {
             var instColor = new InstColor(i, synthNamesList[i], colorsList[i]);
             this.instColors.push(instColor);
         }
-        console.log(this.instColors);
+        //console.log(this.instColors);
     }
     
     init_color_picker(){
@@ -597,7 +1038,7 @@ class Shape {
             if (parent.isCompleted) {
                 //var parent = value.parent;
                 //var thisSynth = get_this_synth(parent);
-                var thisSynth = parent.synth.connect(parent.panner);
+                var thisSynth = parent.synth.connect(parent.panner).connect(meter);
                 //thisSynth.releaseAll();
                 //console.log("VALUE", value);
                 
@@ -1002,7 +1443,7 @@ class Shape {
                 <button class="shape-attr-set-perim">Quantize</button>\
                 <button class="shape-attr-double">*2</button>\
                 <button class="shape-attr-half">/2</button>\
-                <span class="perim-label">Perim:'+this.getPerim()+'</span>\
+                <!--<span class="perim-label">Perim:'+this.getPerim()+'</span>-->\
             </div>\
             <div class="section">\
                 <button class="shape-attr-tofront">To Front</button>\
@@ -1186,47 +1627,41 @@ class InstColor {
         this.name = instName;
         this.color = color;
 
-        var className = "inst-"+i;
+        var className = "inst-"+this.id;
         var selectedHtml = "";
 
-        if (this.id === SELECTED_INSTCOLOR_ID) {
-            selectedHtml = "selected-inst";
+        var parentController = name_to_synth_controller(this.name);
+        var paramNames = parentController.dynamicParamNames
+        var knobsHtml = '';
+        for (var i = 0; i < paramNames.length; i++) {
+            knobsHtml += '\
+                <li>\
+                    <span class="inst-param-title inst-param-title-'+i+'">'+paramNames[i].name+'</span><br>\
+                    <input type="text" class="kk-knob kk-param-'+i+'" data-target="'+i+'"/>\
+                </li>';
+        }
+        
+        var selectHtml = '';
+        for (var i = 0; i < synthNamesList.length; i++) {
+            selectHtml += '<option>'+synthNamesList[i]+'</option>'
         }
         
         var instOptionHtml = '\
-            <li class="'+selectedHtml+' inst-option '+className+'" data="'+this.name+'">\
+            <li class="inst-option '+className+'" data="'+this.name+'">\
                 <div class="inst-title">\
-                    <select class="inst-select">\
-                        <option>Instrument</option>\
-                    </select>\
+                    <select class="inst-select">'+selectHtml+'</select>\
                      <button class="show-hide show-hide-inst" data-target="inst-selectors">\
                         <i class="ion-arrow-left-b"></i>\
                     </button>\
                 </div>\
-                <ul class="inst-params">\
-                    <li>\
-                        <span class="inst-param-title">Glide</span><br>\
-                        <input type="text" class="kk-knob kk-param-0" data-target="0"/>\
-                    </li>\
-                    <li>\
-                        <span class="inst-param-title">Attack</span><br>\
-                        <input type="text" class="kk-knob kk-param-1" data-target="1"/>\
-                    </li>\
-                    <li>\
-                        <span class="inst-param-title">Decay</span><br>\
-                        <input type="text" class="kk-knob kk-param-2" data-target="2"/>\
-                    </li>\
-                    <li>\
-                        <span class="inst-param-title">Sustain</span><br>\
-                        <input type="text" class="kk-knob kk-param-3" data-target="3"/>\
-                    </li>\
-                </ul>\
+                <ul class="inst-params">'+knobsHtml+'</ul>\
             </li>';
 
         $(".inst-selectors ul.inst-list").append(instOptionHtml);
+
         this.li = $("."+className);
-        
-        populate_list(synthNamesList, this.name, ".inst-"+i+" .inst-title select");
+
+        this.li.find(".inst-select").val(this.name);
         this.li.find(".inst-title").css({"background-color": this.color, "color": "#fff"});
         this.li.css({"background-color": hex_to_Rgba(this.color, 0.9), "border-color": this.color});
         
@@ -1241,54 +1676,77 @@ class InstColor {
         this.li.find(".kk-knob").change(function () {
             var index = $(this).attr("data-target");
             set_param_val(parent.id, index, $(this).val());
-        });
+        })
 
         this.li.find(".inst-select").on("change", function () {
-            var val = $(this).val();
-            parent.name = val;
-            console.log(val)
-            PROJECT.shapesList.forEach(function (shape) {
-                console.log(val);
-                if (shape.included && shape.get_inst_color().id == parent.id) {
-                    console.log("found");
-                    shape.set_instrument(val);
-                }
-            });
+            parent.set_synth($(this).val());
         })
+    }
+
+    set_synth (name) {
+        this.name = name;
+        var parent = this;
+
+        var newController = name_to_synth_controller(this.name);
+        var paramNames = newController.dynamicParamNames
+        for (var i = 0; i < paramNames.length; i++) {
+            this.li.find(".inst-param-title-"+i).text(paramNames[i].name);
+        }
+
+        PROJECT.shapesList.forEach(function (shape) {
+            if (shape.included && shape.get_inst_color().id == parent.id) {
+                shape.set_instrument(parent.name);
+            }
+        });
     }
 }
 
-function set_param_val(instColorId, paramIndex, rawVal) {
-    console.log("setting param val", instColorId, paramIndex, rawVal);
-    if (paramIndex == 0) { // portamento
-        var val = rawVal/300;
-        PROJECT.shapesList.forEach(function (shape) {
-            if (shape.instColorId == instColorId) {
-                shape.synth.set("portamento", val);
+/* ========================================================================== */
+/* ------------------------- Synth Controller class ------------------------- */
+class SynthController {
+    constructor (name, baseType, baseParams, dynamicParamNames, fxList) {
+        this.name = name;
+        this.baseType = baseType;
+        this.baseParams = baseParams;
+        this.dynamicParamNames = dynamicParamNames;
+
+        this.fxList = fxList;
+        this.effectSends = [];
+
+        if (this.fxList) {
+            for (var i = 0; i < fxList.length; i++) {
+                var fxObj = fxList[i];
+                var effect = new fxObj.type(fxObj.params).receive(this.name+"effect"+i).toMaster();
+                this.effectSends.push(effect);
             }
-        })
-    } else if (paramIndex == 1) { // attack
-        var val = rawVal/100 + 0.001;
-        PROJECT.shapesList.forEach(function (shape) {
-            if (shape.instColorId == instColorId) {
-                shape.synth.envelope.set("attack", val);
-            }
-        })
-    } else if (paramIndex == 2) { // decay
-        var val = rawVal/100 + 0.001;
-        PROJECT.shapesList.forEach(function (shape) {
-            if (shape.instColorId == instColorId) {
-                shape.synth.envelope.set("decay", val);
-            }
-        })
-    } else if (paramIndex == 3) { // sustain
-        var val = rawVal/100 + 0.001;
-        PROJECT.shapesList.forEach(function (shape) {
-            if (shape.instColorId == instColorId) {
-                shape.synth.envelope.set("sustain", val);
-            }
-        })
+        }
     }
+    get_new_instance () {
+        return new this.baseType(this.baseParams).toMaster();
+    }
+}
+
+function name_to_synth_controller (name) {
+    var index = synthNameEnum[name];
+    return PROJECT.synthControllersList[index];
+}
+
+
+function set_param_val(instColorId, paramIndex, rawVal) {
+    var synthName = PROJECT.instColors[instColorId].name;
+    var synthController = name_to_synth_controller(synthName);
+    var val;
+/*    if (!(rawVal > 0)) {
+        val = -Infinity;
+    }*/
+
+    console.log(val);
+
+    PROJECT.shapesList.forEach(function (shape) {
+        if (shape.instColorId == instColorId) {
+            synthController.dynamicParamNames[paramIndex].func(shape, rawVal);
+        }
+    })
 }
 
 /* ========================================================================== */
@@ -1298,20 +1756,28 @@ function set_param_val(instColorId, paramIndex, rawVal) {
 /* ========================================================================== */
 
 var PROJECT = new Project;
+PROJECT.init();
 var ACTIVE_SHAPE;
 
 $(document).ready(function () {
 
     init_grid();
-    init_synths();
     hide_handles();
     set_draw_inst_color(0);
 
-    hide_menu();
-    expand_inst_selectors();
+    //hide_menu();
+    //expand_inst_selectors();
+    
+    //console.log(PROJECT.synthControllersList);
+    alert("Welcome to Shape Your Music. This application is currently under development, and you may experience bugs. If you have questions feel free to contact me at ejarz25@gmail.com. - Elias");
 
+    meter = new Tone.Meter("level");
+    window.setInterval(function(){
+        if (meter.value > 0.8) {
+            console.log("METER", meter.value);
+        }
+    }, 100);
     //generate_random_shapes(1);
-    //alert("Welcome to Shape Your Music. This application is currently under development, and you may experience bugs. If you have questions feel free to contact me at ejarz25@gmail.com. - Elias");
     //hide_info_pane();
 });
 
@@ -1755,7 +2221,8 @@ function set_draw_state (state) {
 }
 
 function populate_list (values, selectedItem, className) {
-    //console.log("SELECTED ITEM", selectedItem);
+    //$(className).html("yo");
+    //console.log("POPULATE LIST:",values,"SELECTED ITEM", selectedItem);
     var optionsHtml = '';
     var selectedHtml = '';
     for (var i = 0; i < values.length; i++) {
@@ -1895,307 +2362,10 @@ function note_chooser1 (freq, theta) {
 /* ----------------------------- SYNTH CHOOSING ----------------------------- */
 /* ========================================================================== */
 
-var synthNameEnum = {
-    "AM": 0,
-    "Keys": 1,
-    "Duo": 2,
-    "Marimba": 3,
-    "SubBass": 4,
-    "SuperSaw": 5,
-    "Simple": 6,
-    "Membrane": 7,
-    "Kalimba": 8,
-    "Cello": 9,
-    "Pizz": 10,
-    "colton_12": 11,
-    "colton_08": 12
-}
-
-class SynthController {
-    constructor (name, baseType, baseParams, dynamicParamNames, effects) {
-        this.baseType = baseType;
-        this.baseParams = baseParams;
-        this.effects = effects;
-        console.log(effects);
-    }
-    get_new_instance () {
-        var synth = new this.baseType(this.baseParams);
-        if (this.effects) {
-            this.effects.forEach(function (effect) {
-                var toneEffect = new effect.type(effect.params);
-                synth.chain(toneEffect.toMaster());
-            })
-        }
-
-        return synth.toMaster();
-    }
-}
-
-function init_synths () {
-    var defaultDynamicParams = ["portamento", "attack", "decay", "sustain"];
-    
-    add_synth("AM", Tone.AMSynth, {}, defaultDynamicParams);
-
-    var keysParams = {
-            "oscillator": {
-                "detune": 0,
-                "type": "custom",
-                "partials" : [2, 1, 2, 2],
-                "phase": 0,
-                "volume": 0
-            },
-            "envelope": {
-                "attack": 0.005,
-                "decay": 0.3,
-                "sustain": 0.2,
-                "release": 1,
-            },
-            "portamento": 0.01,
-            "volume": -20}
-    var keysEffects = [
-                {
-                    type: Tone.Freeverb,
-                    params: {
-                        "roomSize": 0.8
-                    }
-                }]
-    add_synth("Keys", Tone.Synth, keysParams, defaultDynamicParams, keysEffects);
-    
-    add_synth("Duo", Tone.DuoSynth, {}, defaultDynamicParams);
-
-    var marimbaParams = {
-            "oscillator": {
-                "partials": [1,0,2,0,3]
-            },
-            "envelope": {
-                "attack": 0.001,
-                "decay": 1.2,
-                "sustain": 0,
-                "release": 1.2
-            }}
-    add_synth("Marimba", Tone.Synth, marimbaParams, defaultDynamicParams);
-
-    var subBassParams = {
-            "portamento": 0.08,
-            "oscillator": {
-                "partials": [2, 1, 3, 2, 0.4]
-            },
-            "filter": {
-                "Q": 4,
-                "type": "lowpass",
-                "rolloff": -48
-            },
-            "envelope": {
-                "attack": 0.04,
-                "decay": 0.06,
-                "sustain": 0.4,
-                "release": 1
-            },
-            "filterEnvelope": {
-                "attack": 0.01,
-                "decay": 0.1,
-                "sustain": 0.6,
-                "release": 1.5,
-                "baseFrequency": 50,
-                "octaves": 3.4
-            }}
-    add_synth("SubBass", Tone.MonoSynth, subBassParams, defaultDynamicParams);
-
-    var superSawParams = {
-            "vibratoAmount":1,
-            "vibratoRate":5,
-            "oscillator" : {
-                "type" : "fatsawtooth",
-                "count" : 3,
-                "spread" : 30
-            },
-            "envelope": {
-                "attack": 0.01,
-                "decay": 0.1,
-                "sustain": 0.5,
-                "release": 0.4,
-                "attackCurve" : "exponential"
-            }}
-    var superSawEffects = [
-            {
-                type: Tone.Tremolo,
-                params: {
-                        frequency:10,
-                        type:"sine",
-                        depth:0.5,
-                        spread:180
-                    }
-            }]
-    add_synth("SuperSaw", Tone.MonoSynth, superSawParams, defaultDynamicParams, superSawEffects);
-    add_synth("Simple", Tone.Synth, {}, defaultDynamicParams);
-    add_synth("Membrane", Tone.MembraneSynth, {}, defaultDynamicParams);
-
-    var kalimbaParams = {
-            "harmonicity": 8,
-            "modulationIndex": 2,
-            "oscillator": {
-                "type": "sine"
-            },
-            "envelope": {
-                "attack": 0.001,
-                "decay": 2,
-                "sustain": 0.1,
-                "release": 2
-            },
-            "modulation" : {
-                "type" : "square"
-            },
-            "modulationEnvelope" : {
-                "attack": 0.002,
-                "decay": 0.2,
-                "sustain": 0,
-                "release": 0.2
-            }
-        }
-    add_synth("Kalimba", Tone.FMSynth, kalimbaParams, defaultDynamicParams);
-
-    var celloParams = {
-            "harmonicity": 3.01,
-            "modulationIndex": 14,
-            "oscillator": {
-                "type": "triangle"
-            },
-            "envelope": {
-                "attack": 0.2,
-                "decay": 0.3,
-                "sustain": 0.1,
-                "release": 1.2
-            },
-            "modulation" : {
-                "type": "square"
-            },
-            "modulationEnvelope" : {
-                "attack": 0.01,
-                "decay": 0.5,
-                "sustain": 0.2,
-                "release": 0.1
-            }
-        }
-    add_synth("Cello", Tone.FMSynth, celloParams, defaultDynamicParams);
-
-    var pizzParams = {
-            "oscillator": {
-                "type": "sawtooth"
-            },
-            "filter": {
-                "Q": 3,
-                "type": "highpass",
-                "rolloff": -12
-            },
-            "envelope": {
-                "attack": 0.01,
-                "decay": 0.3,
-                "sustain": 0,
-                "release": 0.9
-            },
-            "filterEnvelope": {
-                "attack": 0.01,
-                "decay": 0.1,
-                "sustain": 0,
-                "release": 0.1,
-                "baseFrequency": 800,
-                "octaves": -1.2
-            }
-        }
-    add_synth("Pizz", Tone.MonoSynth, pizzParams, defaultDynamicParams);
-    
-    var colton12Params = {
-            "pitchDecay": 1,
-            "octaves": 30,
-            "oscillator": {
-                "type": "sine"
-            },
-            "envelope": {
-                "attack": 0.001,
-                "decay": 2,
-                "sustain": 0.001,
-                "release": 1.4,
-                "attackCurve": "exponential"
-            }}
-    var colton12Effects = [
-        {
-            type: Tone.Chebyshev,
-            params: {
-                "order" : 50
-            }
-        }]
-    add_synth("colton_12", Tone.MembraneSynth, colton12Params, defaultDynamicParams, colton12Effects);
-
-    var colton08Params = {
-            vibratoAmount:0,
-            vibratoRate:10,
-            harmonicity:3,
-            voice0: {
-                volume:-10,
-                portamento:0,
-                oscillator:{
-                    type:"sine"
-                },
-                filterEnvelope: {
-                    attack:0,
-                    decay:0,
-                    sustain:0,
-                    release:0,
-                },
-                envelope: {
-                    attack:0.5,
-                    decay:2,
-                    sustain:2,
-                    release:1,
-                },
-            },
-            voice1:{
-                volume:-10,
-                portamento:0,
-                oscillator: {
-                    type:"sine"
-                },
-                filterEnvelope: {
-                    attack:0,
-                    decay:0,
-                    sustain:0,
-                    release:0,
-                },
-                envelope: {
-                    attack:0.01,
-                    decay:2,
-                    sustain:0,
-                    release:2,
-                },
-            }}
-    var colton08Effects = [
-        {
-            type: Tone.Chorus,
-            params: {
-                frequency : 1,
-                delayTime : 2,
-                depth : 20,
-                feedback : 0.1,
-                type : "square",
-                spread : 80
-            }
-        }]
-    add_synth("colton_08", Tone.DuoSynth, colton08Params, defaultDynamicParams, colton08Effects);
-
-}
-
-function add_synth (name, baseType, baseParams, dynamicParamNames, effects) {
-    if (effects) {
-        var synth = new SynthController(name, baseType, baseParams, dynamicParamNames, effects);
-    } else {
-        var synth = new SynthController(name, baseType, baseParams, dynamicParamNames);
-    }
-    synthsList.push(synth);
-}
 
 function synth_chooser (name) {
     var index = synthNameEnum[name];
-    var synth = synthsList[index].get_new_instance();
+    var synth = PROJECT.synthControllersList[index].get_new_instance();
     return synth;
 }
 
@@ -2273,6 +2443,10 @@ function y_coord_to_index (pos) {
     } else if (pos > -1) {
         return 5;
     } else return 6;
+}
+
+function scale_val_to_range (oldVal, oldMin, oldMax, newMin, newMax) {
+    return (((oldVal - oldMin) * (newMax - newMin)) / (oldMax - oldMin)) + newMin;
 }
 
 /* ------------------ Random shapes */
