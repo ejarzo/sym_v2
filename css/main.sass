@@ -472,11 +472,18 @@ ul
                 i
                     @include button_expand_on_hover
                     color: $color-white !important
-                    float: right
-                    padding-right: 5px
+                    padding-right: 3px
                     font-size: 18px
                     position: relative
                     top: -2px
+                    display: block
+                    width: 13px
+                button
+                    float: right
+                    &.mute-solo-channel
+                        &:active
+                            background: #fff    
+                            color: #222
             &.selected-inst
                 .selected-inst-icon
                     opacity: 1

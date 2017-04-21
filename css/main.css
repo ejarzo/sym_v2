@@ -393,11 +393,12 @@ ul {
           position: relative;
           z-index: 100;
           color: #fff !important;
-          float: right;
-          padding-right: 5px;
+          padding-right: 3px;
           font-size: 18px;
           position: relative;
-          top: -2px; }
+          top: -2px;
+          display: block;
+          width: 13px; }
           .inst-selectors ul.inst-list li.inst-option .inst-title i:hover {
             transform: scaleX(1.2) scaleY(1.2) scaleZ(1);
             color: #222;
@@ -410,6 +411,11 @@ ul {
             .inst-selectors ul.inst-list li.inst-option .inst-title i:disabled:hover {
               color: #bbb;
               transform: scaleX(1) scaleY(1) scaleZ(1); }
+        .inst-selectors ul.inst-list li.inst-option .inst-title button {
+          float: right; }
+          .inst-selectors ul.inst-list li.inst-option .inst-title button.mute-solo-channel:active {
+            background: #fff;
+            color: #222; }
       .inst-selectors ul.inst-list li.inst-option.selected-inst .selected-inst-icon {
         opacity: 1;
         display: inline-block !important; }
