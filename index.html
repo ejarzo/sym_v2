@@ -8,7 +8,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
         <link rel="apple-touch-icon" href="apple-touch-icon.png">
-        <link rel="stylesheet" href="css/khantrol-knob.css" />
+        <link rel="stylesheet" href="css/knobjs.css" />
         <link rel="stylesheet" href="css/ionicons.min.css">
         <link rel="stylesheet" href="css/normalize.css">
         <link rel="stylesheet" href="css/main.css">
@@ -147,20 +147,39 @@
             <div class="recorder-blink hidden">
                 <i class="ion-record"></i> REC
             </div>
+            <div class="hidden modal-background downloads">
+                <div class="modal">
+                    <h2>Recordings</h2>
+                    <ul class="downloads-list"></ul>
+                    <div class="close-modal">x</div>
+                </div>
+            </div>
             
             <!-- Overlays -->
             <div class="hidden modal-background tutorial-modal">
                 <div class="modal modal-wide modal-tutorial">
                     <div class="modal-content">
                         <h2>Tutorial</h2>
+                        <h3>Transport</h3>
+                            <table>
+                                <tr>
+                                    <td>
+                                        <img src="img/tutorial/play_record.png">
+                                    </td>
+                                    </td>
+                                    <td>
+                                        <p>Press play or hit the SPACE bar to hear your creation. While playing, this button will become a stop button. Pressing record will allow you to download your song as an audio file.</p>
+                                    </td>
+                                </tr>
+                            </table>
+                        <h3>Drawing and Editing</h3>
                         <table>
                             <tr>
                                 <td>
                                     <img src="img/tutorial/draw_edit_toggle.gif"><br>
                                 </td>
                                 <td>
-                                    <p>There are two modes: <strong>DRAW</strong> and <strong>EDIT</strong>. Pressing TAB toggles between the two.</p>
-                                    
+                                    <p>There are two modes: <strong>DRAW</strong> and <strong>EDIT</strong>. Pressing TAB toggles between the two. Choose the color of your shape using the colored box within the <strong>DRAW</strong> button.</p>
                                 </td>
                             </tr>
                             <tr>
@@ -168,7 +187,8 @@
                                     <img src="img/tutorial/draw_shape.gif">
                                 </td>
                                 <td>
-                                    <p>In <strong>DRAW</strong> mode you can draw shapes by placing vertices. Choose the color of your shape using the colored box within the <strong>DRAW</strong> button.</p>
+                                    <p>In <strong>DRAW</strong> mode you can draw shapes by placing vertices. RIGHT CLICK to cancel your drawing.
+                                    </p> 
                                 </td>
                             </tr>
                             <tr>
@@ -187,8 +207,22 @@
             <div class="hidden modal-background info-modal">
                 <div class="modal">
                     <div class="modal-content">
-                        <p>Info Coming Soon...</p>
-                        <p>By Elias Jarzombek: <a href="https://ejarzo.github.io" target="blank">ejarzo.github.io</a></p>
+                        <h2>Info</h2>
+                        
+                        <!-- <p>Info Coming Soon...</p> -->
+                        <p>Created by Elias Jarzombek<br>
+                        <a href="https://ejarzo.github.io" target="blank">ejarzo.github.io</a><br>
+                        <a href="mailto:elias.jarzombek@tufts.edu">Contact</a></p>
+                        
+                        <h3>Powered by:</h3>
+                        <ul>
+                            <li><a href="https://tonejs.github.io/" target="blank">Tone</a></li>
+                            <li><a href="http://dmitrybaranovskiy.github.io/raphael/" target="blank">Raphaël</a></li>
+                            <li><a href="https://github.com/saebekassebil/teoria/" target="blank">Teoria</a></li>
+                            <li><a href="https://github.com/mattdiamond/Recorderjs" target="blank">Recorderjs</a></li>
+                            <li><a href="https://github.com/russellmcc/knobjs" target="blank">Knobjs</a></li>
+                        </ul>
+
 
                     </div>
                     <div class="close-modal">x</div>
@@ -247,7 +281,7 @@
 
         <script src="js/vendor/jquery-1.11.3.min.js"></script>
         <script src="js/vendor/tone-9.min.js"></script>
-        <script src="js/vendor/khantrol-knob.min.js"></script>
+        <script src="js/vendor/knob.min.js"></script>
         <script src="js/vendor/raphael.min.js"></script>
         <script src="js/vendor/teoria.js"></script>
         <script src="js/vendor/recorder.js"></script>

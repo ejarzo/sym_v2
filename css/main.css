@@ -369,6 +369,7 @@ ul {
     .inst-selectors ul.inst-list::-webkit-scrollbar {
       display: none; }
     .inst-selectors ul.inst-list li.inst-option {
+      text-align: center;
       width: 25%;
       height: 100%;
       font-size: 12px;
@@ -377,7 +378,8 @@ ul {
       vertical-align: middle;
       color: #fff; }
       .inst-selectors ul.inst-list li.inst-option .inst-title {
-        height: 20px; }
+        height: 20px;
+        text-align: left; }
         .inst-selectors ul.inst-list li.inst-option .inst-title select {
           background: transparent;
           border-color: transparent; }
@@ -422,11 +424,12 @@ ul {
           padding-right: 10px;
           padding-left: 10px; }
         .inst-selectors ul.inst-list li.inst-option .inst-params .inst-param-title {
-          text-align: center;
-          padding: 5px;
+          display: block;
           width: 100%;
-          float: left;
-          font-size: 0.9em; }
+          text-align: center;
+          font-size: 0.9em;
+          position: relative;
+          top: -5px; }
 
 .show-hide-inst {
   border: none;
@@ -437,47 +440,37 @@ ul {
 
 /* ========================================================================== */
 /* ================================= KNOBS ================================== */
-.kk-skeleton {
-  height: 10px;
-  text-align: left;
-  margin-left: calc(50% - 15px); }
-  .kk-skeleton .kk-hand {
-    width: 2px;
-    left: 12px;
-    background-color: #fff;
-    border-color: #fff; }
-  .kk-skeleton .kk-face {
-    border: 2px solid #fff;
-    -webkit-transition: all 0.1s ease-in-out;
-    -moz-transition: all 0.1s ease-in-out;
-    -o-transition: all 0.1s ease-in-out;
-    transition: all 0.1s ease-in-out;
-    color: #777;
-    transform: scaleX(1) scaleY(1) scaleZ(1);
-    position: relative;
-    z-index: 100;
-    width: 30px;
-    height: 30px;
-    background: transparent; }
-    .kk-skeleton .kk-face:hover {
-      transform: scaleX(1.2) scaleY(1.2) scaleZ(1);
-      color: #222;
-      z-index: 5000; }
-    .kk-skeleton .kk-face:active {
-      transform: scaleX(1.2) scaleY(1.2) scaleZ(1);
-      color: #222; }
-    .kk-skeleton .kk-face:disabled {
-      color: #bbb; }
-      .kk-skeleton .kk-face:disabled:hover {
-        color: #bbb;
-        transform: scaleX(1) scaleY(1) scaleZ(1); }
-  .kk-skeleton .kk-value {
-    height: 1px;
-    position: relative;
-    top: -25px;
-    right: -35px;
-    text-align: left;
-    display: none; }
+.knob {
+  -webkit-transition: all 0.1s ease-in-out;
+  -moz-transition: all 0.1s ease-in-out;
+  -o-transition: all 0.1s ease-in-out;
+  transition: all 0.1s ease-in-out;
+  color: #777;
+  transform: scaleX(1) scaleY(1) scaleZ(1);
+  position: relative;
+  z-index: 100;
+  width: 40px;
+  height: 40px;
+  margin: 0 auto;
+  margin-top: 10px; }
+  .knob:hover {
+    transform: scaleX(1.2) scaleY(1.2) scaleZ(1);
+    color: #222;
+    z-index: 5000; }
+  .knob:active {
+    transform: scaleX(1.2) scaleY(1.2) scaleZ(1);
+    color: #222; }
+  .knob:disabled {
+    color: #bbb; }
+    .knob:disabled:hover {
+      color: #bbb;
+      transform: scaleX(1) scaleY(1) scaleZ(1); }
+  .knob .knobjs-arc {
+    fill: #fff; }
+  .knob .knobjs-arcbg {
+    mask: none;
+    stroke-width: 0.1;
+    stroke: #fff; }
 
 /* ========================================================================== */
 /* ============================== INFO PANEL ================================ */
@@ -573,6 +566,8 @@ ul {
     .modal-background .modal.modal-tutorial img {
       max-width: 150px;
       padding-right: 20px; }
+    .modal-background .modal h2 {
+      margin-bottom: 30px; }
     .modal-background .modal a {
       border-bottom: 2px solid #bbb;
       text-decoration: none;
@@ -599,6 +594,32 @@ ul {
           padding: 5px; }
           .modal-background .modal .modal-content table td.right {
             font-weight: bold; }
+  .modal-background.downloads .modal {
+    width: 300px !important; }
+    .modal-background.downloads .modal ul {
+      padding: 0;
+      list-style: none; }
+    .modal-background.downloads .modal li {
+      padding-bottom: 40px; }
+      .modal-background.downloads .modal li audio {
+        display: block;
+        width: 100%; }
+      .modal-background.downloads .modal li a {
+        display: block;
+        background-color: #eee;
+        border: 1px solid #bbb;
+        border-radius: 2px;
+        padding: 5px 10px;
+        width: 100%;
+        text-shadow: none;
+        text-align: middle;
+        box-shadow: none; }
+        .modal-background.downloads .modal li a:hover {
+          border-color: #222; }
+        .modal-background.downloads .modal li a i {
+          font-size: 1.2em;
+          position: relative;
+          top: 2px; }
 
 /* ========================================================================== */
 /* ========================= Shape attributes popup ========================= */

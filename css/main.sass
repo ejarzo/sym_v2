@@ -28,6 +28,7 @@ $inst-color-4: #05804D
 $inst-color-5: #023FA5
 $inst-color-6: #05804D
 
+
 /* ========================================================================== */
 /* ================================ MIXINS ================================== */
 
@@ -418,6 +419,7 @@ ul
 /* ========================================================================== */
 /* =============================== RECORDING ================================ */
 
+
 .recorder-blink
     color: #f00
     padding-left: 10px
@@ -453,6 +455,7 @@ ul
         &::-webkit-scrollbar
             display: none
         li.inst-option
+            text-align: center
             width: 25%
             height: 100%
             font-size: 12px
@@ -462,6 +465,7 @@ ul
             color: $color-white
             .inst-title
                 height: 20px
+                text-align: left
                 select
                     background: transparent
                     border-color: transparent
@@ -489,12 +493,12 @@ ul
                     padding-right: 10px
                     padding-left: 10px
                 .inst-param-title
-                    text-align: center
-                    padding: 5px
-                    //background: #ddd
+                    display: block
                     width: 100%
-                    float: left
+                    text-align: center
                     font-size: .9em
+                    position: relative
+                    top: -5px
 
 .show-hide-inst
     border: none
@@ -506,30 +510,18 @@ ul
 /* ========================================================================== */
 /* ================================= KNOBS ================================== */
 
-.kk-skeleton
-    height: 10px
-    text-align: left
-    margin-left: calc(50% - 15px) 
-    .kk-hand
-        width: 2px
-        left: 12px
-        background-color: $color-white
-        border-color: $color-white
-
-    .kk-face
-        border: 2px solid $color-white
-        @include button_expand_on_hover
-        //@include drop_shadow
-        width: 30px
-        height: 30px
-        background: transparent
-    .kk-value
-        height: 1px
-        position: relative
-        top: -25px
-        right: -35px
-        text-align: left
-        display: none
+.knob   
+    @include button_expand_on_hover
+    width: 40px
+    height: 40px
+    margin: 0 auto
+    margin-top: 10px
+    .knobjs-arc
+        fill: #fff
+    .knobjs-arcbg
+        mask: none
+        stroke-width: 0.1
+        stroke: #fff
 
 /* ========================================================================== */
 /* ============================== INFO PANEL ================================ */
@@ -582,6 +574,11 @@ ul
     height: 100vh
     z-index: 1500
     overflow: scroll
+    &.info-modal
+        .modal
+            ul
+                li
+                    //padding-bottom: 5px
     .modal
         @include drop_shadow
         position: absolute
@@ -603,6 +600,8 @@ ul
             img
                 max-width: 150px
                 padding-right: 20px
+        h2 
+            margin-bottom: 30px
         a
             //color: #070
             border-bottom: 2px solid $color-grey-light
@@ -636,6 +635,36 @@ ul
                             //content: " :"
                     &.right
                         font-weight: bold
+
+    &.downloads
+        .modal
+            width: 300px !important
+            //text-align: left
+            ul
+                padding: 0
+                list-style: none
+            li 
+                padding-bottom: 40px
+                audio
+                    display: block
+                    width: 100%
+                a 
+                    display: block
+                    background-color: #eee
+                    border: 1px solid #bbb
+                    border-radius: 2px
+                    padding: 5px 10px
+                    width: 100%
+                    text-shadow: none
+                    text-align: middle
+                    box-shadow: none
+                    &:hover
+                        border-color: $color-black
+                    i
+                        font-size: 1.2em
+                        position: relative
+                        top: 2px
+
 
 /* ========================================================================== */
 /* ========================= Shape attributes popup ========================= */
