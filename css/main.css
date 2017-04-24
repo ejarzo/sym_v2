@@ -562,6 +562,7 @@ ul {
     height: auto;
     max-width: 500px;
     margin: 0 auto;
+    margin-bottom: 100px;
     top: 100px;
     left: 0;
     right: 0;
@@ -569,6 +570,10 @@ ul {
     .modal-background .modal.modal-wide {
       max-width: 900px;
       padding: 30px 70px; }
+    .modal-background .modal.modal-tutorial td {
+      vertical-align: top; }
+      .modal-background .modal.modal-tutorial td.left {
+        width: 200px; }
     .modal-background .modal.modal-tutorial img {
       max-width: 150px;
       padding-right: 20px; }
@@ -642,7 +647,9 @@ ul {
   .shape-attr-popup .color-palette {
     color: #fff;
     text-align: center;
-    left: 0; }
+    left: 0;
+    position: relative;
+    top: 7px; }
     .shape-attr-popup .color-palette i {
       position: relative;
       top: 2px; }

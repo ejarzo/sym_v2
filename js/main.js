@@ -51,28 +51,25 @@ var gridDotAttr       = {fill: "#777", "stroke-width": 1, stroke: "#FFF"};
 /* ======== AUDIO ===================================================== */
 /* "interactive", "playback", "balanced", "fastest"*/
 Tone.Transport.latencyHint = 'interactive';
+var masterCompressor = new Tone.Compressor({
+    "threshold": -6,
+    "ratio": 3,
+    "attack": 0.5,
+    "release": 0.1
+});
+
+//var lowBump = new Tone.Filter(500, "lowpass");
+
+var masterLimiter = new Tone.Limiter(-6);
+//var lowBump = new Tone.Filter(200, "lowshelf");
+Tone.Master.chain(masterCompressor, masterLimiter);
 
 var PLAYING = false;
-var synthNamesList =  ["Keys", "colton_08", "Marimba", "colton_12", "Duo", "Sub Bass", 
-                   "Simple", "AM", "SuperSaw", "Membrane", "Kalimba", "Cello", "Pizz"];
+/*var synthNamesList =  ["Keys", "colton_08", "Marimba", "colton_12", "Duo", "SubBass", 
+                   "Simple", "AM", "SuperSaw", "Membrane", "Kalimba", "Cello", "Pizz"];*/
 
-var synthNameEnum = {
-    "am": 0,
-    "Keys": 1,
-    "Duo": 2,
-    "Marimba": 3,
-    "Sub Bass": 4,
-    "SuperSaw": 5,
-    "Simple": 6,
-    "Membrane": 7,
-    "Kalimba": 8,
-    "Cello": 9,
-    "Pizz": 10,
-    "colton_12": 11,
-    "colton_08": 12
-}
+var synthNameEnum = {}
 
-var DEFAULT_SYNTH = synthNamesList[0];
 var DEFAULT_TEMPO = 5;
 
 var SELECTED_INSTCOLOR_ID = 0;
@@ -96,8 +93,8 @@ var GLOBAL_MARGIN = 5;
 var gridDots = r.set();
 
 /* ======== TOOLS ====================================================== */
-var CURR_TOOL = "draw"; // draw, adjust
-var CURR_DRAW_STATE = "ready"; // ready, drawing
+var CURR_TOOL = "draw";         // draw, adjust
+var CURR_DRAW_STATE = "ready";  // ready, drawing
 
 /* ======== LINE TO MOUSE ============================================== */
 var ORIGIN_RADIUS = 15;
@@ -105,21 +102,13 @@ var hoverLine = r.path().attr(hoverLineAttr);
 var hoverCircle = r.circle(0,0,3).attr(hoverCircleAttr);
 
 /* ======== RECORDING =====================----========================= */
-//var masterLimiter = new Tone.Limiter(-60);
 var rec = new Recorder(Tone.Master);
 var RECORD_ARMED = false;
 var RECORDING = false;
 
 
 
-var filter = new Tone.Filter({
-    type : 'lowpass',
-    Q : 5,
-    rolloff: -48
-}).receive("filter").toMaster()
-
-filter.frequency.value = 100;
-
+var alertMessage = "Welcome to Shape Your Music. This application is currently under development, and you may experience bugs. Check out the Help menu for a basic tutorial. If you have questions feel free to contact me at ejarz25@gmail.com. Enjoy! - Elias"
 
 
 
@@ -230,7 +219,7 @@ class Project {
         /* ------------------------------------------------------------------ */
         /* ------------------------------- AM ------------------------------- */
         /* ------------------------------------------------------------------ */
-        this.add_synth("AM", Tone.AMSynth, {}, defaultDynamicParams);
+        //this.add_synth("AM", Tone.AMSynth, {}, defaultDynamicParams);
 
         /* ------------------------------------------------------------------ */
         /* ------------------------------ KEYS ------------------------------ */
@@ -313,19 +302,37 @@ class Project {
         /* ------------------------------------------------------------------ */
         /* ------------------------------- DUO ------------------------------ */
         /* ------------------------------------------------------------------ */
+        
+        var duoEffects = [
+                    {
+                        type: Tone.Chorus,
+                        params: {
+                            frequency: 1.5,
+                            delayTime: 3.5,
+                            depth: 0.9,
+                            feedback: 0.1,
+                            type: "sine",
+                            spread: 180
+                        }
+                    }]
+
         var duoDynamicParams = 
             [{
                 name: "glide",
                 default: 0,
                 func: function (shape,val) {
-                    shape.synth.set("portamento", scale_val_to_range(val, 0, 101, 0, .8));
+                    shape.synth.set("portamento", scale_val_to_range(val, 0, 101, 0, .5));
                 }
             }, {
-                name: "attack",
-                default: 1,
+                name: "chorus",
+                default: 20,
                 func: function (shape,val) {
-                    shape.synth.voice0.envelope.set("attack", scale_val_to_range(val, 0, 101, 0, .8)) + 0.001;
-                    shape.synth.voice1.envelope.set("attack", scale_val_to_range(val, 0, 101, 0, .8)) + 0.001;
+                    var newVal = scale_val_to_range(val, 0, 101, -50, 0);
+                    if (shape.sends[0]) {
+                        shape.sends[0].gain.value = newVal;
+                    } else {
+                        shape.sends[0] = shape.synth.send("Duoeffect0", newVal);
+                    }   
                 }
             }, {
                 name: "vibrato",
@@ -340,7 +347,7 @@ class Project {
                     shape.synth.set("harmonicity", scale_val_to_range(val, 0, 101, 0, 3));
                 }
             }];
-        this.add_synth("Duo", Tone.DuoSynth, {}, duoDynamicParams);
+        this.add_synth("Duo", Tone.DuoSynth, {}, duoDynamicParams, duoEffects);
 
         /* ------------------------------------------------------------------ */
         /* ----------------------------- Marimba ---------------------------- */
@@ -367,26 +374,26 @@ class Project {
                 name: "attack",
                 default: scale_val_to_range(marimbaParams.envelope.attack, 0, 2, 0, 100),
                 func: function (shape,val) {
-                    shape.synth.envelope.set("attack", scale_val_to_range(val, 0, 101, 0, .8)) + 0.001;
+                    shape.synth.envelope.set("attack", scale_val_to_range(val, 0, 101, 0, .8)) + 0.01;
                 }
             }, {
                 name: "decay",
                 default: scale_val_to_range(marimbaParams.envelope.decay, 0, 2, 0, 100),
                 func: function (shape,val) {
-                    shape.synth.envelope.set("decay", scale_val_to_range(val, 0, 101, 0, 3) + 0.001);
+                    shape.synth.envelope.set("decay", scale_val_to_range(val, 0, 101, 0, 3) + 0.01);
                 }  
             }, {
                 name: "sustain",
                 default: scale_val_to_range(marimbaParams.envelope.sustain, -100, 0, 0, 100),
                 func: function (shape,val) {
-                    shape.synth.envelope.set("sustain", scale_val_to_range(val, 0, 101, 0, 1) + 0.001);
+                    shape.synth.envelope.set("sustain", scale_val_to_range(val, 0, 101, 0, 1) + 0.01);
                 }
             }];
 
-        this.add_synth("Marimba", Tone.Synth, marimbaParams, marimbaDynamicParams);
+        //this.add_synth("Marimba", Tone.Synth, marimbaParams, marimbaDynamicParams);
 
         /* ------------------------------------------------------------------ */
-        /* ---------------------------- Sub Bass ---------------------------- */
+        /* ---------------------------- SubBass ---------------------------- */
         /* ------------------------------------------------------------------ */
         var subBassParams = {
                 "portamento": 0.08,
@@ -428,45 +435,45 @@ class Project {
                 }
             }]
         var subBassDynamicParams = 
-        [{
-            name: "glide",
-            default: scale_val_to_range(0.08, 0, 1, 0, 100),
-            func: function (shape,val) {
-                var newVal =  scale_val_to_range(val, 0, 101, 0, .2);
-                shape.synth.set("portamento",newVal);
-            }
-        }, 
-        {
-            name: "attack",
-            default: scale_val_to_range(keysParams.envelope.attack, 0, 1, 0, 100),
-            func: function (shape,val) {
-                shape.synth.envelope.set("attack", scale_val_to_range(val, 0, 101, 0, 1)+0.005);
-            }
-        }, 
-        {
-            name: "fuzz",
-            default: 50,
-            func: function (shape,val) {
-                var newVal = scale_val_to_range(val, 0, 101, -50, 0);
-                if (shape.sends[0]) {
-                    shape.sends[0].gain.value = newVal;
-                } else {
-                    shape.sends[0] = shape.synth.send("SubBasseffect0", newVal);
-                }                
-            }  
-        }, 
-        {
-            name: "space",
-            default: 50,
-            func: function (shape,val) {
-                var newVal = scale_val_to_range(val, 0, 101, -50, 0);
-                if (shape.sends[1]) {
-                    shape.sends[1].gain.value = newVal;
-                } else {
-                    shape.sends[1] = shape.synth.send("SubBasseffect1", newVal);
-                }    
-            }
-        }];
+            [{
+                name: "glide",
+                default: scale_val_to_range(0.08, 0, 1, 0, 100),
+                func: function (shape,val) {
+                    var newVal =  scale_val_to_range(val, 0, 101, 0, .2);
+                    shape.synth.set("portamento",newVal);
+                }
+            }, 
+            {
+                name: "attack",
+                default: scale_val_to_range(keysParams.envelope.attack, 0, 1, 0, 100),
+                func: function (shape,val) {
+                    shape.synth.envelope.set("attack", scale_val_to_range(val, 0, 101, 0, 1)+0.005);
+                }
+            }, 
+            {
+                name: "fuzz",
+                default: 50,
+                func: function (shape,val) {
+                    var newVal = scale_val_to_range(val, 0, 101, -50, 0);
+                    if (shape.sends[0]) {
+                        shape.sends[0].gain.value = newVal;
+                    } else {
+                        shape.sends[0] = shape.synth.send("SubBasseffect0", newVal);
+                    }                
+                }  
+            }, 
+            {
+                name: "space",
+                default: 50,
+                func: function (shape,val) {
+                    var newVal = scale_val_to_range(val, 0, 101, -50, 0);
+                    if (shape.sends[1]) {
+                        shape.sends[1].gain.value = newVal;
+                    } else {
+                        shape.sends[1] = shape.synth.send("SubBasseffect1", newVal);
+                    }    
+                }
+            }];
         this.add_synth("SubBass", Tone.MonoSynth, subBassParams, subBassDynamicParams, subBassEffects);
 
         /* ------------------------------------------------------------------ */
@@ -556,12 +563,49 @@ class Project {
         /* ------------------------------------------------------------------ */
         /* ------------------------------ Simple ---------------------------- */
         /* ------------------------------------------------------------------ */
-        this.add_synth("Simple", Tone.Synth, {}, defaultDynamicParams);
+        var simpleParams = {
+            oscillator:{
+                type:"triangle"
+            },
+            envelope:{
+                attack:0.005,
+                decay:0.1,
+                sustain:0.3,
+                release:0
+            }
+        }
+        var simpleDynamicParams = 
+            [{
+                name: "glide",
+                default: 0,
+                func: function (shape,val) {
+                    shape.synth.set("portamento",scale_val_to_range(val, 0, 101, 0, .8));
+                }
+            }, {
+                name: "attack",
+                default: scale_val_to_range(simpleParams.envelope.attack, 0, .8, 0, 100),
+                func: function (shape,val) {
+                    shape.synth.envelope.set("attack", scale_val_to_range(val, 0, 101, 0, .8)) + 0.001;
+                }
+            }, {
+                name: "decay",
+                default: scale_val_to_range(simpleParams.envelope.decay, 0, 1, 0, 100),
+                func: function (shape,val) {
+                    shape.synth.envelope.set("decay", scale_val_to_range(val, 0, 101, 0, 3) + 0.001);
+                }  
+            }, {
+                name: "sustain",
+                default: scale_val_to_range(simpleParams.envelope.sustain, 0, 1, 0, 100),
+                func: function (shape,val) {
+                    shape.synth.envelope.set("sustain", scale_val_to_range(val, 0, 101, 0, 1) + 0.001);
+                }
+            }];
+        this.add_synth("Simple", Tone.Synth, simpleParams, simpleDynamicParams);
 
         /* ------------------------------------------------------------------ */
         /* ---------------------------- Membrane ---------------------------- */
         /* ------------------------------------------------------------------ */
-        this.add_synth("Membrane", Tone.MembraneSynth, {}, defaultDynamicParams);
+        //this.add_synth("Membrane", Tone.MembraneSynth, {}, defaultDynamicParams);
 
         /* ------------------------------------------------------------------ */
         /* ----------------------------- Kalimba ---------------------------- */
@@ -588,7 +632,7 @@ class Project {
                     "release": 0.2
                 }
             }
-        this.add_synth("Kalimba", Tone.FMSynth, kalimbaParams, defaultDynamicParams);
+        //this.add_synth("Kalimba", Tone.FMSynth, kalimbaParams, defaultDynamicParams);
 
         /* ------------------------------------------------------------------ */
         /* ----------------------------- Cello -00--------------------------- */
@@ -615,7 +659,7 @@ class Project {
                     "release": 0.1
                 }
             }
-        this.add_synth("Cello", Tone.FMSynth, celloParams, defaultDynamicParams);
+        //this.add_synth("Cello", Tone.FMSynth, celloParams, defaultDynamicParams);
 
         /* ------------------------------------------------------------------ */
         /* ------------------------------- Pizz ----------------------------- */
@@ -768,7 +812,7 @@ class Project {
                     }    
                 }
             }];
-        this.add_synth("colton_12", Tone.MembraneSynth, colton12Params, colton12DynamicParams, colton12Effects);
+        //this.add_synth("colton_12", Tone.MembraneSynth, colton12Params, colton12DynamicParams, colton12Effects);
         
         /* ------------------------------------------------------------------ */
         /* ---------------------------- COLTON 08 --------------------------- */
@@ -876,21 +920,20 @@ class Project {
                 }
             }];
         
-        this.add_synth("colton_08", Tone.DuoSynth, colton08Params, colton08DynamicParams, colton08Effects);
-    
+        //this.add_synth("colton_08", Tone.DuoSynth, colton08Params, colton08DynamicParams, colton08Effects);
     }
 
     add_synth (name, baseType, baseParams, dynamicParamObjs, effects) {
         var synthController = new SynthController(name, baseType, baseParams, dynamicParamObjs, effects);
+        synthNameEnum[name] = this.synthControllersList.length;
         this.synthControllersList.push(synthController);
     }
 
     init_inst_colors () {
         for (var i = 0; i < colorsList.length; i++) {
-            var instColor = new InstColor(i, synthNamesList[i], colorsList[i]);
+            var instColor = new InstColor(i, this.synthControllersList[i].name, colorsList[i]);
             this.instColors.push(instColor);
         }
-        //console.log(this.instColors);
     }
     
     init_color_picker(){
@@ -915,7 +958,8 @@ class Project {
 
         r.clear();
         init_grid();
-        
+        Tone.dispose();
+
         this.shapesList.length = 0;
         
         ACTIVE_SHAPE = new Shape(0, SELECTED_INSTCOLOR_ID);
@@ -1038,8 +1082,6 @@ class Shape {
                 this.odx = 0;
                 this.ody = 0;
                 this.drag = false;
-                //parent.animCircle.transform();
-
             }
         },
         this.move = function (dx, dy) {
@@ -1165,8 +1207,12 @@ class Shape {
             
             this.part.removeAll();
             this.part.dispose();
+/*            this.sends.forEach(function (send) {
+                if (send) {
+                    send.dispose();
+                }
+            })*/
             this.synth.dispose();
-
             this.nodes.forEach(function (node) {
                 node.handle.remove();
             });
@@ -1179,7 +1225,7 @@ class Shape {
             console.log("mute");
             this.synth.triggerRelease();
             this.isMuted = true;
-            //this.synth.volume.value = "-inf";
+            this.synth.volume.value = -Infinity;
             this.part.mute = true;
             this.path.attr({"opacity": 0.3});
             this.nodes.forEach(function (node) {
@@ -1317,7 +1363,7 @@ class Shape {
         this.part = new Tone.Part(function (time, value) {
             if (parent.isCompleted) {
                 var thisSynth = parent.synth.connect(parent.panner);
-                thisSynth.connect(filter);
+                //thisSynth.connect(filter);
                 if (parent.isMuted) {
                     thisSynth.volume.value = -Infinity;
                 } else {
@@ -1330,7 +1376,7 @@ class Shape {
                 var lengthToMiliseconds = (value.noteDur * 1000).toFixed(9);
                 
                 var note = value.noteVal;
-                if (parent.get_inst_color().name == "Sub Bass") {
+                if (parent.get_inst_color().name == "SubBass") {
                     var oct = teoria.note(note).octave() - 2;
                     note = teoria.note(note).name() + oct;
                     //console.log(teoria.note(note).nam());
@@ -1708,14 +1754,14 @@ class Shape {
             <div class="tooltip-arrow arrow-left"></div>\
             <div class="section">\
                 <!--<span class="close-popup">X</span>-->\
-                <!--<label>Instrument:</label>-->\
+                <label>Color:</label>\
                 <div class="color-palette dropdown" style="background: '+this.get_inst_color().color+'">\
                         <!--<i class="ion-chevron-down"></i>-->\
                         <div class="dropdown-content">\
                             <div class="palette-background">'+colorPickerHtml+'</div>\
                         </div>\
                     </div>\
-                <span>Shape: '+this.id+'</span>\
+                <!--<span>Shape: '+this.id+'</span>-->\
             </div>\
             <div class="section">\
                 <label>Starting Note:</label>\
@@ -1800,6 +1846,11 @@ class Shape {
 
 /* ========================================================================== */
 /* --------------------------- Vertex Handle class -------------------------- */
+/* 
+    A Node represents a vertex on a shape. They are draggable, and update their
+    parent shape's path when dragged. They are only visible in Edit mode.
+*/
+
 class Node {
     constructor (x, y, i, shapeId) {
         var parent = this;
@@ -1901,15 +1952,6 @@ class Node {
                 y: this.handle.attr("cy") + transform.dy
             }
         }
-/*        this.getX = function () {
-            var transform = this.handle.matrix.split();
-            return this.handle.attr("cx") + transform.dx;
-        }
-        
-        this.getY = function () {
-            var transform = this.handle.matrix.split();
-            return this.handle.attr("cy") + transform.dy;
-        }*/
 
         this.set_color = function (color) {
             if (this.isFirst) {
@@ -1949,78 +1991,85 @@ class InstColor {
     init_li () {
         var parent = this;
         
+        // edit knob appearance
         var knobSvg = this.li.find(".knobjs-arcbg");
         var knobPath = $(knobSvg).attr("d").split("L1");
         var newPath = knobPath[0];
         $(knobSvg).attr("d", newPath);
         
-        $(".inst-selectors ul.inst-list").append(this.li);
-      
         // styles
         this.li.css({"background-color": hex_to_Rgba(this.color, 0.9), "border-color": this.color});
         this.li.find(".inst-select").val(this.name);
         this.li.find(".inst-title").css({"background-color": this.color, "color": "#fff"});
         
-
+        $(".inst-selectors ul.inst-list").append(this.li);
+        
+        // knob defaults
         this.reset_knob_vals(this.parentController);
         
         // handlers
         this.li.find(".inst-title").on("dblclick", function () {
             toggle_expand_inst_selectors();
         })
-        this.knobchange = false;
+        
+        //this.knobchange = false;
+        
+        // change synth
         this.li.find(".inst-select").on("change", function () {
-            parent.knobchange = true;
-
-            console.log("SYNTH NAME CHANGE");
+            //parent.knobchange = true;
+            //console.log("SYNTH NAME CHANGE ============");
+            
             parent.set_synth($(this).val());
-            console.log("SYNTH NAME CHANGE END");
-            parent.knobchange = false;
-
+            
+            //console.log("SYNTH NAME CHANGE END ==============");
+            //parent.knobchange = false;
         })
 
-        this.li.find(".knob").on("change", function () {
-            if (parent.knobchange == false) {
-                console.log("KNOB CHANGE");
+        // change param value - knob
+        this.li.find(".knob").on("change", function (e) {
+            //console.log(e);
+            //if (e.originalEvent) {
+                //console.log("KNOB CHANGE", parent.name);
                 var val = ~~this.value;
                 var paramId = $(this).attr("data-target");
                 set_param_val(parent.id, paramId, val);
-                console.log("KNOB CHANGE DONE");
-            }
-
+                //console.log("KNOB CHANGE DONE");
+            //}
         })
+
     }
     get_li_content () {
-        var paramNames = this.parentController.dynamicParamObjs
+        var dynamicParams = this.parentController.dynamicParamObjs
+        
+        // synth select list
+        var selectHtml = '';
+        for (var i = 0; i < PROJECT.synthControllersList.length; i++) {
+            selectHtml += '<option>'+PROJECT.synthControllersList[i].name+'</option>'
+        }
 
         // knobs
         var knobsHtml = '';
-        for (var i = 0; i < paramNames.length; i++) {
+        for (var i = 0; i < dynamicParams.length; i++) {
             knobsHtml += '\
                 <li>\
                     <div>\
-                        <x-knobjs-knob id="knob-param-'+i+'" class="knob" data-target="'+i+'""></x-knobjs-knob>\
+                        <x-knobjs-knob id="knob-param-'+i+'" class="knob" data-target="'+i+'"" throw="150"></x-knobjs-knob>\
                     </div>\
                     <div>\
-                        <span class="inst-param-title inst-param-title-'+i+'">'+paramNames[i].name+'</span>\
+                        <span class="inst-param-title inst-param-title-'+i+'">'+dynamicParams[i].name+'</span>\
                     </div>\
                 </li>';
         }
         
-        // synth select list
-        var selectHtml = '';
-        for (var i = 0; i < synthNamesList.length; i++) {
-            selectHtml += '<option>'+synthNamesList[i]+'</option>'
-        }
         
         var instOptionHtml = '\
             <div class="inst-title">\
                 <select class="inst-select" title="Select an instrument">'+selectHtml+'</select>\
-                <button class="show-hide show-hide-inst" data-target="inst-selectors" title="Show/Hide synth controls">\
+                <button class="show-hide show-hide-inst" data-target="inst-selectors" onclick="toggle_expand_inst_selectors()" title="Show/Hide synth controls">\
                     <i class="ion-arrow-left-b"></i>\
                 </button>\
-                <button class="mute-solo-channel" title="Solo all">S</button>\
-                <button class="mute-solo-channel" title="Mute all">M</button>\
+                <!--<button class="mute-solo-channel" title="Solo all">S</button>-->\
+                <!--<button class="mute-solo-channel" title="Mute all">M</button>-->\
             </div>\
             <ul class="inst-params">'+knobsHtml+'</ul>';
 
@@ -2032,31 +2081,34 @@ class InstColor {
         this.name = name;
 
         this.parentController = name_to_synth_controller(this.name);
-        this.reset_knob_vals(this.parentController);
 
         PROJECT.shapesList.forEach(function (shape) {
             if (shape.included && shape.get_inst_color().id == parent.id) {
                 shape.set_instrument(parent.name);
             }
         });
+        
+        this.reset_knob_vals(this.parentController);
     }
 
     reset_knob_vals (synthController) {
         var parent = this;
         var paramObjs = synthController.dynamicParamObjs;
+        
         for (var i = 0; i < paramObjs.length; i++) {
+            
             this.li.find(".inst-param-title-"+i).text(paramObjs[i].name);
             var knob = this.li.find("#knob-param-"+i)[0];
-            knob.setAttribute("throw", 150);
+            
             var defaultVal = paramObjs[i].default;
+            console.log("setting knob defaults");
             knob.setAttribute("value", defaultVal);
         }
     }
 
-    get_knob_val (i) {
-        var val =  this.li.find("#knob-param-"+i)[0];
-        //console.log(val.value);
-        return ~~val.value;
+    get_knob_val (paramIndex) {
+        var knob =  this.li.find("#knob-param-"+paramIndex)[0];
+        return ~~knob.value;
     }
 }
 
@@ -2110,10 +2162,14 @@ function set_param_val(instColorId, paramIndex, rawVal) {
 /* ========================================================================== */
 
 var PROJECT = new Project;
-PROJECT.init();
 var ACTIVE_SHAPE;
 
 $(document).ready(function () {
+    PROJECT.init();
+
+    console.log("PROJECT:", PROJECT.name);
+    console.log("synthControllersList:", PROJECT.synthControllersList);
+    console.log("instColors:", PROJECT.instColors);
 
     init_grid();
     hide_handles();
@@ -2123,7 +2179,8 @@ $(document).ready(function () {
     expand_inst_selectors();
     
     //console.log(PROJECT.synthControllersList);
-    alert("Welcome to Shape Your Music. This application is currently under development, and you may experience bugs. If you have questions feel free to contact me at ejarz25@gmail.com. - Elias");
+
+    alert(alertMessage);
 
     meter = new Tone.Meter("level");
     window.setInterval(function(){
@@ -2894,9 +2951,9 @@ $(".show-hide").on("click", function () {
     var target = $(this).attr("data-target");
     if (target === "menu") {
         if ($(".top-bar").css("top") == "0px") {
-            hide_menu()
+            hide_menu();
         } else {
-            show_menu()
+            show_menu();
         }
     }
     if (target === "inst-selectors") {

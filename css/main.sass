@@ -596,6 +596,7 @@ ul
         height: auto
         max-width: 500px
         margin: 0 auto
+        margin-bottom: 100px
         top: 100px
         left: 0
         right: 0
@@ -604,6 +605,11 @@ ul
             max-width: 900px
             padding: 30px 70px
         &.modal-tutorial
+            td
+                vertical-align: top
+                &.left
+                    width: 200px
+
             img
                 max-width: 150px
                 padding-right: 20px
@@ -693,7 +699,8 @@ ul
         color: $color-white
         text-align: center
         left: 0
-        //top: 6px
+        position: relative
+        top: 7px
         i
             position: relative
             top: 2px
