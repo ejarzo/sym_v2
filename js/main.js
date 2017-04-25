@@ -2237,7 +2237,7 @@ $(document).ready(function () {
     
     //console.log(PROJECT.synthControllersList);
 
-    //alert(alertMessage);
+    alert(alertMessage);
 
     meter = new Tone.Meter("level");
     window.setInterval(function(){
