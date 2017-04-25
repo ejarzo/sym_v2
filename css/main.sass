@@ -229,16 +229,21 @@ ul
             &.account-link
                 float: right
                 border: none
-                //margin-right: 25px
+                margin-right: 25px
                 border-left: 1px solid $color-grey-med
 
     button
         &.show-hide
             z-index: 400
-        &.show-hide-menu
-            @include show_hide_button
-            bottom: -20px
-            right: 0px
+
+.show-hide-menu
+    @include show_hide_button
+    border-top: none
+    position: absolute
+    display: block
+    top: 0
+    right: 0
+    z-index: 1000
 
 /* ========================================================================== */
 /* ============================= User Controls ============================== */
@@ -751,6 +756,7 @@ ul
     button
         background: $color-grey-lighter
         border-radius: 2px
+        width: 100%
         border: 1px solid $color-grey-light
         &:active
             background: $color-grey-light
@@ -759,38 +765,41 @@ ul
             background: none
             @include button_warning
             padding-top: 4px
+            border: none
 
     .mute-solo 
-        .button-cont 
-            display: inline-block
+        button 
+            background: none
             text-align: center
-            width: 50%
-            //height: 100%
-            button 
-                background: none
-                //height: 100%
-                width: 80px
-                text-align: center
-                display: block
-                margin: 0 auto
-                padding: 2px 4px
-                border: none
-            
-            .shape-attr-mute
-                border: 1px solid $color-mute
-                color: $color-mute
+            display: block
+            margin: 0 auto
+            padding: 2px 4px
+            border: none
+        
+    .button-cont 
+        .btn-half
+            width: 45%
+        
+        display: inline-block
+        padding: 0 8px
+        text-align: center
+        width: 50%
+        //height: 100%
+        .shape-attr-mute
+            border: 1px solid $color-mute
+            color: $color-mute
 
-            .shape-attr-unmute
-                background-color: $color-mute
-                color: $color-white
+        .shape-attr-unmute
+            background-color: $color-mute
+            color: $color-white
 
-            .shape-attr-solo
-                border: 1px solid $color-solo
-                color: $color-solo
+        .shape-attr-solo
+            border: 1px solid $color-solo
+            color: $color-solo
 
-            .shape-attr-unsolo
-                background-color: $color-solo
-                color: $color-white
+        .shape-attr-unsolo
+            background-color: $color-solo
+            color: $color-white
 
 /* ========================================================================== */
 /* ================================= Helper ================================= */

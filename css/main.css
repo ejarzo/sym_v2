@@ -131,22 +131,28 @@ ul {
       .menu ul li.account-link {
         float: right;
         border: none;
+        margin-right: 25px;
         border-left: 1px solid #777; }
   .menu button.show-hide {
     z-index: 400; }
-  .menu button.show-hide-menu {
-    position: absolute;
-    background: #eee;
-    color: #444;
-    border: 1px solid #777;
-    border-right: none;
-    font-size: 15px;
-    height: 20px;
-    bottom: -20px;
-    right: 0px; }
-    .menu button.show-hide-menu i, .menu button.show-hide-menu span {
-      position: relative;
-      top: -3px; }
+
+.show-hide-menu {
+  position: absolute;
+  background: #eee;
+  color: #444;
+  border: 1px solid #777;
+  border-right: none;
+  font-size: 15px;
+  height: 20px;
+  border-top: none;
+  position: absolute;
+  display: block;
+  top: 0;
+  right: 0;
+  z-index: 1000; }
+  .show-hide-menu i, .show-hide-menu span {
+    position: relative;
+    top: -3px; }
 
 /* ========================================================================== */
 /* ============================= User Controls ============================== */
@@ -724,39 +730,43 @@ ul {
   .shape-attr-popup button {
     background: #eee;
     border-radius: 2px;
+    width: 100%;
     border: 1px solid #bbb; }
     .shape-attr-popup button:active {
       background: #bbb; }
     .shape-attr-popup button.shape-attr-delete-shape {
       background: none;
       color: #ff6464;
-      padding-top: 4px; }
+      padding-top: 4px;
+      border: none; }
       .shape-attr-popup button.shape-attr-delete-shape:hover {
         text-decoration: underline;
         background-color: transparent;
         color: #ff6464; }
-  .shape-attr-popup .mute-solo .button-cont {
+  .shape-attr-popup .mute-solo button {
+    background: none;
+    text-align: center;
+    display: block;
+    margin: 0 auto;
+    padding: 2px 4px;
+    border: none; }
+  .shape-attr-popup .button-cont {
     display: inline-block;
+    padding: 0 8px;
     text-align: center;
     width: 50%; }
-    .shape-attr-popup .mute-solo .button-cont button {
-      background: none;
-      width: 80px;
-      text-align: center;
-      display: block;
-      margin: 0 auto;
-      padding: 2px 4px;
-      border: none; }
-    .shape-attr-popup .mute-solo .button-cont .shape-attr-mute {
+    .shape-attr-popup .button-cont .btn-half {
+      width: 45%; }
+    .shape-attr-popup .button-cont .shape-attr-mute {
       border: 1px solid #6e6efa;
       color: #6e6efa; }
-    .shape-attr-popup .mute-solo .button-cont .shape-attr-unmute {
+    .shape-attr-popup .button-cont .shape-attr-unmute {
       background-color: #6e6efa;
       color: #fff; }
-    .shape-attr-popup .mute-solo .button-cont .shape-attr-solo {
+    .shape-attr-popup .button-cont .shape-attr-solo {
       border: 1px solid #eda128;
       color: #eda128; }
-    .shape-attr-popup .mute-solo .button-cont .shape-attr-unsolo {
+    .shape-attr-popup .button-cont .shape-attr-unsolo {
       background-color: #eda128;
       color: #fff; }
 

@@ -122,6 +122,12 @@ var alertMessage = "Welcome to Shape Your Music. This application is currently u
 
 /* ========================================================================== */
 /* ------------------------------ Project class ----------------------------- */
+/*  
+    A Project keeps track of all of the informtaion needed to save/load anything
+    the user has created. It has a name, tempo, scale, and root note. 
+    Most important is the shapesList, which is an array of the Project's shapes.
+
+*/
 class Project {
     constructor (/*proj_obj*/) {
         this.name = "New Project";
@@ -171,6 +177,7 @@ class Project {
         this.init_inst_colors();
         this.init_color_picker();
     }
+
     init_tempo () {
         $(".tempo-slider").val(this.tempo * -1);
     }
@@ -187,6 +194,9 @@ class Project {
     /* ======================== INITIALIZE ALL SYNTHS ======================= */
     /* ====================================================================== */
 
+    /* 
+        Creates synthController parameters and calls add_synth for each one
+     */
     init_synths () {
         /* --------- Defaults -------- */
         var defaultDynamicParams = 
@@ -923,12 +933,20 @@ class Project {
         //this.add_synth("colton_08", Tone.DuoSynth, colton08Params, colton08DynamicParams, colton08Effects);
     }
 
+    /* 
+        Adds a synth to the synthControllers list.  Each new controller has a name, 
+        a Tone synth type, synth options in JSON, dynamic parameters that have a name, 
+        default value, and function to execute, and a list of effects
+    */
     add_synth (name, baseType, baseParams, dynamicParamObjs, effects) {
         var synthController = new SynthController(name, baseType, baseParams, dynamicParamObjs, effects);
         synthNameEnum[name] = this.synthControllersList.length;
         this.synthControllersList.push(synthController);
     }
 
+    /*
+        Initializes the instColors. There are as many as there are colors in colorsList
+    */
     init_inst_colors () {
         for (var i = 0; i < colorsList.length; i++) {
             var instColor = new InstColor(i, this.synthControllersList[i].name, colorsList[i]);
@@ -945,7 +963,12 @@ class Project {
         }
     }
     
+    /*
+        clears the canvas by: stopping playback, removine each shape, resetting 
+        the grid and shapesList, changing tool to draw
+    */
     clear_canvas () {
+        // TODO memory
         hide_details();
         stop_handler();
         this.shapesList.forEach(function (shape) {
@@ -958,7 +981,7 @@ class Project {
 
         r.clear();
         init_grid();
-        Tone.dispose();
+        //Tone.dispose();
 
         this.shapesList.length = 0;
         
@@ -976,6 +999,9 @@ class Project {
         console.log(this.shapesList);
     }
 
+    /*
+        Sets all notes for each shape.
+    */
     reset_all_notes () {
         this.shapesList.forEach(function (shape) {
             if (shape.included) {
@@ -986,6 +1012,9 @@ class Project {
 
     /* ---------- I/O ---------- */
 
+    /*
+        returns a project object that contains neccessary data about the project
+    */
     dump () {
         var savedShapesList = []; 
         this.shapesList.forEach(function (shape) {
@@ -1025,6 +1054,10 @@ class Project {
         return projObj;
     }
 
+    /*
+        Loads data from a project object into the project: draws the shapes and 
+        updates the tempo, musical properties etc
+    */
     load (projObj) {
         console.log("Loading Project:", projObj);
 
@@ -1070,6 +1103,14 @@ class Project {
 
 /* ========================================================================== */
 /* ------------------------------- Shape class ------------------------------ */
+/*
+    A Shape is a representation of a melody. The most important properties are
+    the path and the part. The path is the 2D shape drawn by the user that can
+    be dragged and clicked on. The part (Tone.part) is the melody. It executes
+    for every side of the path. Shapes are created with an Id, an instcolorId 
+    that tells it what color to be, and optionally saved data - to load a shape
+    from a given path.
+*/
 class Shape {
     constructor (id, instColorId, savedData) {
         var parent = this;
@@ -1160,7 +1201,7 @@ class Shape {
             }
         }
 
-        /* ----- Details ----- */
+        /* ----- Show the popup ----- */
         this.show_attr_popup = function (event) {
             SELECTED_SHAPE_ID = this.id;
             this.path.attr({"fill-opacity": 0.9});
@@ -1207,11 +1248,11 @@ class Shape {
             
             this.part.removeAll();
             this.part.dispose();
-/*            this.sends.forEach(function (send) {
-                if (send) {
-                    send.dispose();
-                }
-            })*/
+            //this.sends.forEach(function (send) {
+            //    if (send) {
+            //        send.dispose();
+            //    }
+            //})
             this.synth.dispose();
             this.nodes.forEach(function (node) {
                 node.handle.remove();
@@ -1300,7 +1341,7 @@ class Shape {
         this.isMutedFromSolo = false;
         this.isSoloed = false;
 
-        this.quantizeMult = 1;
+        this.quantizeFactor = 1;
 
         // path
         this.path = r.path().attr(this.shapeDefaultAttr);
@@ -1383,6 +1424,7 @@ class Shape {
                 }
                 console.log("note:", note);
 
+                // animation
                 Tone.Draw.schedule(function () {
                     var startP = value.nodeFrom.getCoords();
                     var endP = value.nodeTo.getCoords();
@@ -1484,7 +1526,7 @@ class Shape {
         
         /* ------ Set Perimeter ------ */
         this.popup.find(".shape-attr-set-perim").on("click", function () {
-            parent.set_perim_length(PROJECT.quantizeLength * parent.quantizeMult);
+            parent.set_perim_length(PROJECT.quantizeLength * parent.quantizeFactor);
         });
     }
 
@@ -1514,6 +1556,7 @@ class Shape {
     }
 
     set_sends (name) {
+        // TODO
         for (var i = 0; i < this.sends.length; i++) {
             if (this.sends[i]) {
                 this.sends[i].gain.value = -Infinity;
@@ -1527,7 +1570,7 @@ class Shape {
         var synthController = name_to_synth_controller(name)
         for (var i = 0; i < 4; i++) {
             var val = PROJECT.instColors[this.instColorId].get_knob_val(i);
-            console.log("val:",val);
+            //console.log("val:",val);
             synthController.dynamicParamObjs[i].func(this, val);
         }
     }
@@ -1562,6 +1605,9 @@ class Shape {
         this.path.attr("stroke-width", val);
     }
 
+    /*
+        Sets the instColorId. Changes the color and synth to that of the new instColor
+    */
     set_inst_color_id (id) {
         console.log("setting to InstColor:", id)
         var instColor = PROJECT.instColors[id];
@@ -1588,16 +1634,22 @@ class Shape {
         this.refresh_shape_attr_popup();
     }
     
-    set_quantize_length (val) {
-        var newPerim = val * this.getPerim();
+    /*
+        Multiplies the current perimeter by the given factor.
+    */
+    set_quantize_length (factor) {
+        var newPerim = factor * this.getPerim();
         console.log("NEW PERIM:", newPerim);
         if (PROJECT.isAutoQuantized) {
-            this.quantizeMult *= val;
-            newPerim = PROJECT.quantizeLength * this.quantizeMult;
+            this.quantizeFactor *= factor;
+            newPerim = PROJECT.quantizeLength * this.quantizeFactor;
         }
         this.set_perim_length(newPerim);
     }
 
+    /* 
+        Sets the shape's perimeter length (and therefore melody length)
+    */
     set_perim_length (len) {
         var currLen = this.path.getTotalLength();
         //var targetSize = Math.round(currLen / len) * len;
@@ -1679,7 +1731,7 @@ class Shape {
         
         // TODO
         if (PROJECT.isAutoQuantized) {
-            var totalLength = PROJECT.quantizeLength * this.quantizeMult * PROJECT.tempo / 1000;
+            var totalLength = PROJECT.quantizeLength * this.quantizeFactor * PROJECT.tempo / 1000;
         } else {
             var totalLength = delay + lastNoteInfo.noteDur;
         }
@@ -1784,14 +1836,19 @@ class Shape {
                 </div>\
             </div>\
             <div class="section">\
-                <button class="shape-attr-set-perim">Quantize</button>\
-                <button class="shape-attr-double">*2</button>\
-                <button class="shape-attr-half">/2</button>\
-                <!--<span class="perim-label">Perim:'+this.getPerim()+'</span>-->\
+                <div class="button-cont">\
+                    <button class="shape-attr-set-perim">Quantize</button>\
+                </div><div class="button-cont">\
+                    <button class="shape-attr-tofront">To Front</button>\
+                </div\
             </div>\
             <div class="section">\
-                <button class="shape-attr-tofront">To Front</button>\
-                <button class="shape-attr-toback">To Back</button>\
+                <div class="button-cont">\
+                    <button class="btn-half shape-attr-double" title="Double the size">*2</button>\
+                    <button class="btn-half shape-attr-half" title="Halve the size">&divide;2</button>\
+                </div><div class="button-cont">\
+                    <button class="shape-attr-toback">To Back</button>\
+                </div>\
             </div>\
             <div class="section">\
                 <button class="shape-attr-delete-shape">Delete Shape</button>\
@@ -1905,7 +1962,7 @@ class Node {
                 var parentShape = PROJECT.shapesList[shapeId];
                 // TODO ?
                 if (PROJECT.isAutoQuantized) {
-                    parentShape.set_perim_length(PROJECT.quantizeLength * parentShape.quantizeMult);
+                    parentShape.set_perim_length(PROJECT.quantizeLength * parentShape.quantizeFactor);
                 } else {
                     parentShape.update_note_values();
                 }
@@ -2180,7 +2237,7 @@ $(document).ready(function () {
     
     //console.log(PROJECT.synthControllersList);
 
-    alert(alertMessage);
+    //alert(alertMessage);
 
     meter = new Tone.Meter("level");
     window.setInterval(function(){
@@ -2307,7 +2364,7 @@ $("#auto-quantize").click(function () {
         PROJECT.isAutoQuantized = true;
         PROJECT.shapesList.forEach(function (shape) {
             if (shape.included) {
-                shape.set_perim_length(PROJECT.quantizeLength * shape.quantizeMult);
+                shape.set_perim_length(PROJECT.quantizeLength * shape.quantizeFactor);
             }
         });
     } 
