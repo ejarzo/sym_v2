@@ -7,9 +7,13 @@ To start simple clone the folder and open index.html in a browser (preferably ch
 
 ## The Idea
 
-Shape Your Music is a visual composition language for creating music. It translates visual space to musical space. The user creates shapes that represent melodies. 
+Shape Your Music is a web application that explores a new way of composing music by translating geometric space to musical space.
+
+Experiment with different scales, synths, grid, and quantization options. Dynamically “play" your song by moving shapes, adding new ones, and adjusting the perimeters of existing ones. And record your creation at any time as an audio file to a your computer.
 
 ## How it works
+
+The idea is simple: create melodic loops by drawing shapes. The way in which the sound is generated is unique however: When a shape plays, a node travels around the perimeter of the shape and plays a note at each vertex. The note is determined by the angle at that vertex. While the geometric properties of a shape are used to determine the notes in its melody, color is used to represent its instrument/sound. Multiple other factors are controllable as well.
 
 
 ## Controls
@@ -92,3 +96,16 @@ Remove the shape
 
 ## Instruments 
 At the bottom of the screen there is a toolbar that displays the different instruments. Each one has a unique color and a synth. Different colors can be assigned to the same synth. Selecting a different synth changes the sound for all shapes of that color. Use the four knobs to adjust the timbre of the sound.
+
+## Powered by
+
+[Tone.js](https://tonejs.github.io)
+
+[Raphaël](http://dmitrybaranovskiy.github.io/raphael/)
+
+[Teoria](https://github.com/saebekassebil/teoria/)
+
+[Recorder.js](https://github.com/mattdiamond/Recorderjs)
+
+[Knob.js](https://github.com/russellmcc/knobjs)
+
