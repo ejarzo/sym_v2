@@ -151,7 +151,7 @@ class Project {
     set_scale (name) {
         this.scaleObj = teoria.note(this.rootNote).scale(name);
         this.shapesList.forEach(function (shape) {
-            if (shape.included) {
+            if (shape.isIncluded) {
                 shape.update_start_freq();
             }
         });
@@ -164,7 +164,7 @@ class Project {
         this.scaleObj = note.scale(currScaleName);
         this.rootNote = note.toString();
         this.shapesList.forEach(function (shape) {
-            if (shape.included) {
+            if (shape.isIncluded) {
                 shape.update_start_freq();
             }
         });
@@ -973,11 +973,11 @@ class Project {
         /* ------------------------------------------------------------------ */
 
         //this.add_synth("AM", Tone.AMSynth, {}, defaultDynamicParams);
-        this.add_synth("Cello", Tone.FMSynth, celloParams, celloDynamicParams, celloEffects);
         
         this.add_synth("Keys", Tone.Synth, keysParams, keysDynamicParams, keysEffects);
         this.add_synth("Duo", Tone.DuoSynth, {}, duoDynamicParams, duoEffects);
         
+        this.add_synth("Cello", Tone.FMSynth, celloParams, celloDynamicParams, celloEffects);
         //this.add_synth("Marimba", Tone.Synth, marimbaParams, marimbaDynamicParams);
         
         this.add_synth("SubBass", Tone.MonoSynth, subBassParams, subBassDynamicParams, subBassEffects);
@@ -1033,7 +1033,7 @@ class Project {
         hide_details();
         stop_handler();
         this.shapesList.forEach(function (shape) {
-            if (shape.included) {
+            if (shape.isIncluded) {
                 shape.unmute();
                 shape.delete();    
             }
@@ -1067,7 +1067,7 @@ class Project {
     */
     reset_all_notes () {
         this.shapesList.forEach(function (shape) {
-            if (shape.included) {
+            if (shape.isIncluded) {
                 shape.update_note_values();
             }
         });
@@ -1081,7 +1081,7 @@ class Project {
     dump () {
         var savedShapesList = []; 
         this.shapesList.forEach(function (shape) {
-            if (shape.included) {
+            if (shape.isIncluded) {
                 var coords = []
                 shape.nodes.forEach(function (node) {
                     //var p = {
@@ -1312,17 +1312,13 @@ class Shape {
             
             this.part.removeAll();
             this.part.dispose();
-            //this.sends.forEach(function (send) {
-            //    if (send) {
-            //        send.dispose();
-            //    }
-            //})
+
             this.synth.dispose();
             this.nodes.forEach(function (node) {
                 node.handle.remove();
             });
 
-            this.included = false;
+            this.isIncluded = false;
         }
         
         /* ----- Mute ----- */
@@ -1362,7 +1358,7 @@ class Shape {
         this.solo = function () {
             this.isSoloed = true;
             PROJECT.shapesList.forEach(function (shape) {
-                if (shape.id != parent.id && shape.included && !shape.isMuted) {
+                if (shape.id != parent.id && shape.isIncluded && !shape.isMuted) {
                     shape.isMutedFromSolo = true;
                     shape.mute();
                 }
@@ -1373,7 +1369,7 @@ class Shape {
         this.unsolo = function () {
             this.isSoloed = false;
             PROJECT.shapesList.forEach(function (shape) {
-                if (shape.i != parent.id && shape.included) {
+                if (shape.i != parent.id && shape.isIncluded) {
                     if (shape.isMutedFromSolo) {
                         shape.isMutedFromSolo = false;
                         shape.unmute();
@@ -1397,10 +1393,10 @@ class Shape {
         // tone
         this.synth;
         this.volume = -8;
+
         this.pan = 0;        
         this.panner = new Tone.Panner(this.pan);
 
-        this.sends = [null, null, null, null];
         this.isMuted = false;
         this.isMutedFromSolo = false;
         this.isSoloed = false;
@@ -1422,7 +1418,7 @@ class Shape {
         this.startFreqIndex = 0;
         this.startFreq;
         this.isCompleted = false;
-        this.included = true;
+        this.isIncluded = true;
 
         // animation
         this.animCircle = r.circle(0, 0, 5).attr(this.animCircleAttr).toFront().hide();
@@ -1623,16 +1619,6 @@ class Shape {
     }
 
     init_effect_vals (name) {
-/*        for (var i = 0; i < this.sends.length; i++) {
-            if (this.sends[i]) {
-                this.sends[i].gain.value = -Infinity;
-                this.sends[i].dispose();    
-            }
-            //this.sends[i] = this.synth.send(name+"effect"+i, 0);
-            //this.sends[i] = null;
-        }
-        this.sends.length = 0;
-        this.sends = [null, null, null, null]*/
         var synthController = name_to_synth_controller(name)
         for (var i = 0; i < 4; i++) {
             var val = PROJECT.instColors[this.instColorId].get_knob_val(i);
@@ -1649,6 +1635,8 @@ class Shape {
             rangeMin = 0;
             rangeMax = 1;
         }
+
+        // TODO logs
         if (paramName == "frequency") {
             rangeMin = 20;
             rangeMax = 10000;
@@ -2239,7 +2227,7 @@ class InstColor {
         this.parentController = name_to_synth_controller(this.name);
 
         PROJECT.shapesList.forEach(function (shape) {
-            if (shape.included && shape.get_inst_color().id == parent.id) {
+            if (shape.isIncluded && shape.get_inst_color().id == parent.id) {
                 shape.set_instrument(parent.name);
             }
         });
@@ -2491,7 +2479,7 @@ $("#auto-quantize").click(function () {
     if ($("#auto-quantize").is(":checked")) {
         PROJECT.isAutoQuantized = true;
         PROJECT.shapesList.forEach(function (shape) {
-            if (shape.included) {
+            if (shape.isIncluded) {
                 shape.set_perim_length(PROJECT.quantizeLength * shape.quantizeFactor);
             }
         });
@@ -2651,7 +2639,7 @@ function stop_handler () {
     $(".play-stop-toggle").html("<i class='ion-play'></i>");
     PLAYING = false;
     PROJECT.shapesList.forEach(function (shape) {
-        if (shape.included) {
+        if (shape.isIncluded) {
             shape.stop();
         }                
     });
@@ -2766,7 +2754,7 @@ function snap_to_grid (p) {
 /* -------- HANDLES -------- */
 function hide_handles () {
     PROJECT.shapesList.forEach(function (shape) {
-        if (shape.included) {
+        if (shape.isIncluded) {
             shape.hide_handles();
         }
     });
@@ -2774,7 +2762,7 @@ function hide_handles () {
 
 function show_handles () {
     PROJECT.shapesList.forEach(function (shape) {
-        if (shape.included) {
+        if (shape.isIncluded) {
             shape.show_handles();
         }
     });
@@ -2783,7 +2771,7 @@ function show_handles () {
 function hide_details () {
     SELECTED_SHAPE_ID = -1;
     PROJECT.shapesList.forEach(function (shape) {
-        if (shape.included) {
+        if (shape.isIncluded) {
             shape.path.attr({"fill-opacity": completedShapeOpacity});
         }
     });
