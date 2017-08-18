@@ -11,7 +11,7 @@
     V2: 2017
 
 ============================================================================= */
-
+"use strict"
 /* --------------------------------- RAPHAEL -------------------------------- */
 var r = Raphael("holder", "100%", "100%");
 
@@ -111,7 +111,7 @@ var RECORDING = false;
 
 
 
-var alertMessage = "Welcome to Shape Your Music. This application is currently under development, and you may experience bugs. Check out the Help menu for a basic tutorial. If you have questions feel free to contact me at ejarz25@gmail.com. Enjoy! - Elias"
+var alertMessage = "Welcome to Shape Your Music. This application is under development, and currently only works in the Chrome browser :(. Check out the Help menu for a basic tutorial. If you have questions feel free to contact me at ejarz25@gmail.com. Enjoy! - Elias"
 
 
 
@@ -2137,9 +2137,11 @@ class InstColor {
         
         // edit knob appearance
         var knobSvg = this.li.find(".knobjs-arcbg");
-        var knobPath = $(knobSvg).attr("d").split("L1");
-        var newPath = knobPath[0];
-        $(knobSvg).attr("d", newPath);
+        if (knobSvg) {
+            var knobPath = $(knobSvg).attr("d").split("L1");
+            var newPath = knobPath[0];
+            $(knobSvg).attr("d", newPath);
+        }
         
         // styles
         this.li.css({"background-color": hex_to_Rgba(this.color, 0.9), "border-color": this.color});
@@ -2354,7 +2356,7 @@ $(document).ready(function () {
     
     //console.log(PROJECT.synthControllersList);
 
-    //alert(alertMessage);
+    alert(alertMessage);
 
 /*    window.setInterval(function(){
         if (masterMeter.value > 0.1) {
