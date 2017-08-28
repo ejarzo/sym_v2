@@ -111,7 +111,7 @@ var RECORDING = false;
 
 
 
-var alertMessage = "Welcome to Shape Your Music. This application is under development, and currently only works in the Chrome browser :(. Check out the Help menu for a basic tutorial. If you have questions feel free to contact me at ejarz25@gmail.com. Enjoy! - Elias"
+var alertMessage = "Welcome to Shape Your Music. This application is under development, and currently ONLY WORKS IN GOOGLE CHROME :(. Check out the Help menu for a basic tutorial. If you have questions feel free to contact me at ejarz25@gmail.com. Enjoy! - Elias"
 
 
 
@@ -2340,6 +2340,7 @@ var PROJECT = new Project;
 var ACTIVE_SHAPE;
 
 $(document).ready(function () {
+    alert(alertMessage);
     PROJECT.init();
     //makeWaveVis();
 
@@ -2356,7 +2357,6 @@ $(document).ready(function () {
     
     //console.log(PROJECT.synthControllersList);
 
-    alert(alertMessage);
 
 /*    window.setInterval(function(){
         if (masterMeter.value > 0.1) {
